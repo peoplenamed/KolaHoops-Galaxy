@@ -1,6 +1,6 @@
 #define brightness 1 //this is not right at all.
-#define demo 0
-#define framerate 120 // SIESURE WARNING?
+#define demo 1
+int framerate= 240; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
   //   hsvtest,
   //   wavyFlag,// stock
@@ -9,8 +9,11 @@ void (*renderEffect[])(byte) = {
   //   sparkle, //need to make this look better, probably looks sweet when moving fas
 //##########in development###########
   //  colorDrift, //hsv2rgb defeated me. why isnt this smooth?
-       strobe, //need to have a better system for duty cycle modulation
-       fans, // varied duty cycle per led per section strobe
+   //    strobe, //need to have a better system for duty cycle modulation
+     POV,
+      fans, // varied duty cycle per led per section strobe
+       
+       
   //###########good codes, dont change these#####
    
     MonsterHunter, //woah dont fuck with this guy
@@ -145,6 +148,120 @@ uint8_t error = 0;
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 uint16_t debounceDelay = 200;
 uint8_t button = 0;
+
+
+//###############bitmap storage
+/* string index of character table
+ !"#$%&'()*+,-./ //start 0 end 15
+0123456789:;>=<? //start 16 end 31
+@ABCDEFGHIJKLMNO //start 32 end 47
+PQRSTUVWXYZ[ ]^_ //START 48 END 63
+`abcdefghijklmno //start 64 end 79
+pqrstuvwxyz{|}~~ //start 80 end 95
+*/
+//uint8_t message[2] ={2,2};
+// led character definitions modified from http://www.edaboard.com/thread45151.html
+// 5 data columns + 1 space
+// for each character
+const String Message[5] = {"KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("};
+const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
+
+ char led_chars[97][6] PROGMEM = {  
+0x00,0x00,0x00,0x00,0x00,0x00,	// space 0
+0x00,0x00,0xfa,0x00,0x00,0x00,	// !	1
+0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
+0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
+0x24,0x54,0xfe,0x54,0x48,0x00,  // $4
+0xc4,0xc8,0x10,0x26,0x46,0x00,  // %5
+0x6c,0x92,0xaa,0x44,0x0a,0x00,  // &6
+0x00,0xa0,0xc0,0x00,0x00,0x00,  // '7
+0x00,0x38,0x44,0x82,0x00,0x00,	// (8
+0x00,0x82,0x44,0x38,0x00,0x00,  // )10
+0x28,0x10,0x7c,0x10,0x28,0x00,  // *11
+0x10,0x10,0x7c,0x10,0x10,0x00,  // +12
+0x00,0x0a,0x0c,0x00,0x00,0x00,  // ,13
+0x10,0x10,0x10,0x10,0x10,0x00,  // -14
+0x00,0x06,0x06,0x00,0x00,0x00,  // .15
+0x04,0x08,0x10,0x20,0x40,0x00,  // /  16
+0x7c,0x8a,0x92,0xa2,0x7c,0x00,  // 0 17
+0x00,0x42,0xfe,0x02,0x00,0x00,  // 1 18
+0x42,0x86,0x8a,0x92,0x62,0x00,  // 2 9
+0x84,0x82,0xa2,0xd2,0x8c,0x00,	// 3 0 
+0x18,0x28,0x48,0xfe,0x08,0x00,	// 4 1
+0xe5,0xa2,0xa2,0xa2,0x9c,0x00,	// 5 2
+0x3c,0x52,0x92,0x92,0x0c,0x00,	// 6 3
+0x80,0x8e,0x90,0xa0,0xc0,0x00,	// 7 4
+0x6c,0x92,0x92,0x92,0x6c,0x00,	// 8 5
+0x60,0x92,0x92,0x94,0x78,0x00,	// 9  6
+0x00,0x6c,0x6c,0x00,0x00,0x00,	// : 7 
+0x00,0x6a,0x6c,0x00,0x00,0x00,	// ;8
+0x10,0x28,0x44,0x82,0x00,0x00,	// <9
+0x28,0x28,0x28,0x28,0x28,0x00,	// =0
+0x00,0x82,0x44,0x28,0x10,0x00,	// >1
+0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
+0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
+0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
+0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
+0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
+0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
+0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
+0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
+0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
+0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
+0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
+0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
+0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
+0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
+0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
+0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
+0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
+0xfe,0x90,0x90,0x90,0x60,0x00,	// P9
+0x7c,0x82,0x8a,0x84,0x7a,0x00,	// Q0
+0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
+0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
+0x80,0x80,0xfe,0x80,0x80,0x00,	// T3
+0xfc,0x02,0x02,0x02,0xfc,0x00,	// U4
+0xf8,0x04,0x02,0x04,0xf8,0x00,	// V5
+0xfc,0x02,0x1c,0x02,0xfc,0x00,	// W6
+0xc6,0x28,0x10,0x28,0xc6,0x00,	// X7
+0xe0,0x10,0x0e,0x10,0xe0,0x00,	// Y8
+0x86,0x8b,0x92,0xa2,0xc2,0x00,	// Z9
+0x00,0xfe,0x82,0x82,0x00,0x00,	// [0
+0x00,0x00,0x00,0x00,0x00,0x00,     //1 *** do not remove this empty char ***
+0x00,0x82,0x82,0xfe,0x00,0x00,	// ]2
+0x20,0x40,0x80,0x40,0x20,0x00,	// ^3
+0x02,0x02,0x02,0x02,0x02,0x00,	// _4
+0x00,0x80,0x40,0x20,0x00,0x00,	// `5
+0x04,0x2a,0x2a,0x2a,0x1e,0x00,	// a6
+0xfe,0x12,0x22,0x22,0x1c,0x00,	// b7
+0x1c,0x22,0x22,0x22,0x04,0x00,	// c8
+0x1c,0x22,0x22,0x12,0xfe,0x00,	// d9
+0x1c,0x2a,0x2a,0x2a,0x18,0x00,	// e0
+0x10,0x7e,0x90,0x80,0x40,0x00,	// f1
+0x30,0x4a,0x4a,0x4a,0x7c,0x00,	// g2
+0xfe,0x10,0x20,0x20,0x1e,0x00,	// h3
+0x00,0x22,0xbe,0x02,0x00,0x00,	// i4
+0x04,0x02,0x22,0xbc,0x00,0x00,	// j5
+0xfe,0x08,0x14,0x22,0x00,0x00,	// k6
+0x00,0x82,0xfe,0x02,0x00,0x00,	// l7
+0x3e,0x20,0x18,0x20,0x1e,0x00,	// m8
+0x3e,0x10,0x20,0x20,0x1e,0x00,	// n9
+0x1c,0x22,0x22,0x22,0x1c,0x00,	// o0
+0x3e,0x28,0x28,0x28,0x10,0x00,	// p1
+0x10,0x28,0x28,0x18,0x3e,0x00,	// q2
+0x3e,0x10,0x20,0x20,0x10,0x00,	// r3
+0x12,0x2a,0x2a,0x2a,0x04,0x00,	// s4
+0x20,0xfc,0x22,0x02,0x04,0x00,	// t5
+0x3c,0x02,0x02,0x04,0x3e,0x00,	// u6
+0x38,0x04,0x02,0x04,0x38,0x00,	// v7
+0x3c,0x02,0x0c,0x02,0x3c,0x00,	// w8
+0x22,0x14,0x08,0x14,0x22,0x00,	// x9
+0x30,0x0a,0x0a,0x0a,0x3c,0x00,	// y0
+0x22,0x26,0x2a,0x32,0x22,0x00, 	// z1
+0x00,0x10,0x6c,0x82,0x00,0x00,	// {2
+0x00,0x00,0xfe,0x00,0x00,0x00,	// |3
+0x00,0x82,0x6c,0x10,0x00,0x00, 
+0x18,0x3c,0x7e,0xff,0x7e,0x3c}; //4
 
 // Principle of operation: at any given time, the LEDs depict an image or
 // animation effect (referred to as the "back" image throughout this code).
@@ -398,8 +515,7 @@ void compasss()
 //}
 
 void loop() {
-  compasss(); //a work in progress, some of the things work including the plane calc to an extent.
-  //this really should be done on interrupt either external or internal to keep with the lady's good idea
+ 
   
   
   // Do nothing? All the work happens in the callback() function below,
@@ -492,10 +608,12 @@ void callback() {
       button=0;  
     }
     else{   
-      tCounter          = random(-2000,-4000); // Hold image ? to ? seconds
+      tCounter          = random(-7200   ,-14400); // Hold image ? to ? seconds
     }
 
   }
+// compasss(); //a work in progress, some of the things work including the plane calc to an extent.
+  //this really should be done on interrupt either external or internal to keep with the lady's good idea
 }
 
 // ---------------------------------------------------------------------------
@@ -517,6 +635,8 @@ void callback() {
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
+    framerate=120;
+    Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
 
     fxVars[idx][1]=random(1536); //color were gonna write initally
     Serial.println(fxVars[idx][1]);
@@ -537,6 +657,8 @@ void hsvtest(byte idx) {
 
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
+    framerate=120;
+     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(0,1536); //color were gonna write initally
     fxVars[idx][0] = 1; // Effect initialized
     fxVars[idx][2] =random(1,4); //increments of color drift per frame
@@ -565,7 +687,10 @@ void colorDrift(byte idx) {
 }
 
 void sparkle(byte idx) {
+  
   if(fxVars[idx][0] == 0) {
+    framerate=120;
+     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][0]=1;
   }
   byte *ptr = &imgData[idx][0];
@@ -579,6 +704,7 @@ void sparkle(byte idx) {
 
 void strobe(byte idx) {
   if(fxVars[idx][0] == 0) {
+   
     fxVars[idx][1]=random(1536); //color were gonna use to cycle
     fxVars[idx][2] =random(0,2); //increments of color drift per frame
     fxVars[idx][3] =0; //strobe indicator, 0 is nothing written for the frame and anything else is write
@@ -691,6 +817,8 @@ void strobe(byte idx) {
 void fans(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
+    framerate=240;
+     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(1536); //color were gonna use to cycle
     fxVars[idx][2]=numPixels/random(2,8); //using this to determine the # of sections between 2 and 8
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame, 
@@ -755,11 +883,93 @@ void fans(byte idx) {
   fxVars[idx][7]=0;  
 }
 
+void POV(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    int i;
+    fxVars[idx][1]=random(1536); //color were gonna use to cycle
+    fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
+    fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame, 
+    fxVars[idx][4]=0;//# of frames until next change
+    fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
+    fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
+    fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+    //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
+    fxVars[idx][9]=0;// character counter
+    fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
+    fxVars[idx][0]=1;// Effect initialized
+  }
+  if(fxVars[idx][0] == -1) { //re init
+  }
+fxVars[idx][3]++;
+  
+
+  byte *ptr = &imgData[idx][0];
+  long color;
+  for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+
+    for(int i=0; i<fxVars[idx][2]; i++) {  
+    byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]);  //  
+  // if(data>>i==1){
+    if((data>>i)&1){
+      //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
+        color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
+        255, 255);
+        *ptr++ = color >> 16; 
+        *ptr++ = color >> 8; 
+        *ptr++ = color;
+      }
+      else{       
+        *ptr++ = 0; 
+        *ptr++ = 0;
+        *ptr++ = 0;
+      }
+    }
+  
+    fxVars[idx][7]++;  
+
+
+   
+  }
+  
+  
+  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
+         
+     *ptr++ = 0; 
+      *ptr++ = 0;
+      *ptr++ = 0;
+
+  }
+    if(fxVars[idx][3]>=fxVars[idx][4]){fxVars[idx][3]=0;fxVars[idx][5]++;}//set frame counter to first position
+
+ //  if(fxVars[idx][4]<=fxVars[idx][3]){ // if frame operator is greater than frame holder then set frame opserator to 0 and increment level op
+  //   fxVars[idx][3]=0;
+//     fxVars[idx][5]++; //increment level operator
+//   }
+       if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator  > level holder then increment character and check for overflow
+  {
+  fxVars[idx][5]=0;
+  fxVars[idx][9]++;
+   if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
+     fxVars[idx][9]=0;
+  
+    }
+    
+     
+//Serial.println(fxVars[idx][5]);
+  fxVars[idx][7]=0;  
+  
+}
+  }
+
 
 
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
+  framerate=120;
+   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(1536);//get new pacman color
     fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
     fxVars[idx][3]=numPixels/2;//pacman position
@@ -839,7 +1049,9 @@ void pacman(byte idx) { //hsv color chase for now
 // Not a big fan of this pattern (it's way overused with LED stuff), but it's
 // practically part of the Geneva Convention by now.
 void rainbowChase(byte idx) {
-  if(fxVars[idx][0] == 0) { // Initialize effect?
+  if(fxVars[idx][0] == 0) {
+   framerate=120;
+   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second // Initialize effect?
     // Number of repetitions (complete loops around color wheel); any
     // more than 4 per meter just looks too chaotic and un-rainbow-like.
     // Store as hue 'distance' around complete belt:
@@ -870,7 +1082,10 @@ void rainbowChase(byte idx) {
 
 
 void sineChase(byte idx) {
-  if(fxVars[idx][0] == 0) { // Initialize effect?
+  
+  if(fxVars[idx][0] == 0) {
+    framerate=120;
+    Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second // Initialize effect?
     fxVars[idx][1] = random(1536); // Random hue
     // Number of repetitions (complete loops around color wheel);
     // any more than 4 per meter just looks too chaotic.
@@ -939,7 +1154,8 @@ void wavyFlag(byte idx) {
   long i, sum, s, x;
   int  idx1, idx2, a, b;
   if(fxVars[idx][0] == 0) { // Initialize effect?
-
+framerate=120;
+ Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1] = 720 + random(720); // Wavyness
     fxVars[idx][2] = 4 + random(10);    // Wave speed
     fxVars[idx][3] = 200 + random(200); // Wave 'puckeryness'
@@ -980,7 +1196,8 @@ void wavyFlag(byte idx) {
 void sineCompass(byte idx) {
   // Only needs to be rendered once, when effect is initialized:
   if(fxVars[idx][0] == 0) {
-
+framerate=120;
+ Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     Serial.println("effect=04");
     //    fxVars[idx][1] = random(1536); // Random hue
     fxVars[idx][1] = 1; // Random hue
@@ -1018,25 +1235,11 @@ void sineCompass(byte idx) {
   // fxVars[idx][4] += fxVars[idx][3];
 }
 
-void renderEffect05(byte idx) {
-  // Only needs to be rendered once, when effect is initialized:
-  if(fxVars[idx][0] == 0) {
-    //   Serial.println("effect=05");
-    byte *ptr = &imgData[idx][0],
-    r = average, g = average, b = average;
-    for(int i=0; i<numPixels; i++) {
-      *ptr++ = r; 
-      *ptr++ = g; 
-      *ptr++ = b;
-    }
-    //  fxVars[idx][0] = 1; // Effect initialized
-  }
-
-}
-
 
 void MonsterHunter(byte idx) {
   if(fxVars[idx][0] == 0) {
+    framerate=120;
+     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(1536);
     fxVars[idx][3]=numPixels/2;//pacman position
     fxVars[idx][2]=random(1536);//get new  color
