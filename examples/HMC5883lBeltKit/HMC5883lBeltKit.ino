@@ -1,25 +1,26 @@
-#define brightness 4 //this is not right at all.
+#define brightness 1 //this is not right at all.
 #define demo 1
 int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
-  //  hsvtest,
-  //   wavyFlag,// stock
+  
+    hsvtest,
+     wavyFlag,// stock
   //   sineCompass, //need to get it built before we can learn the compass
-  //   sinePoop, //?
-  //   sparkle, //need to make this look better, probably looks sweet when moving fas
+     sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
   colorDrift, // why isnt this smooth? gamma.
-      strobe, //need to have a better system for duty cycle modulation
-  POV,
-  fans, // varied duty cycle per led per section strobe
+     
 
-
+ Dice,
   //###########good codes, dont change these#####
-
+ strobe, //need to have a better system for duty cycle modulation
+  SnakeChase,
   MonsterHunter, //woah dont fuck with this guy
   pacman, //bounces back from end to end and builds every time
-  //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+    rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
+POV,
+ fans, // varied duty cycle per led per section strobe
 }
 ,
 (*renderAlpha[])(void)  = {
@@ -277,7 +278,7 @@ fxIdx[3];                  // Effect # for back & front images + alpha
 int  fxVars[3][50],             // Effect instance variables (explained later)
 tCounter   = 1,           // Countdown to next transition
 transitionTime;            // Duration (in frames) of current transition
-
+float fxFloats[3][4];
 // function prototypes, leave these be :)
 void renderEffect00(byte idx);
 void renderEffect01(byte idx);
@@ -452,7 +453,7 @@ void compassread()
   Serial.print("yz");
   Serial.println(yzheading);
   Serial.println(yztravel);
-  delay(1000);
+  delay(250);
 
 
 
@@ -866,6 +867,32 @@ void fans(byte idx) {
  }
  fxVars[idx][7]=0;  
 }
+
+void Dice(byte idx){
+   if(fxVars[idx][0] == 0) {
+     fxVars[idx][1]=random(750,1536);
+     fxVars[idx][2]=fxVars[idx][1]*2%1536;
+     fxVars[idx][3]=fxVars[idx][1]*3%1536;
+     fxVars[idx][4]=fxVars[idx][1]*4%1536;
+     fxVars[idx][5]=fxVars[idx][1]*5%1536;
+     fxVars[idx][6]=fxVars[idx][1]*6%1536;
+     fxVars[idx][7]=0;
+     fxVars[idx][0]=1; //effect init
+     }
+if(plane>0){
+   fxVars[idx][7]=plane;}
+   else{
+      fxVars[idx][7]=abs(plane)*2;
+      }
+  byte *ptr = &imgData[idx][0];
+    for(int i=0; i<numPixels; i++) {
+      long color;
+      color = hsv2rgb(fxVars[idx][fxVars[idx][7]],
+      255, 255);
+      *ptr++ = color >> 16; 
+      *ptr++ = color >> 8; 
+      *ptr++ = color;}}
+
 void POV(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
@@ -926,6 +953,75 @@ void POV(byte idx) {
     }
     //Serial.println(fxVars[idx][5]);
     fxVars[idx][7]=0;  
+  }
+}
+
+//simple dual pixel chasin in opposite directions
+void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
+  if(fxVars[idx][0] == 0) { // Initialize effect?
+    fxVars[idx][1] = random(1536); // Random hue
+    fxFloats[idx][0] = random(100,1000) / 1000.0 ; // random speed 0.0 - 1.0
+    fxFloats[idx][1] = 1; // Current position
+    fxVars[idx][4] = 4 + random(10); // random spread
+    fxVars[idx][5] = fxVars[idx][4] * -2;
+
+    fxVars[idx][6] = fxVars[idx][1]*(random(2,5))%1536; // Random hue far away from first color
+    fxFloats[idx][2] = random(100,1000) / -1000.0 ; // random speed 0.0 - 1.0
+    fxFloats[idx][3] = (float)numPixels; // Current position
+    fxVars[idx][9] = 4 + random(10); // random spread
+    fxVars[idx][10] = fxVars[idx][9] * -2;
+
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0], r1, g1, b1, r2, g2, b2, r, g, b;
+  float distance = 0.0, modifier1 = 0.0,modifier2 = 0.0;
+  int   hue = 0, saturation = 0;
+  long color1, color2, i;
+
+  for(i=0; i<numPixels; i++) {
+    hue = 255;
+    modifier1 = 0;
+    modifier2 = 0;
+
+    if(i >= numPixels - fxVars[idx][4] && fxFloats[idx][1] <= fxVars[idx][4]) {
+      modifier1 = numPixels;
+    }
+    if(i <= fxVars[idx][4] && fxFloats[idx][1] >= numPixels - fxVars[idx][4]) {
+      modifier1 = -numPixels;
+    }
+    
+    if(i >= numPixels - fxVars[idx][9] && fxFloats[idx][3] <= fxVars[idx][9]) {
+      modifier2 = numPixels;
+    }
+    if(i <= fxVars[idx][9] && fxFloats[idx][3] >= numPixels - fxVars[idx][9]) {
+      modifier2 = -numPixels;
+    }
+    
+    distance = min(abs(i - fxFloats[idx][1] - modifier1), fxVars[idx][4]) * -2;
+    saturation = map(distance, fxVars[idx][5], 0.0, 0, 255);
+    color1 = hsv2rgb(fxVars[idx][1], hue, saturation);
+
+    distance = min(abs(i - fxFloats[idx][3] - modifier2), fxVars[idx][9]) * -2;
+    saturation = map(distance, fxVars[idx][10], 0.0, 0, 255);
+    color2 = hsv2rgb(fxVars[idx][6], hue, saturation);
+
+
+    r1 = color2 >> 16; g1 = color2 >> 8; b1 = color2;
+    r2 = color1 >> 16; g2 = color1 >> 8; b2 = color1;
+    r = min(r1 + r2, 255);
+    g = min(g1 + g2, 255);
+    b = min(b1 + b2, 255);
+    *ptr++ = r; *ptr++ = g; *ptr++ = b;
+  }
+
+  fxFloats[idx][1] += fxFloats[idx][0];
+  if(fxFloats[idx][1] >= numPixels){
+    fxFloats[idx][1] -= numPixels;
+  }
+  fxFloats[idx][3] += fxFloats[idx][2];
+  if(fxFloats[idx][3] <= 0){
+    fxFloats[idx][3] += numPixels;
   }
 }
 
