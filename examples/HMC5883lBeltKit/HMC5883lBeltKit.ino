@@ -1,6 +1,6 @@
 #define brightness 1 //this is not right at all.
 #define demo 1
-int framerate= 240; // SIESURE WARNING?
+int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
   //   hsvtest,
   //   wavyFlag,// stock
@@ -127,21 +127,19 @@ LPD8806 strip = LPD8806(numPixels);
 
 //##############compass maths
 uint8_t plane;
-
-int xyheadingDegreesdelta, xyheadingDegreeslast, xyspeed,count;
-float xyheadingDegrees;
-unsigned long xymillislast,xymillisdelta;
+boolean compassreadphase = 0;
+  float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast;
 //############### stuff for the averages for the compass
-const int numReadings = 100;
-int readings[numReadings];      // the readings from the analog input
-int index = 0;                  // the index of the current reading
-int total = 0;                  // the running total
-int average = 0;     
+//const int numReadings = 100;
+//int readings[numReadings];      // the readings from the analog input
+//int index = 0;                  // the index of the current reading
+//int total = 0;                  // the running total
+//int average = 0;     
 //#############compass stuff
 #include <HMC5883L.h>
 HMC5883L compass;
 uint8_t error = 0;
-#define compassscale 8.1
+#define compassscale 1.2
 //acceptable values are 0.88, 1.3, 1.9, 2.5, 4.0, 4.7, 5.6, 8.1
 
 //#############software debounce for the button and button 
@@ -167,7 +165,7 @@ const String Message[5] = {"KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("
 const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
 
  char led_chars[97][6] PROGMEM = {  
-0x00,0x00,0x00,0x00,0x00,0x00,	// space 0
+0x00,0x00,0x00,0x00,0x00,0x00,  // space 0
 0x00,0x00,0xfa,0x00,0x00,0x00,	// !	1
 0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
 0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
@@ -302,14 +300,15 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
-  for (int thisReading = 0; thisReading < numReadings; thisReading++)
-    readings[thisReading] = 0;   
+//  for (int thisReading = 0; thisReading < numReadings; thisReading++)
+//    readings[thisReading] = 0;   
+
   // Start up the LED strip.  Note that strip.show() is NOT called here --
   // the callback function will be invoked immediately when attached, and
   // the first thing the calback does is update the strip.
 
   // Initialize the serial port.
-  Serial.begin(9600);
+//  Serial.begin(9600);
 
 
 
@@ -321,13 +320,13 @@ void setup() {
 
   // Serial.println("Setting scale to +/- 8.1 Ga");
   error = compass.SetScale(compassscale); // Set the scale of the compass. //orig 1.3
-  if(error != 0) // If there is an error, print it out.
-    Serial.println(compass.GetErrorText(error));
+//  if(error != 0) // If there is an error, print it out.
+ //   Serial.println(compass.GetErrorText(error));
 
   // Serial.println("Setting measurement mode to continous.");
   error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-  if(error != 0) // If there is an error, print it out.
-    Serial.println(compass.GetErrorText(error));
+//  if(error != 0) // If there is an error, print it out.
+//    Serial.println(compass.GetErrorText(error));
 
 
   strip.begin();
@@ -347,65 +346,8 @@ void setup() {
   attachInterrupt(0, buttonpress, RISING);
 }
 
-void compasss()
-{
-  // Retrive the raw values from the compass (not scaled).
-  MagnetometerRaw raw = compass.ReadRawAxis();
-  // Retrived the scaled values from the compass (scaled to the configured scale).
-  MagnetometerScaled scaled = compass.ReadScaledAxis();
-
-  // Values are accessed like so:
-  int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
-
-  // Calculate heading when the magnetometer is level, then correct for signs of axis.
-  float xyheading = atan2(scaled.YAxis, scaled.XAxis);
-  float xzheading = atan2(scaled.XAxis, scaled.ZAxis);
-  float yzheading = atan2(scaled.ZAxis, scaled.YAxis);
-  // Once you have your heading, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in your locatio
-
-  // Find yours here: http://www.magnetic-declination.com/
-  // Mine is: 2Ã¯Â¿Â½ 37' W, which is 2.617 Degrees, or (which we need) 0.0456752665 radians, I will use 0.0457
-  // If you cannot find your Declination, comment out these two lines, your compass will be slightly off.
-  //  float declinationAngle = 0.0457;
-  //  heading += declinationAngle;
-
-  // Correct for when signs are reversed.
-  if(xyheading < 0)
-    xyheading += 2*PI;
-
-  // Check for wrap due to addition of declination.
-  if(xyheading > 2*PI)
-    xyheading -= 2*PI;
-
-  // Convert radians to degrees for readability.
-  xyheadingDegreeslast = xyheadingDegrees;
-  xyheadingDegrees = xyheading * 180/M_PI; 
-  runningaverage(xyheadingDegrees);
-
-
-  // Correct for when signs are reversed.
-  if(xzheading < 0)
-    xzheading += 2*PI;
-
-  // Check for wrap due to addition of declination.
-  if(xzheading > 2*PI)
-    xzheading -= 2*PI;
-
-  // Convert radians to degrees for readability.
-  float xzheadingDegrees = xzheading * 180/M_PI; 
-  // Correct for when signs are reversed.
-  if(yzheading < 0)
-    yzheading += 2*PI;
-
-  // Check for wrap due to addition of declination.
-  if(yzheading > 2*PI)
-    yzheading -= 2*PI;
-
-  // Convert radians to degrees for readability.
-  float yzheadingDegrees = yzheading * 180/M_PI; 
-
-  /*
-
+void findplane(){
+   MagnetometerRaw raw = compass.ReadRawAxis();
    if(abs(raw.XAxis)>abs(raw.YAxis)&&abs(raw.XAxis)>abs(raw.ZAxis)) //in plane 1
    {
    if(raw.XAxis>0){
@@ -437,7 +379,68 @@ void compasss()
    }
    
    }
-   */
+}
+  
+void compassread()
+{
+  // Retrive the raw values from the compass (not scaled).
+ // MagnetometerRaw raw = compass.ReadRawAxis();
+  // Retrived the scaled values from the compass (scaled to the configured scale).
+  MagnetometerScaled scaled = compass.ReadScaledAxis();
+
+  // Values are accessed like so:
+//  int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
+ xyheadinglast = xyheading;
+ xzheadinglast = xzheading;
+ yzheadinglast = yzheading;
+  // Calculate heading when the magnetometer is level, then correct for signs of axis.
+ xyheading = atan2(scaled.YAxis, scaled.XAxis);
+ xzheading = atan2(scaled.XAxis, scaled.ZAxis);
+ yzheading = atan2(scaled.ZAxis, scaled.YAxis);
+  // Once you have your heading, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in your locatio
+
+  // Find yours here: http://www.magnetic-declination.com/
+  // Mine is: 2Ã¯Â¿Â½ 37' W, which is 2.617 Degrees, or (which we need) 0.0456752665 radians, I will use 0.0457
+  // If you cannot find your Declination, comment out these two lines, your compass will be slightly off.
+  //  float declinationAngle = 0.0457;
+  //  heading += declinationAngle;
+
+  // Correct for when signs are reversed.
+  if(xyheading < 0)
+    xyheading += 2*PI;
+
+  // Check for wrap due to addition of declination.
+  if(xyheading > 2*PI)
+    xyheading -= 2*PI;
+
+  // Convert radians to degrees for readability.
+//  xyheadingDegreeslast = xyheadingDegrees;
+//  xyheadingDegrees = xyheading * 180/M_PI; 
+//  runningaverage(xyheadingDegrees);
+
+
+  // Correct for when signs are reversed.
+  if(xzheading < 0)
+    xzheading += 2*PI;
+
+  // Check for wrap due to addition of declination.
+  if(xzheading > 2*PI)
+    xzheading -= 2*PI;
+
+  // Convert radians to degrees for readability.
+//  float xzheadingDegrees = xzheading * 180/M_PI; 
+  // Correct for when signs are reversed.
+  if(yzheading < 0)
+    yzheading += 2*PI;
+
+  // Check for wrap due to addition of declination.
+  if(yzheading > 2*PI)
+    yzheading -= 2*PI;
+
+  // Convert radians to degrees for readability.
+//  float yzheadingDegrees = yzheading * 180/M_PI; 
+
+
   // Output the data via the serial port.
   // Output(raw, scaled, heading, headingDegrees);
 
@@ -612,10 +615,12 @@ void callback() {
     }
 
   }
-// compasss(); //a work in progress, some of the things work including the plane calc to an extent.
-  //this really should be done on interrupt either external or internal to keep with the lady's good idea
+ 
+  if(compassreadphase==1){
+compassread();
+}else{findplane();}
+ compassreadphase=!compassreadphase;
 }
-
 // ---------------------------------------------------------------------------
 // Image effect rendering functions.  Each effect is generated parametrically
 // (that is, from a set of numbers, usually randomly seeded).  Because both
@@ -635,8 +640,6 @@ void callback() {
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
-    framerate=120;
-    Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
 
     fxVars[idx][1]=random(1536); //color were gonna write initally
     Serial.println(fxVars[idx][1]);
@@ -657,8 +660,7 @@ void hsvtest(byte idx) {
 
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
-    framerate=120;
-     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
+
     fxVars[idx][1]=random(0,1536); //color were gonna write initally
     fxVars[idx][0] = 1; // Effect initialized
     fxVars[idx][2] =random(1,4); //increments of color drift per frame
@@ -689,8 +691,7 @@ void colorDrift(byte idx) {
 void sparkle(byte idx) {
   
   if(fxVars[idx][0] == 0) {
-    framerate=120;
-     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
+
     fxVars[idx][0]=1;
   }
   byte *ptr = &imgData[idx][0];
@@ -817,8 +818,6 @@ void strobe(byte idx) {
 void fans(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
-    framerate=240;
-     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(1536); //color were gonna use to cycle
     fxVars[idx][2]=numPixels/random(2,8); //using this to determine the # of sections between 2 and 8
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame, 
@@ -968,8 +967,6 @@ fxVars[idx][3]++;
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
-  framerate=120;
-   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(1536);//get new pacman color
     fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
     fxVars[idx][3]=numPixels/2;//pacman position
@@ -1050,8 +1047,7 @@ void pacman(byte idx) { //hsv color chase for now
 // practically part of the Geneva Convention by now.
 void rainbowChase(byte idx) {
   if(fxVars[idx][0] == 0) {
-   framerate=120;
-   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second // Initialize effect?
+  
     // Number of repetitions (complete loops around color wheel); any
     // more than 4 per meter just looks too chaotic and un-rainbow-like.
     // Store as hue 'distance' around complete belt:
@@ -1084,8 +1080,7 @@ void rainbowChase(byte idx) {
 void sineChase(byte idx) {
   
   if(fxVars[idx][0] == 0) {
-    framerate=120;
-    Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second // Initialize effect?
+   
     fxVars[idx][1] = random(1536); // Random hue
     // Number of repetitions (complete loops around color wheel);
     // any more than 4 per meter just looks too chaotic.
@@ -1154,8 +1149,6 @@ void wavyFlag(byte idx) {
   long i, sum, s, x;
   int  idx1, idx2, a, b;
   if(fxVars[idx][0] == 0) { // Initialize effect?
-framerate=120;
- Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1] = 720 + random(720); // Wavyness
     fxVars[idx][2] = 4 + random(10);    // Wave speed
     fxVars[idx][3] = 200 + random(200); // Wave 'puckeryness'
@@ -1192,12 +1185,10 @@ framerate=120;
 
 
 
-
+/*
 void sineCompass(byte idx) {
   // Only needs to be rendered once, when effect is initialized:
   if(fxVars[idx][0] == 0) {
-framerate=120;
- Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     Serial.println("effect=04");
     //    fxVars[idx][1] = random(1536); // Random hue
     fxVars[idx][1] = 1; // Random hue
@@ -1235,11 +1226,9 @@ framerate=120;
   // fxVars[idx][4] += fxVars[idx][3];
 }
 
-
+*/
 void MonsterHunter(byte idx) {
   if(fxVars[idx][0] == 0) {
-    framerate=120;
-     Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
     fxVars[idx][1]=random(1536);
     fxVars[idx][3]=numPixels/2;//pacman position
     fxVars[idx][2]=random(1536);//get new  color
@@ -1589,6 +1578,7 @@ void buttonpress(){
   lastDebounceTime = millis();
 }
 
+/*
 void runningaverage(int newval) {
   // subtract the last reading:
   total= total - readings[index];        
@@ -1608,4 +1598,4 @@ void runningaverage(int newval) {
   // Serial.println(average);  
   //  delay(1);        // delay in between reads for stability            
 }
-
+*/
