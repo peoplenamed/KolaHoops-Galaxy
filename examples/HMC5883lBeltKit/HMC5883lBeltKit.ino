@@ -1,25 +1,25 @@
-#define brightness 1 //this is not right at all.
+#define brightness 4 //this is not right at all.
 #define demo 1
 int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
-  //   hsvtest,
+  //  hsvtest,
   //   wavyFlag,// stock
   //   sineCompass, //need to get it built before we can learn the compass
   //   sinePoop, //?
   //   sparkle, //need to make this look better, probably looks sweet when moving fas
-//##########in development###########
-  //  colorDrift, //hsv2rgb defeated me. why isnt this smooth?
-   //    strobe, //need to have a better system for duty cycle modulation
-     POV,
-      fans, // varied duty cycle per led per section strobe
-       
-       
+  //##########in development###########
+  colorDrift, // why isnt this smooth? gamma.
+      strobe, //need to have a better system for duty cycle modulation
+  POV,
+  fans, // varied duty cycle per led per section strobe
+
+
   //###########good codes, dont change these#####
-   
-    MonsterHunter, //woah dont fuck with this guy
-    pacman, //bounces back from end to end and builds every time
+
+  MonsterHunter, //woah dont fuck with this guy
+  pacman, //bounces back from end to end and builds every time
   //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
-    sineChase, //stock sine chase
+  sineChase, //stock sine chase
 }
 ,
 (*renderAlpha[])(void)  = {
@@ -30,18 +30,18 @@ void (*renderEffect[])(byte) = {
 //########################################################################################################################
 /*
 mmmaxwwwell
-6/30/2012
-added:
--a button on external interrupt 0 with software debounce
--demo mode to go with above
--some fun patterns
--a running average that could be an array(hint hint), eventually for compass
--a hmc5883l magnometer and heading math? in the main loop. not the best way to do it but it works. should be on an interrupt
-so nothing is in loop
-
-ladyada awesome job with the entire thing and thanks for the light rope!
-
-*/
+ 6/30/2012
+ added:
+ -a button on external interrupt 0 with software debounce
+ -demo mode to go with above
+ -some fun patterns
+ -a running average that could be an array(hint hint), eventually for compass
+ -a hmc5883l magnometer and heading math? in the main loop. not the best way to do it but it works. should be on an interrupt
+ so nothing is in loop
+ 
+ ladyada awesome job with the entire thing and thanks for the light rope!
+ 
+ */
 /*
 Smoothing
  
@@ -64,8 +64,8 @@ Smoothing
  */
 /*
 
-
-HMC5883L_Example.pde - Example sketch for integration with an HMC5883L triple axis magnetomerwe.
+ 
+ HMC5883L_Example.pde - Example sketch for integration with an HMC5883L triple axis magnetomerwe.
  Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)
  
  This program is free software: you can redistribute it and/or modify
@@ -126,9 +126,9 @@ LPD8806 strip = LPD8806(numPixels);
 
 
 //##############compass maths
-uint8_t plane;
+int plane;
 boolean compassreadphase = 0;
-  float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast;
+float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast, xytravel,xztravel,yztravel;
 //############### stuff for the averages for the compass
 //const int numReadings = 100;
 //int readings[numReadings];      // the readings from the analog input
@@ -139,7 +139,7 @@ boolean compassreadphase = 0;
 #include <HMC5883L.h>
 HMC5883L compass;
 uint8_t error = 0;
-#define compassscale 1.2
+#define compassscale 8.1
 //acceptable values are 0.88, 1.3, 1.9, 2.5, 4.0, 4.7, 5.6, 8.1
 
 //#############software debounce for the button and button 
@@ -151,115 +151,116 @@ uint8_t button = 0;
 //###############bitmap storage
 /* string index of character table
  !"#$%&'()*+,-./ //start 0 end 15
-0123456789:;>=<? //start 16 end 31
-@ABCDEFGHIJKLMNO //start 32 end 47
-PQRSTUVWXYZ[ ]^_ //START 48 END 63
-`abcdefghijklmno //start 64 end 79
-pqrstuvwxyz{|}~~ //start 80 end 95
-*/
+ 0123456789:;>=<? //start 16 end 31
+ @ABCDEFGHIJKLMNO //start 32 end 47
+ PQRSTUVWXYZ[ ]^_ //START 48 END 63
+ `abcdefghijklmno //start 64 end 79
+ pqrstuvwxyz{|}~~ //start 80 end 95
+ */
 //uint8_t message[2] ={2,2};
 // led character definitions modified from http://www.edaboard.com/thread45151.html
 // 5 data columns + 1 space
 // for each character
-const String Message[5] = {"KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("};
+const String Message[5] = {
+  "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("};
 const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
 
- char led_chars[97][6] PROGMEM = {  
-0x00,0x00,0x00,0x00,0x00,0x00,  // space 0
-0x00,0x00,0xfa,0x00,0x00,0x00,	// !	1
-0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
-0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
-0x24,0x54,0xfe,0x54,0x48,0x00,  // $4
-0xc4,0xc8,0x10,0x26,0x46,0x00,  // %5
-0x6c,0x92,0xaa,0x44,0x0a,0x00,  // &6
-0x00,0xa0,0xc0,0x00,0x00,0x00,  // '7
-0x00,0x38,0x44,0x82,0x00,0x00,	// (8
-0x00,0x82,0x44,0x38,0x00,0x00,  // )10
-0x28,0x10,0x7c,0x10,0x28,0x00,  // *11
-0x10,0x10,0x7c,0x10,0x10,0x00,  // +12
-0x00,0x0a,0x0c,0x00,0x00,0x00,  // ,13
-0x10,0x10,0x10,0x10,0x10,0x00,  // -14
-0x00,0x06,0x06,0x00,0x00,0x00,  // .15
-0x04,0x08,0x10,0x20,0x40,0x00,  // /  16
-0x7c,0x8a,0x92,0xa2,0x7c,0x00,  // 0 17
-0x00,0x42,0xfe,0x02,0x00,0x00,  // 1 18
-0x42,0x86,0x8a,0x92,0x62,0x00,  // 2 9
-0x84,0x82,0xa2,0xd2,0x8c,0x00,	// 3 0 
-0x18,0x28,0x48,0xfe,0x08,0x00,	// 4 1
-0xe5,0xa2,0xa2,0xa2,0x9c,0x00,	// 5 2
-0x3c,0x52,0x92,0x92,0x0c,0x00,	// 6 3
-0x80,0x8e,0x90,0xa0,0xc0,0x00,	// 7 4
-0x6c,0x92,0x92,0x92,0x6c,0x00,	// 8 5
-0x60,0x92,0x92,0x94,0x78,0x00,	// 9  6
-0x00,0x6c,0x6c,0x00,0x00,0x00,	// : 7 
-0x00,0x6a,0x6c,0x00,0x00,0x00,	// ;8
-0x10,0x28,0x44,0x82,0x00,0x00,	// <9
-0x28,0x28,0x28,0x28,0x28,0x00,	// =0
-0x00,0x82,0x44,0x28,0x10,0x00,	// >1
-0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
-0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
-0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
-0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
-0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
-0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
-0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
-0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
-0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
-0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
-0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
-0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
-0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
-0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
-0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
-0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
-0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
-0xfe,0x90,0x90,0x90,0x60,0x00,	// P9
-0x7c,0x82,0x8a,0x84,0x7a,0x00,	// Q0
-0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
-0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
-0x80,0x80,0xfe,0x80,0x80,0x00,	// T3
-0xfc,0x02,0x02,0x02,0xfc,0x00,	// U4
-0xf8,0x04,0x02,0x04,0xf8,0x00,	// V5
-0xfc,0x02,0x1c,0x02,0xfc,0x00,	// W6
-0xc6,0x28,0x10,0x28,0xc6,0x00,	// X7
-0xe0,0x10,0x0e,0x10,0xe0,0x00,	// Y8
-0x86,0x8b,0x92,0xa2,0xc2,0x00,	// Z9
-0x00,0xfe,0x82,0x82,0x00,0x00,	// [0
-0x00,0x00,0x00,0x00,0x00,0x00,     //1 *** do not remove this empty char ***
-0x00,0x82,0x82,0xfe,0x00,0x00,	// ]2
-0x20,0x40,0x80,0x40,0x20,0x00,	// ^3
-0x02,0x02,0x02,0x02,0x02,0x00,	// _4
-0x00,0x80,0x40,0x20,0x00,0x00,	// `5
-0x04,0x2a,0x2a,0x2a,0x1e,0x00,	// a6
-0xfe,0x12,0x22,0x22,0x1c,0x00,	// b7
-0x1c,0x22,0x22,0x22,0x04,0x00,	// c8
-0x1c,0x22,0x22,0x12,0xfe,0x00,	// d9
-0x1c,0x2a,0x2a,0x2a,0x18,0x00,	// e0
-0x10,0x7e,0x90,0x80,0x40,0x00,	// f1
-0x30,0x4a,0x4a,0x4a,0x7c,0x00,	// g2
-0xfe,0x10,0x20,0x20,0x1e,0x00,	// h3
-0x00,0x22,0xbe,0x02,0x00,0x00,	// i4
-0x04,0x02,0x22,0xbc,0x00,0x00,	// j5
-0xfe,0x08,0x14,0x22,0x00,0x00,	// k6
-0x00,0x82,0xfe,0x02,0x00,0x00,	// l7
-0x3e,0x20,0x18,0x20,0x1e,0x00,	// m8
-0x3e,0x10,0x20,0x20,0x1e,0x00,	// n9
-0x1c,0x22,0x22,0x22,0x1c,0x00,	// o0
-0x3e,0x28,0x28,0x28,0x10,0x00,	// p1
-0x10,0x28,0x28,0x18,0x3e,0x00,	// q2
-0x3e,0x10,0x20,0x20,0x10,0x00,	// r3
-0x12,0x2a,0x2a,0x2a,0x04,0x00,	// s4
-0x20,0xfc,0x22,0x02,0x04,0x00,	// t5
-0x3c,0x02,0x02,0x04,0x3e,0x00,	// u6
-0x38,0x04,0x02,0x04,0x38,0x00,	// v7
-0x3c,0x02,0x0c,0x02,0x3c,0x00,	// w8
-0x22,0x14,0x08,0x14,0x22,0x00,	// x9
-0x30,0x0a,0x0a,0x0a,0x3c,0x00,	// y0
-0x22,0x26,0x2a,0x32,0x22,0x00, 	// z1
-0x00,0x10,0x6c,0x82,0x00,0x00,	// {2
-0x00,0x00,0xfe,0x00,0x00,0x00,	// |3
-0x00,0x82,0x6c,0x10,0x00,0x00, 
-0x18,0x3c,0x7e,0xff,0x7e,0x3c}; //4
+char led_chars[97][6] PROGMEM = {  
+  0x00,0x00,0x00,0x00,0x00,0x00,  // space 0
+  0x00,0x00,0xfa,0x00,0x00,0x00,	// !	1
+  0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
+  0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
+  0x24,0x54,0xfe,0x54,0x48,0x00,  // $4
+  0xc4,0xc8,0x10,0x26,0x46,0x00,  // %5
+  0x6c,0x92,0xaa,0x44,0x0a,0x00,  // &6
+  0x00,0xa0,0xc0,0x00,0x00,0x00,  // '7
+  0x00,0x38,0x44,0x82,0x00,0x00,	// (8
+  0x00,0x82,0x44,0x38,0x00,0x00,  // )10
+  0x28,0x10,0x7c,0x10,0x28,0x00,  // *11
+  0x10,0x10,0x7c,0x10,0x10,0x00,  // +12
+  0x00,0x0a,0x0c,0x00,0x00,0x00,  // ,13
+  0x10,0x10,0x10,0x10,0x10,0x00,  // -14
+  0x00,0x06,0x06,0x00,0x00,0x00,  // .15
+  0x04,0x08,0x10,0x20,0x40,0x00,  // /  16
+  0x7c,0x8a,0x92,0xa2,0x7c,0x00,  // 0 17
+  0x00,0x42,0xfe,0x02,0x00,0x00,  // 1 18
+  0x42,0x86,0x8a,0x92,0x62,0x00,  // 2 9
+  0x84,0x82,0xa2,0xd2,0x8c,0x00,	// 3 0 
+  0x18,0x28,0x48,0xfe,0x08,0x00,	// 4 1
+  0xe5,0xa2,0xa2,0xa2,0x9c,0x00,	// 5 2
+  0x3c,0x52,0x92,0x92,0x0c,0x00,	// 6 3
+  0x80,0x8e,0x90,0xa0,0xc0,0x00,	// 7 4
+  0x6c,0x92,0x92,0x92,0x6c,0x00,	// 8 5
+  0x60,0x92,0x92,0x94,0x78,0x00,	// 9  6
+  0x00,0x6c,0x6c,0x00,0x00,0x00,	// : 7 
+  0x00,0x6a,0x6c,0x00,0x00,0x00,	// ;8
+  0x10,0x28,0x44,0x82,0x00,0x00,	// <9
+  0x28,0x28,0x28,0x28,0x28,0x00,	// =0
+  0x00,0x82,0x44,0x28,0x10,0x00,	// >1
+  0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
+  0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
+  0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
+  0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
+  0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
+  0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
+  0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
+  0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
+  0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
+  0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
+  0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
+  0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
+  0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
+  0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
+  0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
+  0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
+  0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
+  0xfe,0x90,0x90,0x90,0x60,0x00,	// P9
+  0x7c,0x82,0x8a,0x84,0x7a,0x00,	// Q0
+  0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
+  0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
+  0x80,0x80,0xfe,0x80,0x80,0x00,	// T3
+  0xfc,0x02,0x02,0x02,0xfc,0x00,	// U4
+  0xf8,0x04,0x02,0x04,0xf8,0x00,	// V5
+  0xfc,0x02,0x1c,0x02,0xfc,0x00,	// W6
+  0xc6,0x28,0x10,0x28,0xc6,0x00,	// X7
+  0xe0,0x10,0x0e,0x10,0xe0,0x00,	// Y8
+  0x86,0x8b,0x92,0xa2,0xc2,0x00,	// Z9
+  0x00,0xfe,0x82,0x82,0x00,0x00,	// [0
+  0x00,0x00,0x00,0x00,0x00,0x00,     //1 *** do not remove this empty char ***
+  0x00,0x82,0x82,0xfe,0x00,0x00,	// ]2
+  0x20,0x40,0x80,0x40,0x20,0x00,	// ^3
+  0x02,0x02,0x02,0x02,0x02,0x00,	// _4
+  0x00,0x80,0x40,0x20,0x00,0x00,	// `5
+  0x04,0x2a,0x2a,0x2a,0x1e,0x00,	// a6
+  0xfe,0x12,0x22,0x22,0x1c,0x00,	// b7
+  0x1c,0x22,0x22,0x22,0x04,0x00,	// c8
+  0x1c,0x22,0x22,0x12,0xfe,0x00,	// d9
+  0x1c,0x2a,0x2a,0x2a,0x18,0x00,	// e0
+  0x10,0x7e,0x90,0x80,0x40,0x00,	// f1
+  0x30,0x4a,0x4a,0x4a,0x7c,0x00,	// g2
+  0xfe,0x10,0x20,0x20,0x1e,0x00,	// h3
+  0x00,0x22,0xbe,0x02,0x00,0x00,	// i4
+  0x04,0x02,0x22,0xbc,0x00,0x00,	// j5
+  0xfe,0x08,0x14,0x22,0x00,0x00,	// k6
+  0x00,0x82,0xfe,0x02,0x00,0x00,	// l7
+  0x3e,0x20,0x18,0x20,0x1e,0x00,	// m8
+  0x3e,0x10,0x20,0x20,0x1e,0x00,	// n9
+  0x1c,0x22,0x22,0x22,0x1c,0x00,	// o0
+  0x3e,0x28,0x28,0x28,0x10,0x00,	// p1
+  0x10,0x28,0x28,0x18,0x3e,0x00,	// q2
+  0x3e,0x10,0x20,0x20,0x10,0x00,	// r3
+  0x12,0x2a,0x2a,0x2a,0x04,0x00,	// s4
+  0x20,0xfc,0x22,0x02,0x04,0x00,	// t5
+  0x3c,0x02,0x02,0x04,0x3e,0x00,	// u6
+  0x38,0x04,0x02,0x04,0x38,0x00,	// v7
+  0x3c,0x02,0x0c,0x02,0x3c,0x00,	// w8
+  0x22,0x14,0x08,0x14,0x22,0x00,	// x9
+  0x30,0x0a,0x0a,0x0a,0x3c,0x00,	// y0
+  0x22,0x26,0x2a,0x32,0x22,0x00, 	// z1
+  0x00,0x10,0x6c,0x82,0x00,0x00,	// {2
+  0x00,0x00,0xfe,0x00,0x00,0x00,	// |3
+  0x00,0x82,0x6c,0x10,0x00,0x00, 
+  0x18,0x3c,0x7e,0xff,0x7e,0x3c}; //4
 
 // Principle of operation: at any given time, the LEDs depict an image or
 // animation effect (referred to as the "back" image throughout this code).
@@ -300,15 +301,15 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
-//  for (int thisReading = 0; thisReading < numReadings; thisReading++)
-//    readings[thisReading] = 0;   
+  //  for (int thisReading = 0; thisReading < numReadings; thisReading++)
+  //    readings[thisReading] = 0;   
 
   // Start up the LED strip.  Note that strip.show() is NOT called here --
   // the callback function will be invoked immediately when attached, and
   // the first thing the calback does is update the strip.
 
   // Initialize the serial port.
-//  Serial.begin(9600);
+  Serial.begin(9600);
 
 
 
@@ -320,13 +321,13 @@ void setup() {
 
   // Serial.println("Setting scale to +/- 8.1 Ga");
   error = compass.SetScale(compassscale); // Set the scale of the compass. //orig 1.3
-//  if(error != 0) // If there is an error, print it out.
- //   Serial.println(compass.GetErrorText(error));
+  //  if(error != 0) // If there is an error, print it out.
+  //   Serial.println(compass.GetErrorText(error));
 
   // Serial.println("Setting measurement mode to continous.");
   error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-//  if(error != 0) // If there is an error, print it out.
-//    Serial.println(compass.GetErrorText(error));
+  //  if(error != 0) // If there is an error, print it out.
+  //    Serial.println(compass.GetErrorText(error));
 
 
   strip.begin();
@@ -347,56 +348,62 @@ void setup() {
 }
 
 void findplane(){
-   MagnetometerRaw raw = compass.ReadRawAxis();
-   if(abs(raw.XAxis)>abs(raw.YAxis)&&abs(raw.XAxis)>abs(raw.ZAxis)) //in plane 1
-   {
-   if(raw.XAxis>0){
-   plane=1;
-   }
-   else{
-   plane=-1;
-   }
-   }
-   if(abs(raw.YAxis)>abs(raw.XAxis)&&abs(raw.YAxis)>abs(raw.ZAxis)) //in plane 2
-   
-   {
-   if(raw.YAxis>0){
-   plane=2;
-   }
-   else{
-   plane=-2;
-   }
-   }
-   
-   if(abs(raw.ZAxis)>abs(raw.YAxis)&&abs(raw.ZAxis)>abs(raw.XAxis)) //in plane 3
-   
-   {
-   if(raw.ZAxis>0){
-   plane=3;
-   }
-   else{
-   plane=-3;
-   }
-   
-   }
+  MagnetometerRaw raw = compass.ReadRawAxis();
+  if(abs(raw.XAxis)>abs(raw.YAxis)&&abs(raw.XAxis)>abs(raw.ZAxis)) //in plane 1
+  {
+    if(raw.XAxis>0){
+      plane=1;
+    }
+    else{
+      plane=-1;
+    }
+  }
+  if(abs(raw.YAxis)>abs(raw.XAxis)&&abs(raw.YAxis)>abs(raw.ZAxis)) //in plane 2
+
+  {
+    if(raw.YAxis>0){
+      plane=2;
+    }
+    else{
+      plane=-2;
+    }
+  }
+
+  if(abs(raw.ZAxis)>abs(raw.YAxis)&&abs(raw.ZAxis)>abs(raw.XAxis)) //in plane 3
+
+  {
+    if(raw.ZAxis>0){
+      plane=3;
+    }
+    else{
+      plane=-3;
+    }
+
+  }
+  Serial.println();
+  Serial.print("plane:");
+  Serial.println(plane);
 }
-  
+
 void compassread()
 {
   // Retrive the raw values from the compass (not scaled).
- // MagnetometerRaw raw = compass.ReadRawAxis();
+  // MagnetometerRaw raw = compass.ReadRawAxis();
   // Retrived the scaled values from the compass (scaled to the configured scale).
   MagnetometerScaled scaled = compass.ReadScaledAxis();
 
   // Values are accessed like so:
-//  int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
- xyheadinglast = xyheading;
- xzheadinglast = xzheading;
- yzheadinglast = yzheading;
+  //  int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
+  xyheadinglast = xyheading;
+  xzheadinglast = xzheading;
+  yzheadinglast = yzheading;
   // Calculate heading when the magnetometer is level, then correct for signs of axis.
- xyheading = atan2(scaled.YAxis, scaled.XAxis);
- xzheading = atan2(scaled.XAxis, scaled.ZAxis);
- yzheading = atan2(scaled.ZAxis, scaled.YAxis);
+  xyheading = atan2(scaled.YAxis, scaled.XAxis);
+  xzheading = atan2(scaled.XAxis, scaled.ZAxis);
+  yzheading = atan2(scaled.ZAxis, scaled.YAxis);
+  xytravel = atan2(xyheading,xyheadinglast);
+  xztravel = atan2(xzheading,xzheadinglast);
+  yztravel = atan2(yzheading,yzheadinglast);
   // Once you have your heading, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in your locatio
 
   // Find yours here: http://www.magnetic-declination.com/
@@ -414,9 +421,9 @@ void compassread()
     xyheading -= 2*PI;
 
   // Convert radians to degrees for readability.
-//  xyheadingDegreeslast = xyheadingDegrees;
-//  xyheadingDegrees = xyheading * 180/M_PI; 
-//  runningaverage(xyheadingDegrees);
+  //  xyheadingDegreeslast = xyheadingDegrees;
+  //  xyheadingDegrees = xyheading * 180/M_PI; 
+  //  runningaverage(xyheadingDegrees);
 
 
   // Correct for when signs are reversed.
@@ -428,7 +435,7 @@ void compassread()
     xzheading -= 2*PI;
 
   // Convert radians to degrees for readability.
-//  float xzheadingDegrees = xzheading * 180/M_PI; 
+  //  float xzheadingDegrees = xzheading * 180/M_PI; 
   // Correct for when signs are reversed.
   if(yzheading < 0)
     yzheading += 2*PI;
@@ -436,9 +443,21 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
+  Serial.print("xy");
+  Serial.println(xyheading);
+  Serial.println(xytravel);
+  Serial.print("xz");
+  Serial.println(xzheading);
+  Serial.println(xztravel);
+  Serial.print("yz");
+  Serial.println(yzheading);
+  Serial.println(yztravel);
+  delay(1000);
+
+
 
   // Convert radians to degrees for readability.
-//  float yzheadingDegrees = yzheading * 180/M_PI; 
+  //  float yzheadingDegrees = yzheading * 180/M_PI; 
 
 
   // Output the data via the serial port.
@@ -518,9 +537,9 @@ void compassread()
 //}
 
 void loop() {
- 
-  
-  
+  findplane();
+  compassread();
+
   // Do nothing? All the work happens in the callback() function below,
   // but we still need loop() here to keep the compiler happy.
 }
@@ -615,11 +634,13 @@ void callback() {
     }
 
   }
- 
-  if(compassreadphase==1){
-compassread();
-}else{findplane();}
- compassreadphase=!compassreadphase;
+
+  //  if(compassreadphase==1){
+  //compassread();
+  //}else{
+  //findplane();
+  //}
+  // compassreadphase=!compassreadphase;
 }
 // ---------------------------------------------------------------------------
 // Image effect rendering functions.  Each effect is generated parametrically
@@ -640,8 +661,7 @@ compassread();
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
-
-    fxVars[idx][1]=random(1536); //color were gonna write initally
+ fxVars[idx][1]=random(1536); //color were gonna write initally
     Serial.println(fxVars[idx][1]);
     fxVars[idx][0] = 1; // Effect initialized
     byte *ptr = &imgData[idx][0];
@@ -655,44 +675,33 @@ void hsvtest(byte idx) {
     }
   }
 }
-
-
-
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
-
-    fxVars[idx][1]=random(0,1536); //color were gonna write initally
+ fxVars[idx][1]=random(0,1536); //color were gonna write initally
     fxVars[idx][0] = 1; // Effect initialized
     fxVars[idx][2] =random(1,4); //increments of color drift per frame
     // fxVars[idx][2] =1; //increments of color drift per frame
   }
   byte *ptr = &imgData[idx][0];
-
-  if(fxVars[idx][1]>1536-fxVars[idx][2]){
+if(fxVars[idx][1]>1536-fxVars[idx][2]){
     fxVars[idx][1]=fxVars[idx][1]%1536;
   }
   fxVars[idx][1]+=fxVars[idx][2];
-
-  Serial.println(fxVars[idx][1]);
+//  Serial.println(fxVars[idx][1]);
   //Serial.println(fxVars[idx][1]);
   for(int i=0; i<numPixels; i++) {
     long color;
-
-    color = hsv2rgb(fxVars[idx][1],
+  color = hsv2rgb(fxVars[idx][1],
     255, 255);
     *ptr++ = color >> 16; 
     *ptr++ = color >> 8; 
     *ptr++ = color;
-
-  }
+}
   //  Serial.println(fxVars[idx][1]);
 }
-
 void sparkle(byte idx) {
-  
-  if(fxVars[idx][0] == 0) {
-
-    fxVars[idx][0]=1;
+ if(fxVars[idx][0] == 0) {
+ fxVars[idx][0]=1;
   }
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
@@ -701,12 +710,9 @@ void sparkle(byte idx) {
     *ptr++ = random(255);
   }
 }
-
-
 void strobe(byte idx) {
   if(fxVars[idx][0] == 0) {
-   
-    fxVars[idx][1]=random(1536); //color were gonna use to cycle
+ fxVars[idx][1]=random(1536); //color were gonna use to cycle
     fxVars[idx][2] =random(0,2); //increments of color drift per frame
     fxVars[idx][3] =0; //strobe indicator, 0 is nothing written for the frame and anything else is write
     fxVars[idx][4] =0; //frame counter 0-120
@@ -716,23 +722,18 @@ void strobe(byte idx) {
     fxVars[idx][7]=random(0,1);//if 1 replace black with second color 9
     fxVars[idx][8]=60; // strobe duty cycle value
     fxVars[idx][9]=random(1536);//color2
-
-    fxVars[idx][0] = 1; // Effect initialized
+  fxVars[idx][0] = 1; // Effect initialized
   }
   //fxVars[idx][7]++;
   //if(fxVars[idx][7]==fxVars[idx][8]){
   //  fxVars[idx][7]=0;
   // fxVars[idx][5]++;}
-
-  byte *ptr = &imgData[idx][0];
-
-  fxVars[idx][1]+=fxVars[idx][2];
+byte *ptr = &imgData[idx][0];
+ fxVars[idx][1]+=fxVars[idx][2];
   if(fxVars[idx][1]>1536-fxVars[idx][1]){
     fxVars[idx][1]=fxVars[idx][1]%1536;
   }
-
-
-  for(int i=0; i<numPixels; i++) {
+for(int i=0; i<numPixels; i++) {
     long color;
     color = hsv2rgb(fxVars[idx][1],
     255, 255);
@@ -751,7 +752,6 @@ void strobe(byte idx) {
 
   }
   //Serial.println(fxVars[idx][1]);
-
   switch(abs(fxVars[idx][5])) //dutycycle=0-9
   {
   case 0://10%ducy cycle
@@ -796,15 +796,12 @@ void strobe(byte idx) {
     }
     break;
   }
-
-
   if(fxVars[idx][4]>=100){ //keep track of frames passed
     fxVars[idx][4]=1;
   }
   else{
     fxVars[idx][4]=fxVars[idx][4]+1;
   }
-
   if(fxVars[idx][4]%24==1){
     //       fxVars[idx][5]++;
   }
@@ -812,9 +809,7 @@ void strobe(byte idx) {
     fxVars[idx][5]=-1;
   }
   //Serial.println(fxVars[idx][5]);
-
 }
-
 void fans(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
@@ -832,18 +827,12 @@ void fans(byte idx) {
   }
   if(fxVars[idx][0] == -1) { //re init
   }
-
-  // fxVars[idx][3]++; //frame counter operator increment
-  // if(fxVars[idx][3]==fxVars[idx][4]){ //if frame increment operator == its limit then
-  //   fxVars[idx][3]=1;//set frame counter to first position
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
-
-    for(int i=0; i<fxVars[idx][2]; i++) {  
+  for(int i=0; i<fxVars[idx][2]; i++) {  
       if(fxVars[idx][6]/fxVars[idx][2]*i>abs(fxVars[idx][5])){//number of levels(frames) to change over nubmer of leds gives change per pixel
-
-        color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
+     color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
         255, 255);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
@@ -855,10 +844,8 @@ void fans(byte idx) {
         *ptr++ = 0;
       }
     }
-
-    fxVars[idx][7]++;  
-
-    fxVars[idx][5]++; //increment level operator
+ fxVars[idx][7]++;  
+   fxVars[idx][5]++; //increment level operator
     if(fxVars[idx][5]>=fxVars[idx][6]){ //if level operator == number of levels
       fxVars[idx][5]=-fxVars[idx][6]+1;
     }
@@ -876,12 +863,9 @@ void fans(byte idx) {
       *ptr++ = 0;
       *ptr++ = 0;
     }
-
-  }
-
-  fxVars[idx][7]=0;  
+ }
+ fxVars[idx][7]=0;  
 }
-
 void POV(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
@@ -901,18 +885,15 @@ void POV(byte idx) {
   }
   if(fxVars[idx][0] == -1) { //re init
   }
-fxVars[idx][3]++;
-  
-
+  fxVars[idx][3]++;
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
-
     for(int i=0; i<fxVars[idx][2]; i++) {  
-    byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]);  //  
-  // if(data>>i==1){
-    if((data>>i)&1){
-      //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
+      byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]);  //  
+      // if(data>>i==1){
+      if((data>>i)&1){
+        //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
         color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
         255, 255);
         *ptr++ = color >> 16; 
@@ -925,45 +906,28 @@ fxVars[idx][3]++;
         *ptr++ = 0;
       }
     }
-  
     fxVars[idx][7]++;  
-
-
-   
   }
-  
-  
   for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
-         
      *ptr++ = 0; 
-      *ptr++ = 0;
-      *ptr++ = 0;
-
+    *ptr++ = 0;
+    *ptr++ = 0;
   }
-    if(fxVars[idx][3]>=fxVars[idx][4]){fxVars[idx][3]=0;fxVars[idx][5]++;}//set frame counter to first position
-
- //  if(fxVars[idx][4]<=fxVars[idx][3]){ // if frame operator is greater than frame holder then set frame opserator to 0 and increment level op
-  //   fxVars[idx][3]=0;
-//     fxVars[idx][5]++; //increment level operator
-//   }
-       if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator  > level holder then increment character and check for overflow
+  if(fxVars[idx][3]>=fxVars[idx][4]){
+    fxVars[idx][3]=0;
+    fxVars[idx][5]++;
+  }
+  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator  > level holder then increment character and check for overflow
   {
-  fxVars[idx][5]=0;
-  fxVars[idx][9]++;
-   if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
-     fxVars[idx][9]=0;
-  
+    fxVars[idx][5]=0;
+    fxVars[idx][9]++;
+    if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
+      fxVars[idx][9]=0;
     }
-    
-     
-//Serial.println(fxVars[idx][5]);
-  fxVars[idx][7]=0;  
-  
-}
+    //Serial.println(fxVars[idx][5]);
+    fxVars[idx][7]=0;  
   }
-
-
-
+}
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
@@ -1047,7 +1011,7 @@ void pacman(byte idx) { //hsv color chase for now
 // practically part of the Geneva Convention by now.
 void rainbowChase(byte idx) {
   if(fxVars[idx][0] == 0) {
-  
+
     // Number of repetitions (complete loops around color wheel); any
     // more than 4 per meter just looks too chaotic and un-rainbow-like.
     // Store as hue 'distance' around complete belt:
@@ -1078,9 +1042,9 @@ void rainbowChase(byte idx) {
 
 
 void sineChase(byte idx) {
-  
+
   if(fxVars[idx][0] == 0) {
-   
+
     fxVars[idx][1] = random(1536); // Random hue
     // Number of repetitions (complete loops around color wheel);
     // any more than 4 per meter just looks too chaotic.
@@ -1187,46 +1151,46 @@ void wavyFlag(byte idx) {
 
 /*
 void sineCompass(byte idx) {
-  // Only needs to be rendered once, when effect is initialized:
-  if(fxVars[idx][0] == 0) {
-    Serial.println("effect=04");
-    //    fxVars[idx][1] = random(1536); // Random hue
-    fxVars[idx][1] = 1; // Random hue
-    // Number of repetitions (complete loops around color wheel);
-    // any more than 4 per meter just looks too chaotic.
-    // Store as distance around complete belt in half-degree units:
-    //    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
-    fxVars[idx][2] = 720; //we will vary this by xy heading change speed, xyspeed will be between 0 and 4
-    // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring.  It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    //fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels; //original
-    fxVars[idx][3] = 0; //no rotation
-
-    // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
-    fxVars[idx][4] = 0; // Current position
-    fxVars[idx][0] = 1; // Effect initialized
-  }
-  fxVars[idx][4] = map(average,0,360,0,720*4); // Current position
-  byte *ptr = &imgData[idx][0];
-  int  foo;
-  long color, i;
-  for(long i=0; i<numPixels; i++) {
-    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
-    // Peaks of sine wave are white, troughs are black, mid-range
-    // values are pure hue (100% saturated).
-    color = (foo >= 0) ?   //black?
-    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
-    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
-    *ptr++ = color >> 16; 
-    *ptr++ = color >> 8; 
-    *ptr++ = color;
-  }
-  // fxVars[idx][4] += fxVars[idx][3];
-}
-
-*/
+ // Only needs to be rendered once, when effect is initialized:
+ if(fxVars[idx][0] == 0) {
+ Serial.println("effect=04");
+ //    fxVars[idx][1] = random(1536); // Random hue
+ fxVars[idx][1] = 1; // Random hue
+ // Number of repetitions (complete loops around color wheel);
+ // any more than 4 per meter just looks too chaotic.
+ // Store as distance around complete belt in half-degree units:
+ //    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
+ fxVars[idx][2] = 720; //we will vary this by xy heading change speed, xyspeed will be between 0 and 4
+ // Frame-to-frame increment (speed) -- may be positive or negative,
+ // but magnitude shouldn't be so small as to be boring.  It's generally
+ // still less than a full pixel per frame, making motion very smooth.
+ //fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels; //original
+ fxVars[idx][3] = 0; //no rotation
+ 
+ // Reverse direction half the time.
+ if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+ fxVars[idx][4] = 0; // Current position
+ fxVars[idx][0] = 1; // Effect initialized
+ }
+ fxVars[idx][4] = map(average,0,360,0,720*4); // Current position
+ byte *ptr = &imgData[idx][0];
+ int  foo;
+ long color, i;
+ for(long i=0; i<numPixels; i++) {
+ foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+ // Peaks of sine wave are white, troughs are black, mid-range
+ // values are pure hue (100% saturated).
+ color = (foo >= 0) ?   //black?
+ hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
+ hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
+ *ptr++ = color >> 16; 
+ *ptr++ = color >> 8; 
+ *ptr++ = color;
+ }
+ // fxVars[idx][4] += fxVars[idx][3];
+ }
+ 
+ */
 void MonsterHunter(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=random(1536);
@@ -1454,8 +1418,8 @@ PROGMEM prog_uchar gammaTable[]  = {
 // folks before even getting into the real substance of the program, and
 // the compiler permits forward references to functions but not data.
 inline byte gamma(byte x) {
-  return pgm_read_byte(&gammaTable[x])<<1;
-//return x/2<<1;
+  return pgm_read_byte(&gammaTable[x/brightness]);
+  //return x/2;
 }
 
 // Fixed-point colorspace conversion: HSV (hue-saturation-value) to RGB.
@@ -1580,22 +1544,22 @@ void buttonpress(){
 
 /*
 void runningaverage(int newval) {
-  // subtract the last reading:
-  total= total - readings[index];        
-  // read from the sensor:  
-  readings[index] = newval;
-  // add the reading to the total:
-  total= total + readings[index];      
-  // advance to the next position in the array:  
-  index = index + 1;                    
-  // if we're at the end of the array...
-  if (index >= numReadings)              
-    // ...wrap around to the beginning:
-    index = 0;                          
-  // calculate the average:
-  average = total / numReadings;        
-  // send it to the computer as ASCII digits
-  // Serial.println(average);  
-  //  delay(1);        // delay in between reads for stability            
-}
-*/
+ // subtract the last reading:
+ total= total - readings[index];        
+ // read from the sensor:  
+ readings[index] = newval;
+ // add the reading to the total:
+ total= total + readings[index];      
+ // advance to the next position in the array:  
+ index = index + 1;                    
+ // if we're at the end of the array...
+ if (index >= numReadings)              
+ // ...wrap around to the beginning:
+ index = 0;                          
+ // calculate the average:
+ average = total / numReadings;        
+ // send it to the computer as ASCII digits
+ // Serial.println(average);  
+ //  delay(1);        // delay in between reads for stability            
+ }
+ */
