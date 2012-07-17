@@ -2,25 +2,25 @@
 #define demo 1
 int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
-  
-    hsvtest,
-     wavyFlag,// stock
   //   sineCompass, //need to get it built before we can learn the compass
-     sparkle, //need to make this look better, probably looks sweet when moving fas
+  //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
-  colorDrift, // why isnt this smooth? gamma.
-     
-
- Dice,
+  twoatonce,
+  Dice,
   //###########good codes, dont change these#####
- strobe, //need to have a better system for duty cycle modulation
+  hsvtest,
+  wavyFlag,// stock
+  colorDrift, // why wasn't this smooth? gamma.
+  strobe, //need to have a better system for duty cycle modulation
   SnakeChase,
   MonsterHunter, //woah dont fuck with this guy
   pacman, //bounces back from end to end and builds every time
-    rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
-POV,
- fans, // varied duty cycle per led per section strobe
+  POV,
+  fans, // varied duty cycle per led per section strobe
+  skipAflash,
+  RandomColorsEverywhere,
 }
 ,
 (*renderAlpha[])(void)  = {
@@ -124,7 +124,7 @@ LPD8806 strip = LPD8806(numPixels);
 // clock = pin 13.  On Mega, data = pin 51, clock = pin 52.
 //LPD8806 strip = LPD8806(numPixels);
 
-
+int crazycounter;
 
 //##############compass maths
 int plane;
@@ -168,7 +168,7 @@ const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOP
 
 char led_chars[97][6] PROGMEM = {  
   0x00,0x00,0x00,0x00,0x00,0x00,  // space 0
-  0x00,0x00,0xfa,0x00,0x00,0x00,	// !	1
+  0x00,0x00,0xfa,0x00,0x00,0x00,  // !	1
   0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
   0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
   0x24,0x54,0xfe,0x54,0x48,0x00,  // $4
@@ -702,13 +702,19 @@ if(fxVars[idx][1]>1536-fxVars[idx][2]){
 }
 void sparkle(byte idx) {
  if(fxVars[idx][0] == 0) {
+   fxVars[idx][1] = random(1536); // color!
+   fxVars[idx][2] = random(0,2);  // if 1 or greater then single color
  fxVars[idx][0]=1;
   }
+  long color;
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-    *ptr++ = random(255); 
-    *ptr++ = random(255); 
-    *ptr++ = random(255);
+    if(fxVars[idx][2]>1){
+       fxVars[idx][1] = random(1536);}
+      
+    *ptr++ = color >> 16; 
+    *ptr++ = color >> 8; 
+    *ptr++ = color;
   }
 }
 void strobe(byte idx) {
@@ -811,6 +817,29 @@ for(int i=0; i<numPixels; i++) {
   }
   //Serial.println(fxVars[idx][5]);
 }
+void RandomColorsEverywhere(byte idx) {
+       byte *ptr = &imgData[idx][0];
+      for (int i=0;i<numPixels*3; i++){
+       byte r = random(256), g = random(256), b = random(256);
+        *ptr++ =r,g,b;
+  }
+}
+
+void twoatonce(byte idx){
+
+crazycounter++;
+if(crazycounter>30){
+  crazycounter=0;
+}
+ 
+  if(crazycounter>15){
+    strobe(idx);
+  }
+  else{
+    rainbowChase(idx);
+  }
+}
+
 void fans(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
@@ -867,6 +896,43 @@ void fans(byte idx) {
  }
  fxVars[idx][7]=0;  
 }
+void skipAflash(byte idx) {
+  // this will alternate which flash at different times
+      if(fxVars[idx][0] == 1) {
+       byte *ptr = &imgData[idx][0],
+       r = random(256), g = random(256), b = random(256);
+  int count=0;
+
+  if (count = (2 + (2 * rand ()) %10)) {
+   count +=1;
+    for(int i=0; i<(numPixels/2); i++) {
+     *ptr++ = r; *ptr++ = g; *ptr++ = b;
+     byte r1= r, g1=g, b1=b;
+     r=0; g=0; b=0;
+     *ptr++ = r; *ptr++ = g; *ptr++ = b;  
+     r=r1;g=g1;b=b1;
+   }
+   }
+  else if (count =( 3 + (2 * rand ()) %10))  {
+                        
+             
+   for(int j=0; j<(numPixels/2); j++) {
+    byte r2, g2, b2;
+    r=r2;g=g2;b=b2;
+    r=0; g=0; b=0;
+    *ptr++ = r; *ptr++ = g; *ptr++ = b; 
+    r2=r;g2=g;b2=b;
+    r = random(256), g = random(256), b = random(256); 
+       *ptr++ = r; *ptr++ = g; *ptr++ = b;  
+}
+}
+}
+ 
+    fxVars[idx][0] = 1;
+ }
+    
+
+
 
 void Dice(byte idx){
    if(fxVars[idx][0] == 0) {
