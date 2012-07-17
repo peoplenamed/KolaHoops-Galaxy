@@ -1,5 +1,6 @@
 #define brightness 1 //this is not right at all.
 #define demo 1
+const uint8_t compassdebug = 0;
 int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
   //   sineCompass, //need to get it built before we can learn the compass
@@ -31,6 +32,9 @@ void (*renderEffect[])(byte) = {
 //########################################################################################################################
 /*
 mmmaxwwwell
+7/16/12 
+added singularity node's modified code for getting serial input
+https://github.com/analognode/LPD8806/blob/master/LDP8806old/examples/interactive_strand/interactive_strand.pde
  6/30/2012
  added:
  -a button on external interrupt 0 with software debounce
@@ -117,6 +121,7 @@ Smoothing
 // Instantiate LED strip; arguments are the total number of pixels in strip,
 // the data pin number and clock pin number:
 LPD8806 strip = LPD8806(numPixels);
+int tCounter   = 1;
 
 // You can also use hardware SPI for ultra-fast writes by omitting the data
 // and clock pin arguments.  This is faster, but the data and clock are then
@@ -147,7 +152,7 @@ uint8_t error = 0;
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 uint16_t debounceDelay = 200;
 uint8_t button = 0;
-
+char serInStr[30];  // array that will hold the serial input string
 
 //###############bitmap storage
 /* string index of character table
@@ -275,9 +280,9 @@ byte imgData[2][numPixels * 3], // Data for 2 strips worth of imagery
 alphaMask[numPixels],      // Alpha channel for compositing images
 backImgIdx = 0,            // Index of 'back' image (always 0 or 1)
 fxIdx[3];                  // Effect # for back & front images + alpha
-int  fxVars[3][50],             // Effect instance variables (explained later)
-tCounter   = 1,           // Countdown to next transition
-transitionTime;            // Duration (in frames) of current transition
+int  fxVars[3][50];             // Effect instance variables (explained later)
+           // Countdown to next transition
+int transitionTime;            // Duration (in frames) of current transition
 float fxFloats[3][4];
 // function prototypes, leave these be :)
 void renderEffect00(byte idx);
@@ -381,9 +386,11 @@ void findplane(){
     }
 
   }
+  if(compassdebug==1){
   Serial.println();
   Serial.print("plane:");
   Serial.println(plane);
+  }
 }
 
 void compassread()
@@ -444,6 +451,7 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
+    if (compassdebug==1){
   Serial.print("xy");
   Serial.println(xyheading);
   Serial.println(xytravel);
@@ -454,6 +462,7 @@ void compassread()
   Serial.println(yzheading);
   Serial.println(yztravel);
   delay(250);
+    }
 
 
 
@@ -540,7 +549,7 @@ void compassread()
 void loop() {
   findplane();
   compassread();
-
+  getSerial();
   // Do nothing? All the work happens in the callback() function below,
   // but we still need loop() here to keep the compiler happy.
 }
@@ -1725,3 +1734,128 @@ void runningaverage(int newval) {
  //  delay(1);        // delay in between reads for stability            
  }
  */
+ void getSerial(){
+     int num;
+  if( readSerialString() ) {
+    Serial.println(serInStr);
+    char cmd = serInStr[0];  // first char is command
+    char* str = serInStr;
+    while( *++str == ' ' );  // got past any intervening whitespace
+    num = atoi(str);         // the rest is arguments (maybe)
+    if( cmd == '+' ) {
+      Serial.println("Next Pattern");
+   
+ tCounter=-1;
+
+    }
+    else if( cmd == 'c' || cmd == 'w' || cmd == 'i' || cmd == 's' || cmd == 'f' ) {
+      byte a = toHex( str[0],str[1] );
+      byte b = toHex( str[2],str[3] );
+      byte c = toHex( str[4],str[5] );
+      byte d = toHex( str[6],str[7] );
+      if( cmd == 's' ) {
+        //fade individual LED to rgb address a, b, c at speed d
+        Serial.println("set individual LED to "); 
+        Serial.print(a,HEX); 
+        Serial.print(",");
+        Serial.print(b,HEX); 
+        Serial.print(",");
+        Serial.print(c,HEX); 
+        Serial.print(",");
+        Serial.print(d,HEX);          
+        Serial.println("");
+      //  pixelFade(d, a, b, c, cycleSpeed);
+      }
+      else if( cmd == 'w' ) {
+        // initiate color wheel
+        Serial.println("wheel to ");
+        Serial.print(a,HEX); 
+        Serial.print(",");
+        Serial.print(b,HEX); 
+        Serial.print(",");
+        Serial.print(c,HEX); 
+        Serial.print(",");
+        Serial.print(d,HEX);          
+        Serial.println("");
+    //    rainbow(10);
+      } 
+      else if( cmd == 'i' ) {
+        // initiate color wipe
+        Serial.println("color wipe to ");
+        Serial.print(a,HEX); 
+        Serial.print(",");
+        Serial.print(b,HEX); 
+        Serial.print(",");
+        Serial.print(c,HEX); 
+        Serial.print(",");
+        Serial.print(d,HEX);          
+        Serial.println("");
+   //     colorWipe(strip.Color(a,b,c), cycleSpeed);
+      } 
+      else if( cmd == 'c' ) {
+        // color Chase
+        Serial.println("color chase to ");
+        Serial.print(a,HEX); 
+        Serial.print(",");
+        Serial.print(b,HEX); 
+        Serial.print(",");
+        Serial.print(c,HEX); 
+        Serial.print(",");
+        Serial.print(d,HEX);          
+        Serial.println("");
+    //    colorChase(strip.Color(a,b,c), cycleSpeed);	// orange
+      }
+      else if ( cmd == 'f' ) {
+        Serial.print("set cycle speed to ");
+        Serial.print(a,HEX); 
+        Serial.print(",");
+        Serial.print(b,HEX); 
+        Serial.print(",");
+        Serial.print(c,HEX); 
+        Serial.print(",");
+        Serial.print(d,HEX);
+        Serial.println("");
+    //    cycleSpeed = a;
+      }
+    }
+    serInStr[0] = 0;  // say we've used the string
+    Serial.print("cmd>");  
+  }}
+  //read a string from the serial and store it in an array
+//you must supply the array variable
+uint8_t readSerialString()
+{
+  if(!Serial.available()) {
+    return 0;
+  }
+  delay(10);  // wait a little for serial data
+
+  memset( serInStr, 0, sizeof(serInStr) ); // set it all to zero
+  int i = 0;
+  while (Serial.available()) {
+    serInStr[i] = Serial.read();   // FIXME: doesn't check buffer overrun
+    i++;
+  }
+  //serInStr[i] = 0;  // indicate end of read string
+  return i;  // return number of chars read
+}
+
+#include <ctype.h>
+uint8_t toHex(char hi, char lo)
+{
+  uint8_t b;
+  hi = toupper(hi);
+  if( isxdigit(hi) ) {
+    if( hi > '9' ) hi -= 7;      // software offset for A-F
+    hi -= 0x30;                  // subtract ASCII offset
+    b = hi<<4;
+    lo = toupper(lo);
+    if( isxdigit(lo) ) {
+      if( lo > '9' ) lo -= 7;  // software offset for A-F
+      lo -= 0x30;              // subtract ASCII offset
+      b = b + lo;
+      return b;
+    } // else error
+  }  // else error
+  return 0;
+}
