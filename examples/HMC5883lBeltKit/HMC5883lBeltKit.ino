@@ -3,6 +3,7 @@ int demo = 1;
 uint8_t compassdebug = 0;
 int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
+  //PeteOV,
   //   sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
@@ -13,12 +14,13 @@ void (*renderEffect[])(byte) = {
   wavyFlag,// stock
   colorDrift, // why wasn't this smooth? gamma.
   strobe, //need to have a better system for duty cycle modulation
-//  SnakeChase,
+  //  SnakeChase, //serial monitor does not work with this one, too intesne
   MonsterHunter, //woah dont fuck with this guy
   pacman, //bounces back from end to end and builds every time
   rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
-  POV,
+  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  //needs to store index and message string in progmem
   fans, // varied duty cycle per led per section strobe
   skipAflash,
   RandomColorsEverywhere,
@@ -167,13 +169,13 @@ char serInStr[30];  // array that will hold the serial input string
 // led character definitions modified from http://www.edaboard.com/thread45151.html
 // 5 data columns + 1 space
 // for each character
-const String Message[5] = {
-  "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("};
-const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
+
+
+
 
 char led_chars[97][6] PROGMEM = {  
   0x00,0x00,0x00,0x00,0x00,0x00,  // space 0
-  0x00,0x00,0xfa,0x00,0x00,0x00,  // !	1
+  0x00,0x00,0xfa,0x00,0x00,0x00,  // !  1
   0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
   0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
   0x24,0x54,0xfe,0x54,0x48,0x00,  // $4
@@ -854,6 +856,7 @@ void twoatonce(byte idx){
   else{
     rainbowChase(idx);
   }
+ 
 }
 
 void fans(byte idx) {
@@ -997,6 +1000,9 @@ void Dice(byte idx){
 }
 
 void POV(byte idx) {
+  const String Message[5] = {
+  "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("};
+const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
     fxVars[idx][1]=random(1536); //color were gonna use to cycle
@@ -1059,6 +1065,71 @@ void POV(byte idx) {
   }
 }
 
+/*
+void PeteOV(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    int i;
+    fxVars[idx][1]=random(1536); //color were gonna use to cycle
+    fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
+    fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame, 
+    fxVars[idx][4]=30;//# of frames until next change
+    fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
+    fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
+    fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+    //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
+    fxVars[idx][9]=0;// character counter
+    fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
+    fxVars[idx][0]=1;// Effect initialized
+  }
+  if(fxVars[idx][0] == -1) { //re init
+  }
+  fxVars[idx][3]++;
+  byte *ptr = &imgData[idx][0];
+  long color;
+  for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+    for(int i=0; i<fxVars[idx][2]; i++) {  
+      byte data=0xfa; 
+      // if(data>>i==1){
+     
+        if((data>>i)&1){
+        //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
+        color = hsv2rgb(((1536/fxVars[idx][8]+fxVars[idx][1])*fxVars[idx][7]),
+        255, 255);
+        *ptr++ = color >> 16; 
+        *ptr++ = color >> 8; 
+        *ptr++ = color;
+      }
+      else{       
+        *ptr++ = 0; 
+        *ptr++ = 0;
+        *ptr++ = 0;
+      }
+    }
+    fxVars[idx][7]++;  
+  }
+  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
+    *ptr++ = 0; 
+    *ptr++ = 0;
+    *ptr++ = 0;
+  }
+  if(fxVars[idx][3]>=fxVars[idx][4]){
+    fxVars[idx][3]=0;
+    fxVars[idx][5]++;
+  }
+  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator  > level holder then increment character and check for overflow
+  {
+    fxVars[idx][5]=0;
+    fxVars[idx][9]++;
+    if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
+      fxVars[idx][9]=0;
+    }
+    //Serial.println(fxVars[idx][5]);
+    fxVars[idx][7]=0;  
+  }
+}
+*/
 //simple dual pixel chasin in opposite directions
 void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
   if(fxVars[idx][0] == 0) { // Initialize effect?
@@ -1849,4 +1920,3 @@ uint8_t toHex(char hi, char lo)
   }  // else error
   return 0;
 }
-
