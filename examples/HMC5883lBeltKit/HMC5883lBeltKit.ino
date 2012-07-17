@@ -1,6 +1,6 @@
-#define brightness 1 //this is not right at all.
-#define demo 1
-const uint8_t compassdebug = 0;
+int brightness = 2; //this is not right at all.
+int demo = 1;
+uint8_t compassdebug = 0;
 int framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
   //   sineCompass, //need to get it built before we can learn the compass
@@ -13,7 +13,7 @@ void (*renderEffect[])(byte) = {
   wavyFlag,// stock
   colorDrift, // why wasn't this smooth? gamma.
   strobe, //need to have a better system for duty cycle modulation
-  SnakeChase,
+//  SnakeChase,
   MonsterHunter, //woah dont fuck with this guy
   pacman, //bounces back from end to end and builds every time
   rainbowChase, //stock rainbow chase doesnt work at 240 hz
@@ -32,9 +32,9 @@ void (*renderEffect[])(byte) = {
 //########################################################################################################################
 /*
 mmmaxwwwell
-7/16/12 
-added singularity node's modified code for getting serial input
-https://github.com/analognode/LPD8806/blob/master/LDP8806old/examples/interactive_strand/interactive_strand.pde
+ 7/16/12 
+ added singularity node's modified code for getting serial input
+ https://github.com/analognode/LPD8806/blob/master/LDP8806old/examples/interactive_strand/interactive_strand.pde
  6/30/2012
  added:
  -a button on external interrupt 0 with software debounce
@@ -281,7 +281,7 @@ alphaMask[numPixels],      // Alpha channel for compositing images
 backImgIdx = 0,            // Index of 'back' image (always 0 or 1)
 fxIdx[3];                  // Effect # for back & front images + alpha
 int  fxVars[3][50];             // Effect instance variables (explained later)
-           // Countdown to next transition
+// Countdown to next transition
 int transitionTime;            // Duration (in frames) of current transition
 float fxFloats[3][4];
 // function prototypes, leave these be :)
@@ -315,9 +315,14 @@ void setup() {
   // the first thing the calback does is update the strip.
 
   // Initialize the serial port.
-  Serial.begin(9600);
+  Serial.begin(115200);
 
-
+  Serial.println("Send a");
+  Serial.println("+ to increment pattern,");
+  Serial.println("B to increase brightness, ");
+  Serial.println("b to decrease brightness, ");
+  Serial.println("D to enable compass debug,");
+  Serial.println("d to disable compass debug");
 
   //  Serial.println("Starting the I2C interface.");
   Wire.begin(); // Start the I2C interface.
@@ -387,9 +392,9 @@ void findplane(){
 
   }
   if(compassdebug==1){
-  Serial.println();
-  Serial.print("plane:");
-  Serial.println(plane);
+    Serial.println();
+    Serial.print("plane:");
+    Serial.println(plane);
   }
 }
 
@@ -451,18 +456,18 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
-    if (compassdebug==1){
-  Serial.print("xy");
-  Serial.println(xyheading);
-  Serial.println(xytravel);
-  Serial.print("xz");
-  Serial.println(xzheading);
-  Serial.println(xztravel);
-  Serial.print("yz");
-  Serial.println(yzheading);
-  Serial.println(yztravel);
-  delay(250);
-    }
+  if (compassdebug==1){
+    Serial.print("xy");
+    Serial.println(xyheading);
+    Serial.println(xytravel);
+    Serial.print("xz");
+    Serial.println(xzheading);
+    Serial.println(xztravel);
+    Serial.print("yz");
+    Serial.println(yzheading);
+    Serial.println(yztravel);
+    delay(250);
+  }
 
 
 
@@ -547,9 +552,10 @@ void compassread()
 //}
 
 void loop() {
+  getSerial();
   findplane();
   compassread();
-  getSerial();
+  
   // Do nothing? All the work happens in the callback() function below,
   // but we still need loop() here to keep the compiler happy.
 }
@@ -671,7 +677,7 @@ void callback() {
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
- fxVars[idx][1]=random(1536); //color were gonna write initally
+    fxVars[idx][1]=random(1536); //color were gonna write initally
     Serial.println(fxVars[idx][1]);
     fxVars[idx][0] = 1; // Effect initialized
     byte *ptr = &imgData[idx][0];
@@ -687,40 +693,41 @@ void hsvtest(byte idx) {
 }
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
- fxVars[idx][1]=random(0,1536); //color were gonna write initally
+    fxVars[idx][1]=random(0,1536); //color were gonna write initally
     fxVars[idx][0] = 1; // Effect initialized
     fxVars[idx][2] =random(1,4); //increments of color drift per frame
     // fxVars[idx][2] =1; //increments of color drift per frame
   }
   byte *ptr = &imgData[idx][0];
-if(fxVars[idx][1]>1536-fxVars[idx][2]){
+  if(fxVars[idx][1]>1536-fxVars[idx][2]){
     fxVars[idx][1]=fxVars[idx][1]%1536;
   }
   fxVars[idx][1]+=fxVars[idx][2];
-//  Serial.println(fxVars[idx][1]);
+  //  Serial.println(fxVars[idx][1]);
   //Serial.println(fxVars[idx][1]);
   for(int i=0; i<numPixels; i++) {
     long color;
-  color = hsv2rgb(fxVars[idx][1],
+    color = hsv2rgb(fxVars[idx][1],
     255, 255);
     *ptr++ = color >> 16; 
     *ptr++ = color >> 8; 
     *ptr++ = color;
-}
+  }
   //  Serial.println(fxVars[idx][1]);
 }
 void sparkle(byte idx) {
- if(fxVars[idx][0] == 0) {
-   fxVars[idx][1] = random(1536); // color!
-   fxVars[idx][2] = random(0,2);  // if 1 or greater then single color
- fxVars[idx][0]=1;
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1] = random(1536); // color!
+    fxVars[idx][2] = random(0,2);  // if 1 or greater then single color
+    fxVars[idx][0]=1;
   }
   long color;
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     if(fxVars[idx][2]>1){
-       fxVars[idx][1] = random(1536);}
-      
+      fxVars[idx][1] = random(1536);
+    }
+
     *ptr++ = color >> 16; 
     *ptr++ = color >> 8; 
     *ptr++ = color;
@@ -728,7 +735,7 @@ void sparkle(byte idx) {
 }
 void strobe(byte idx) {
   if(fxVars[idx][0] == 0) {
- fxVars[idx][1]=random(1536); //color were gonna use to cycle
+    fxVars[idx][1]=random(1536); //color were gonna use to cycle
     fxVars[idx][2] =random(0,2); //increments of color drift per frame
     fxVars[idx][3] =0; //strobe indicator, 0 is nothing written for the frame and anything else is write
     fxVars[idx][4] =0; //frame counter 0-120
@@ -738,18 +745,18 @@ void strobe(byte idx) {
     fxVars[idx][7]=random(0,1);//if 1 replace black with second color 9
     fxVars[idx][8]=60; // strobe duty cycle value
     fxVars[idx][9]=random(1536);//color2
-  fxVars[idx][0] = 1; // Effect initialized
+    fxVars[idx][0] = 1; // Effect initialized
   }
   //fxVars[idx][7]++;
   //if(fxVars[idx][7]==fxVars[idx][8]){
   //  fxVars[idx][7]=0;
   // fxVars[idx][5]++;}
-byte *ptr = &imgData[idx][0];
- fxVars[idx][1]+=fxVars[idx][2];
+  byte *ptr = &imgData[idx][0];
+  fxVars[idx][1]+=fxVars[idx][2];
   if(fxVars[idx][1]>1536-fxVars[idx][1]){
     fxVars[idx][1]=fxVars[idx][1]%1536;
   }
-for(int i=0; i<numPixels; i++) {
+  for(int i=0; i<numPixels; i++) {
     long color;
     color = hsv2rgb(fxVars[idx][1],
     255, 255);
@@ -827,20 +834,20 @@ for(int i=0; i<numPixels; i++) {
   //Serial.println(fxVars[idx][5]);
 }
 void RandomColorsEverywhere(byte idx) {
-       byte *ptr = &imgData[idx][0];
-      for (int i=0;i<numPixels*3; i++){
-       byte r = random(256), g = random(256), b = random(256);
-        *ptr++ =r,g,b;
+  byte *ptr = &imgData[idx][0];
+  for (int i=0;i<numPixels*3; i++){
+    byte r = random(256), g = random(256), b = random(256);
+    *ptr++ =r,g,b;
   }
 }
 
 void twoatonce(byte idx){
 
-crazycounter++;
-if(crazycounter>30){
-  crazycounter=0;
-}
- 
+  crazycounter++;
+  if(crazycounter>30){
+    crazycounter=0;
+  }
+
   if(crazycounter>15){
     strobe(idx);
   }
@@ -869,9 +876,9 @@ void fans(byte idx) {
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
-  for(int i=0; i<fxVars[idx][2]; i++) {  
+    for(int i=0; i<fxVars[idx][2]; i++) {  
       if(fxVars[idx][6]/fxVars[idx][2]*i>abs(fxVars[idx][5])){//number of levels(frames) to change over nubmer of leds gives change per pixel
-     color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
+        color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
         255, 255);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
@@ -883,8 +890,8 @@ void fans(byte idx) {
         *ptr++ = 0;
       }
     }
- fxVars[idx][7]++;  
-   fxVars[idx][5]++; //increment level operator
+    fxVars[idx][7]++;  
+    fxVars[idx][5]++; //increment level operator
     if(fxVars[idx][5]>=fxVars[idx][6]){ //if level operator == number of levels
       fxVars[idx][5]=-fxVars[idx][6]+1;
     }
@@ -902,71 +909,92 @@ void fans(byte idx) {
       *ptr++ = 0;
       *ptr++ = 0;
     }
- }
- fxVars[idx][7]=0;  
+  }
+  fxVars[idx][7]=0;  
 }
 void skipAflash(byte idx) {
   // this will alternate which flash at different times
-      if(fxVars[idx][0] == 1) {
-       byte *ptr = &imgData[idx][0],
-       r = random(256), g = random(256), b = random(256);
-  int count=0;
+  if(fxVars[idx][0] == 1) {
+    byte *ptr = &imgData[idx][0],
+    r = random(256), g = random(256), b = random(256);
+    int count=0;
 
-  if (count = (2 + (2 * rand ()) %10)) {
-   count +=1;
-    for(int i=0; i<(numPixels/2); i++) {
-     *ptr++ = r; *ptr++ = g; *ptr++ = b;
-     byte r1= r, g1=g, b1=b;
-     r=0; g=0; b=0;
-     *ptr++ = r; *ptr++ = g; *ptr++ = b;  
-     r=r1;g=g1;b=b1;
-   }
-   }
-  else if (count =( 3 + (2 * rand ()) %10))  {
-                        
-             
-   for(int j=0; j<(numPixels/2); j++) {
-    byte r2, g2, b2;
-    r=r2;g=g2;b=b2;
-    r=0; g=0; b=0;
-    *ptr++ = r; *ptr++ = g; *ptr++ = b; 
-    r2=r;g2=g;b2=b;
-    r = random(256), g = random(256), b = random(256); 
-       *ptr++ = r; *ptr++ = g; *ptr++ = b;  
+    if (count = (2 + (2 * rand ()) %10)) {
+      count +=1;
+      for(int i=0; i<(numPixels/2); i++) {
+        *ptr++ = r; 
+        *ptr++ = g; 
+        *ptr++ = b;
+        byte r1= r, g1=g, b1=b;
+        r=0; 
+        g=0; 
+        b=0;
+        *ptr++ = r; 
+        *ptr++ = g; 
+        *ptr++ = b;  
+        r=r1;
+        g=g1;
+        b=b1;
+      }
+    }
+    else if (count =( 3 + (2 * rand ()) %10))  {
+
+
+      for(int j=0; j<(numPixels/2); j++) {
+        byte r2, g2, b2;
+        r=r2;
+        g=g2;
+        b=b2;
+        r=0; 
+        g=0; 
+        b=0;
+        *ptr++ = r; 
+        *ptr++ = g; 
+        *ptr++ = b; 
+        r2=r;
+        g2=g;
+        b2=b;
+        r = random(256), g = random(256), b = random(256); 
+        *ptr++ = r; 
+        *ptr++ = g; 
+        *ptr++ = b;  
+      }
+    }
+  }
+
+  fxVars[idx][0] = 1;
 }
-}
-}
- 
-    fxVars[idx][0] = 1;
- }
-    
+
 
 
 
 void Dice(byte idx){
-   if(fxVars[idx][0] == 0) {
-     fxVars[idx][1]=random(750,1536);
-     fxVars[idx][2]=fxVars[idx][1]*2%1536;
-     fxVars[idx][3]=fxVars[idx][1]*3%1536;
-     fxVars[idx][4]=fxVars[idx][1]*4%1536;
-     fxVars[idx][5]=fxVars[idx][1]*5%1536;
-     fxVars[idx][6]=fxVars[idx][1]*6%1536;
-     fxVars[idx][7]=0;
-     fxVars[idx][0]=1; //effect init
-     }
-if(plane>0){
-   fxVars[idx][7]=plane;}
-   else{
-      fxVars[idx][7]=abs(plane)*2;
-      }
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=random(750,1536);
+    fxVars[idx][2]=fxVars[idx][1]*2%1536;
+    fxVars[idx][3]=fxVars[idx][1]*3%1536;
+    fxVars[idx][4]=fxVars[idx][1]*4%1536;
+    fxVars[idx][5]=fxVars[idx][1]*5%1536;
+    fxVars[idx][6]=fxVars[idx][1]*6%1536;
+    fxVars[idx][7]=0;
+    fxVars[idx][0]=1; //effect init
+  }
+  if(plane>0){
+    fxVars[idx][7]=plane;
+  }
+  else{
+    fxVars[idx][7]=abs(plane)*2;
+  }
   byte *ptr = &imgData[idx][0];
-    for(int i=0; i<numPixels; i++) {
-      long color;
-      color = hsv2rgb(fxVars[idx][fxVars[idx][7]],
-      255, 255);
-      *ptr++ = color >> 16; 
-      *ptr++ = color >> 8; 
-      *ptr++ = color;}}
+  for(int i=0; i<numPixels; i++) {
+    long color;
+    color = hsv2rgb(fxVars[idx][fxVars[idx][7]],
+    255, 255);
+    *ptr++ = color >> 16; 
+    *ptr++ = color >> 8; 
+    *ptr++ = color;
+  }
+}
 
 void POV(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -1011,7 +1039,7 @@ void POV(byte idx) {
     fxVars[idx][7]++;  
   }
   for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
-     *ptr++ = 0; 
+    *ptr++ = 0; 
     *ptr++ = 0;
     *ptr++ = 0;
   }
@@ -1065,14 +1093,14 @@ void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
     if(i <= fxVars[idx][4] && fxFloats[idx][1] >= numPixels - fxVars[idx][4]) {
       modifier1 = -numPixels;
     }
-    
+
     if(i >= numPixels - fxVars[idx][9] && fxFloats[idx][3] <= fxVars[idx][9]) {
       modifier2 = numPixels;
     }
     if(i <= fxVars[idx][9] && fxFloats[idx][3] >= numPixels - fxVars[idx][9]) {
       modifier2 = -numPixels;
     }
-    
+
     distance = min(abs(i - fxFloats[idx][1] - modifier1), fxVars[idx][4]) * -2;
     saturation = map(distance, fxVars[idx][5], 0.0, 0, 255);
     color1 = hsv2rgb(fxVars[idx][1], hue, saturation);
@@ -1082,12 +1110,18 @@ void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
     color2 = hsv2rgb(fxVars[idx][6], hue, saturation);
 
 
-    r1 = color2 >> 16; g1 = color2 >> 8; b1 = color2;
-    r2 = color1 >> 16; g2 = color1 >> 8; b2 = color1;
+    r1 = color2 >> 16; 
+    g1 = color2 >> 8; 
+    b1 = color2;
+    r2 = color1 >> 16; 
+    g2 = color1 >> 8; 
+    b2 = color1;
     r = min(r1 + r2, 255);
     g = min(g1 + g2, 255);
     b = min(b1 + b2, 255);
-    *ptr++ = r; *ptr++ = g; *ptr++ = b;
+    *ptr++ = r; 
+    *ptr++ = g; 
+    *ptr++ = b;
   }
 
   fxFloats[idx][1] += fxFloats[idx][0];
@@ -1734,8 +1768,8 @@ void runningaverage(int newval) {
  //  delay(1);        // delay in between reads for stability            
  }
  */
- void getSerial(){
-     int num;
+void getSerial(){
+  int num;
   if( readSerialString() ) {
     Serial.println(serInStr);
     char cmd = serInStr[0];  // first char is command
@@ -1744,84 +1778,40 @@ void runningaverage(int newval) {
     num = atoi(str);         // the rest is arguments (maybe)
     if( cmd == '+' ) {
       Serial.println("Next Pattern");
-   
- tCounter=-1;
+      tCounter=-1;
+    }
+    if( cmd == 'd' ) {
+      compassdebug=0;
+      Serial.println("disable compass serial output");
+    }
+    if( cmd == 'D' ) {
+      compassdebug=1;
+      Serial.println("enable compass serial output");
+    }
+    if( cmd == 'b' ) {
+      if (brightness <6){
+      brightness++;
+      Serial.print("brightness decreased, brightness at ");
+      Serial.println(brightness);
+    }else{
+        Serial.println("brightness already at minimum");
+      }
+    if( cmd == 'B' ) {
+      if (brightness >1){
+        brightness--;
+        Serial.print("brightness increased, brightness at");
+        Serial.println(brightness);
+      }
+      else{
+        Serial.println("brightness already at maximum");
+      }
+
 
     }
-    else if( cmd == 'c' || cmd == 'w' || cmd == 'i' || cmd == 's' || cmd == 'f' ) {
-      byte a = toHex( str[0],str[1] );
-      byte b = toHex( str[2],str[3] );
-      byte c = toHex( str[4],str[5] );
-      byte d = toHex( str[6],str[7] );
-      if( cmd == 's' ) {
-        //fade individual LED to rgb address a, b, c at speed d
-        Serial.println("set individual LED to "); 
-        Serial.print(a,HEX); 
-        Serial.print(",");
-        Serial.print(b,HEX); 
-        Serial.print(",");
-        Serial.print(c,HEX); 
-        Serial.print(",");
-        Serial.print(d,HEX);          
-        Serial.println("");
-      //  pixelFade(d, a, b, c, cycleSpeed);
-      }
-      else if( cmd == 'w' ) {
-        // initiate color wheel
-        Serial.println("wheel to ");
-        Serial.print(a,HEX); 
-        Serial.print(",");
-        Serial.print(b,HEX); 
-        Serial.print(",");
-        Serial.print(c,HEX); 
-        Serial.print(",");
-        Serial.print(d,HEX);          
-        Serial.println("");
-    //    rainbow(10);
-      } 
-      else if( cmd == 'i' ) {
-        // initiate color wipe
-        Serial.println("color wipe to ");
-        Serial.print(a,HEX); 
-        Serial.print(",");
-        Serial.print(b,HEX); 
-        Serial.print(",");
-        Serial.print(c,HEX); 
-        Serial.print(",");
-        Serial.print(d,HEX);          
-        Serial.println("");
-   //     colorWipe(strip.Color(a,b,c), cycleSpeed);
-      } 
-      else if( cmd == 'c' ) {
-        // color Chase
-        Serial.println("color chase to ");
-        Serial.print(a,HEX); 
-        Serial.print(",");
-        Serial.print(b,HEX); 
-        Serial.print(",");
-        Serial.print(c,HEX); 
-        Serial.print(",");
-        Serial.print(d,HEX);          
-        Serial.println("");
-    //    colorChase(strip.Color(a,b,c), cycleSpeed);	// orange
-      }
-      else if ( cmd == 'f' ) {
-        Serial.print("set cycle speed to ");
-        Serial.print(a,HEX); 
-        Serial.print(",");
-        Serial.print(b,HEX); 
-        Serial.print(",");
-        Serial.print(c,HEX); 
-        Serial.print(",");
-        Serial.print(d,HEX);
-        Serial.println("");
-    //    cycleSpeed = a;
-      }
-    }
-    serInStr[0] = 0;  // say we've used the string
-    Serial.print("cmd>");  
-  }}
-  //read a string from the serial and store it in an array
+    serInStr[0] = 0;  // say we've used the string    
+  }
+}}
+//read a string from the serial and store it in an array
 //you must supply the array variable
 uint8_t readSerialString()
 {
@@ -1859,3 +1849,4 @@ uint8_t toHex(char hi, char lo)
   }  // else error
   return 0;
 }
+
