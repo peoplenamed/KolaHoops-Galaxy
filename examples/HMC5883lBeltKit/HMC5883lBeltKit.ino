@@ -7,8 +7,8 @@ void (*renderEffect[])(byte) = {
   //   sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
-  twoatonce,
-  Dice,
+//  twoatonce,
+//  Dice,
   //###########good codes, dont change these#####
   hsvtest,
   wavyFlag,// stock
@@ -132,7 +132,7 @@ int tCounter   = 1;
 //LPD8806 strip = LPD8806(numPixels);
 
 int crazycounter;
-
+uint8_t colorschemeselector = 0;
 //##############compass maths
 int plane;
 boolean compassreadphase = 0;
@@ -156,7 +156,190 @@ uint16_t debounceDelay = 200;
 uint8_t button = 0;
 char serInStr[30];  // array that will hold the serial input string
 
-//###############bitmap storage
+
+#define maroon 0x800000
+#define dark red 0x8B0000 
+#define brown 0xA52A2A 
+#define firebrick 0xB22222 
+#define crimson 0xDC143C 
+#define red 0xFF0000 
+#define tomato 0xFF6347 
+#define coral 0xFF7F50   
+#define indian red 0xCD5C5C 
+#define lightcoral 0xF08080 
+#define darksalmon 0xE9967A 
+#define salmon 0xFA8072 
+#define lightsalmon 0xFFA07A 
+#define orangered 0xFF4500 
+#define darkorange 0xFF8C00 
+#define orange 0xFFA500 
+#define gold 0xFFD700 
+#define dark golden rod 0xB8860B 
+#define goldenrod 0xDAA520
+#define palegolden rod 0xEEE8AA 
+#define darkkhaki 0xBDB76B 
+#define khaki 0xF0E68C 
+#define olive 0x808000 
+#define yellow 0xFFFF00 
+#define yellowgreen 0x9ACD32 
+#define darkolive green 0x556B2F 
+#define olivedrab 0x6B8E23 
+#define lawngreen 0x7CFC00 
+#define chartreuse 0x7FFF00 
+#define greenyellow 0xADFF2F 
+#define darkgreen 0x006400 
+#define green 0x008000 
+#define forestgreen 0x228B22 
+#define lime 0x00FF00 
+#define limegreen 0x32CD32 
+#define lightgreen 0x90EE90 
+#define palegreen 0x98FB98 
+#define darkseagreen 0x8FBC8F 
+#define mediumspringgreen 0x00FA9A 
+#define springgreen 0x00FF7F 
+#define seagreen 0x2E8B57 
+#define mediumaquamarine 0x66CDAA 
+#define mediumseagreen 0x3CB371 
+#define lightseagreen 0x20B2AA 
+#define darkslategray 0x2F4F4F 
+#define teal 0x008080 
+#define darkcyan 0x008B8B 
+#define aqua 0x00FFFF 
+#define cyan 0x00FFFF 
+#define lightcyan 0xE0FFFF 
+#define darkturquoise 0x00CED1 
+#define turquoise 0x40E0D0 
+#define mediumturquoise 0x48D1CC 
+#define paleturquoise 0xAFEEEE 
+#define aquamarine 0x7FFFD4 
+#define powderblue 0xB0E0E6 
+#define cadetblue 0x5F9EA0 
+#define steelblue 0x4682B4 
+#define cornflowerblue 0x6495ED 
+#define deepskyblue 0x00BFFF 
+#define dodgerblue 0x1E90FF 
+#define lightblue 0xADD8E6 
+#define skyblue 0x87CEEB 
+#define lightskyblue 0x87CEFA 
+#define midnightblue 0x191970 
+#define navy 0x000080 
+#define darkblue 0x00008B 
+#define mediumblue 0x0000CD 
+#define blue 0x0000FF 
+#define royalblue 0x4169E1 
+#define blueviolet 0x8A2BE2 
+#define indigo 0x4B0082 
+#define darkslateblue 0x483D8B 
+#define slateblue 0x6A5ACD 
+#define mediumslateblue 0x7B68EE 
+#define mediumpurple 0x9370DB 
+#define darkmagenta 0x8B008B 
+#define darkviolet 0x9400D3 
+#define darkorchid 0x9932CC 
+#define mediumorchid 0xBA55D3 
+#define purple 0x800080 
+#define thistle 0xD8BFD8 
+#define plum 0xDDA0DD 
+#define violet 0xEE82EE 
+#define magenta 0xFF00FF 
+#define orchid 0xDA70D6 
+#define mediumvioletred 0xC71585 
+#define palevioletred 0xDB7093 
+#define deeppink 0xFF1493 
+#define hotpink 0xFF69B4 
+#define lightpink 0xFFB6C1 
+#define pink 0xFFC0CB 
+#define antiquewhite 0xFAEBD7 
+#define beige 0xF5F5DC 
+#define bisque 0xFFE4C4 
+#define blanchedalmond 0xFFEBCD 
+#define wheat 0xF5DEB3 
+#define cornsilk 0xFFF8DC 
+#define lemonchiffon 0xFFFACD 
+#define lightgolden rod yellow 0xFAFAD2 
+#define lightyellow 0xFFFFE0 
+#define saddlebrown 0x8B4513 
+#define sienna 0xA0522D 
+#define chocolate 0xD2691E 
+#define peru 0xCD853F 
+#define sandybrown 0xF4A460
+#define burlywood 0xDEB887 
+#define tanish 0xD2B48C 
+#define rosybrown 0xBC8F8F 
+#define moccasin 0xFFE4B5 
+#define navajowhite 0xFFDEAD 
+#define peachpuff 0xFFDAB9 
+#define mistyrose 0xFFE4E1 
+#define lavenderblush 0xFFF0F5 
+#define linen 0xFAF0E6 
+#define oldlace 0xFDF5E6 
+#define papayawhip 0xFFEFD5 
+#define seashell 0xFFF5EE 
+#define mintcream 0xF5FFFA 
+#define slategray 0x708090 
+#define lightslategray 0x778899 
+#define lightsteelblue 0xB0C4DE 
+#define lavender 0xE6E6FA 
+#define floralwhite 0xFFFAF0 
+#define aliceblue 0xF0F8FF 
+#define ghostwhite 0xF8F8FF 
+#define honeydew 0xF0FFF0 
+#define ivory 0xFFFFF0 
+#define azure 0xF0FFFF 
+#define snow 0xFFFAFA 
+#define black 0x000000 
+#define dimgrey 0x696969 
+#define grey 0x808080 
+#define darkgrey 0xA9A9A9 
+#define silver 0xC0C0C0 
+#define lightgrey 0xD3D3D3 
+#define gainsboro 0xDCDCDC 
+#define whitesmoke 0xF5F5F5 
+#define white 0xFFFFFF 
+
+const long eightcolorschema[][8] PROGMEM={
+azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //white ish
+red,green,blue,magenta,teal,yellow,white,black,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+};
+
+//##############bitmap storage
 /* string index of character table
  !"#$%&'()*+,-./ //start 0 end 15
  0123456789:;>=<? //start 16 end 31
@@ -172,8 +355,7 @@ char serInStr[30];  // array that will hold the serial input string
 
 
 
-
-char led_chars[97][6] PROGMEM = {  
+const char led_chars[97][6] PROGMEM = {  
   0x00,0x00,0x00,0x00,0x00,0x00,  // space 0
   0x00,0x00,0xfa,0x00,0x00,0x00,  // !  1
   0x00,0xe0,0x00,0xe0,0x00,0x00,	// "2
@@ -319,18 +501,18 @@ void setup() {
   // Initialize the serial port.
   Serial.begin(115200);
 
-  Serial.println("Send a");
+  /*Serial.println("Send a");
   Serial.println("+ to increment pattern,");
   Serial.println("B to increase brightness, ");
   Serial.println("b to decrease brightness, ");
   Serial.println("D to enable compass debug,");
   Serial.println("d to disable compass debug");
-
+*/
   //  Serial.println("Starting the I2C interface.");
   Wire.begin(); // Start the I2C interface.
 
   // Serial.println("Constructing new HMC5883L");
-  compass = HMC5883L(); // Construct a new HMC5883 compass.
+ compass = HMC5883L(); // Construct a new HMC5883 compass.
 
   // Serial.println("Setting scale to +/- 8.1 Ga");
   error = compass.SetScale(compassscale); // Set the scale of the compass. //orig 1.3
@@ -679,16 +861,13 @@ void callback() {
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1]=random(1536); //color were gonna write initally
-    Serial.println(fxVars[idx][1]);
     fxVars[idx][0] = 1; // Effect initialized
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
       long color;
-      color = hsv2rgb(fxVars[idx][1],
-      255, 255);
-      *ptr++ = color >> 16; 
-      *ptr++ = color >> 8; 
+      color = eightcolorschema[0][6];
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
       *ptr++ = color;
     }
   }
@@ -719,8 +898,7 @@ void colorDrift(byte idx) {
 }
 void sparkle(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1] = random(1536); // color!
-    fxVars[idx][2] = random(0,2);  // if 1 or greater then single color
+    fxVars[idx][1] = 0; // color scheme selector
     fxVars[idx][0]=1;
   }
   long color;
@@ -1868,7 +2046,7 @@ void getSerial(){
         Serial.println("brightness already at minimum");
       }
     if( cmd == 'B' ) {
-      if (brightness >1){
+      if (brightness >=2){
         brightness--;
         Serial.print("brightness increased, brightness at");
         Serial.println(brightness);
