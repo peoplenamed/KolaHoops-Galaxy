@@ -3,28 +3,29 @@ uint8_t demo = 1;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 1;
+uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 0,menuphase4 = 0,menuphase5 = 0,menuphase6 = 0,menuphase7 = 0;
 void (*renderEffect[])(byte) = {
   //PeteOV,
   // sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
-// twoatonce,
-// Dice,
+  // twoatonce,
+  // Dice,
   //###########good codes, dont change these#####
   hsvtest,
-//  wavyFlag,// stock
- // colorDrift, // why wasn't this smooth? gamma.
-//  strobe, //need to have a better system for duty cycle modulation
+  //  wavyFlag,// stock
+  // colorDrift, // why wasn't this smooth? gamma.
+  //  strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
- // MonsterHunter, //woah dont fuck with this guy
- // pacman, //bounces back from end to end and builds every time
- // rainbowChase, //stock rainbow chase doesnt work at 240 hz
-//  sineChase, //stock sine chase
- // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  // MonsterHunter, //woah dont fuck with this guy
+  // pacman, //bounces back from end to end and builds every time
+  // rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  //  sineChase, //stock sine chase
+  // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
- // fans, // varied duty cycle per led per section strobe
- // skipAflash,
- // RandomColorsEverywhere,
+  // fans, // varied duty cycle per led per section strobe
+  // skipAflash,
+  // RandomColorsEverywhere,
 }
 ,
 (*renderAlpha[])(void) = {
@@ -35,47 +36,47 @@ void (*renderEffect[])(byte) = {
 //########################################################################################################################
 /*
 mmmaxwwwell
-7/16/12
-added singularity node's modified code for getting serial input
-https://github.com/analognode/LPD8806/blob/master/LDP8806old/examples/interactive_strand/interactive_strand.pde
-6/30/2012
-added:
--a button on external interrupt 0 with software debounce
--demo mode to go with above
--some fun patterns
--a running average that could be an array(hint hint), eventually for compass
--a hmc5883l magnometer and heading math? in the main loop. not the best way to do it but it works. should be on an interrupt
-so nothing is in loop
-ladyada awesome job with the entire thing and thanks for the light rope!
-*/
+ 7/16/12
+ added singularity node's modified code for getting serial input
+ https://github.com/analognode/LPD8806/blob/master/LDP8806old/examples/interactive_strand/interactive_strand.pde
+ 6/30/2012
+ added:
+ -a button on external interrupt 0 with software debounce
+ -demo mode to go with above
+ -some fun patterns
+ -a running average that could be an array(hint hint), eventually for compass
+ -a hmc5883l magnometer and heading math? in the main loop. not the best way to do it but it works. should be on an interrupt
+ so nothing is in loop
+ ladyada awesome job with the entire thing and thanks for the light rope!
+ */
 /*
 Smoothing
-Reads repeatedly from an analog input, calculating a running average
-and printing it to the computer. Keeps ten readings in an array and
-continually averages them.
-The circuit:
-* Analog sensor (potentiometer will do) attached to analog input 0
-Created 22 April 2007
-By David A. Mellis <dam@mellis.org>
-modified 9 Apr 2012
-by Tom Igoe
-http://www.arduino.cc/en/Tutorial/Smoothing
-This example code is in the public domain.
-*/
+ Reads repeatedly from an analog input, calculating a running average
+ and printing it to the computer. Keeps ten readings in an array and
+ continually averages them.
+ The circuit:
+ * Analog sensor (potentiometer will do) attached to analog input 0
+ Created 22 April 2007
+ By David A. Mellis <dam@mellis.org>
+ modified 9 Apr 2012
+ by Tom Igoe
+ http://www.arduino.cc/en/Tutorial/Smoothing
+ This example code is in the public domain.
+ */
 /*
 
-HMC5883L_Example.pde - Examhsvple sketch for integration with an HMC5883L triple axis magnetomerwe.
-Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)
-This program is free software: you can redistribute it and/or modify
-it under the terms of the version 3 GNU General Public License as
-published by the Free Software Foundation.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ HMC5883L_Example.pde - Examhsvple sketch for integration with an HMC5883L triple axis magnetomerwe.
+ Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the version 3 GNU General Public License as
+ published by the Free Software Foundation.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*****************************************************************************/
 // Example to control LPD8806-based RGB LED Modules in a strip
@@ -124,6 +125,7 @@ int crazycounter;
 //##############compass maths
 int plane;
 boolean compassreadphase = 0;
+uint16_t xyheadingdegrees=0;
 float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast, xytravel,xztravel,yztravel;
 //############### stuff for the averages for the compass
 //const int numReadings = 100;
@@ -286,56 +288,56 @@ char serInStr[30]; // array that will hold the serial input string
 #define white 0xFFFFFF
 
 long eightcolorschema[][8] PROGMEM={
-azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //white ish
-red,green,blue,magenta,teal,yellow,white,black,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,
+  azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //white ish
+  red,green,blue,magenta,teal,yellow,white,black,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,
 };
 
 //##############bitmap storage
 /* string index of character table
-!"#$%&'()*+,-./ //start 0 end 15
-0123456789:;>=<? //start 16 end 31
-@ABCDEFGHIJKLMNO //start 32 end 47
-PQRSTUVWXYZ[ ]^_ //START 48 END 63
-`abcdefghijklmno //start 64 end 79
-pqrstuvwxyz{|}~~ //start 80 end 95
-*/
+ !"#$%&'()*+,-./ //start 0 end 15
+ 0123456789:;>=<? //start 16 end 31
+ @ABCDEFGHIJKLMNO //start 32 end 47
+ PQRSTUVWXYZ[ ]^_ //START 48 END 63
+ `abcdefghijklmno //start 64 end 79
+ pqrstuvwxyz{|}~~ //start 80 end 95
+ */
 //uint8_t message[2] ={2,2};
 // led character definitions modified from http://www.edaboard.com/thread45151.html
 // 5 data columns + 1 space
@@ -490,17 +492,17 @@ void setup() {
   Serial.begin(115200);
 
   /*Serial.println("Send a");
-Serial.println("+ to increment pattern,");
-Serial.println("B to increase brightness, ");
-Serial.println("b to decrease brightness, ");
-Serial.println("D to enable compass debug,");
-Serial.println("d to disable compass debug");
-*/
+   Serial.println("+ to increment pattern,");
+   Serial.println("B to increase brightness, ");
+   Serial.println("b to decrease brightness, ");
+   Serial.println("D to enable compass debug,");
+   Serial.println("d to disable compass debug");
+   */
   // Serial.println("Starting the I2C interface.");
   Wire.begin(); // Start the I2C interface.
 
   // Serial.println("Constructing new HMC5883L");
- compass = HMC5883L(); // Construct a new HMC5883 compass.
+  compass = HMC5883L(); // Construct a new HMC5883 compass.
 
   // Serial.println("Setting scale to +/- 8.1 Ga");
   error = compass.SetScale(compassscale); // Set the scale of the compass. //orig 1.3
@@ -525,7 +527,7 @@ Serial.println("d to disable compass debug");
   // the timer allows smooth transitions between effects (otherwise the
   // effects and transitions would jump around in speed...not attractive).
   Timer1.initialize();
-  Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
+  Timer1.attachInterrupt(menurender, 1000000 / framerate); // x frames/second
 
   attachInterrupt(0, buttonpress, RISING);
 }
@@ -606,8 +608,8 @@ void compassread()
     xyheading -= 2*PI;
 
   // Convert radians to degrees for readability.
-  // xyheadingDegreeslast = xyheadingDegrees;
-  // xyheadingDegrees = xyheading * 180/M_PI;
+ // xyheadingDegreeslast = xyheadingDegrees;
+  xyheadingdegrees = xyheading * 180/M_PI;
   // runningaverage(xyheadingDegrees);
 
 
@@ -664,36 +666,36 @@ void compassread()
   //figure out headingdelta
   //void runningAverage(int newval)
   /* if(count1==0){count1=1;}else{
-if(xyheadingDegrees>xyheadingDegreeslast){//indicates cw rotation or rollover from 359-0 in ccw rotation
-if(xyheadingDegreeslast>90||xyheadingDegreeslast<270){
-runningaverage(xyheadingDegrees-xyheadingDegreeslast);
-// xyheadingDegreesdelta=(xyheadingDegrees-xyheadingDegreeslast)+xyheadingDegreesdelta;
-}//indicates cw rotation w/o rollover
-else{
-runningaverage(xyheadingDegreeslast+(360-xyheadingDegrees));
-// xyheadingDegreesdelta=(xyheadingDegreeslast+(360-xyheadingDegrees))+xyheadingDegreesdelta;
-} //indicates ccw rotation with rollover
-}
-if(xyheadingDegrees<xyheadingDegreeslast){ //indicates ccw rotation or rollover from 0-359 in cw rotation
-if(xyheadingDegreeslast>90||xyheadingDegreeslast<270){
-runningaverage((xyheadingDegreeslast-xyheadingDegrees));
-// xyheadingDegreesdelta=(xyheadingDegreeslast-xyheadingDegrees)+xyheadingDegreesdelta;
-}//indicates ccw rotation w/o rollover
-else{
-runningaverage(xyheadingDegrees+(xyheadingDegreeslast-360));
-// xyheadingDegreesdelta=(xyheadingDegrees+(xyheadingDegreeslast-360))+xyheadingDegreesdelta;
-*/
+   if(xyheadingDegrees>xyheadingDegreeslast){//indicates cw rotation or rollover from 359-0 in ccw rotation
+   if(xyheadingDegreeslast>90||xyheadingDegreeslast<270){
+   runningaverage(xyheadingDegrees-xyheadingDegreeslast);
+   // xyheadingDegreesdelta=(xyheadingDegrees-xyheadingDegreeslast)+xyheadingDegreesdelta;
+   }//indicates cw rotation w/o rollover
+   else{
+   runningaverage(xyheadingDegreeslast+(360-xyheadingDegrees));
+   // xyheadingDegreesdelta=(xyheadingDegreeslast+(360-xyheadingDegrees))+xyheadingDegreesdelta;
+   } //indicates ccw rotation with rollover
+   }
+   if(xyheadingDegrees<xyheadingDegreeslast){ //indicates ccw rotation or rollover from 0-359 in cw rotation
+   if(xyheadingDegreeslast>90||xyheadingDegreeslast<270){
+   runningaverage((xyheadingDegreeslast-xyheadingDegrees));
+   // xyheadingDegreesdelta=(xyheadingDegreeslast-xyheadingDegrees)+xyheadingDegreesdelta;
+   }//indicates ccw rotation w/o rollover
+   else{
+   runningaverage(xyheadingDegrees+(xyheadingDegreeslast-360));
+   // xyheadingDegreesdelta=(xyheadingDegrees+(xyheadingDegreeslast-360))+xyheadingDegreesdelta;
+   */
   //}; //indicates cw rotation with rollover
   // }; }
   /*
 if(xyheadingDegreesdelta>90){
-xyheadingDegreesdelta=xyheadingDegreesdelta-90;
-count=count+1;
-xymillisdelta=xymillislast - millis();
-xymillislast=millis();
-Serial.println(xyheadingDegreesdelta );
-};
-*/
+   xyheadingDegreesdelta=xyheadingDegreesdelta-90;
+   count=count+1;
+   xymillisdelta=xymillislast - millis();
+   xymillislast=millis();
+   Serial.println(xyheadingDegreesdelta );
+   };
+   */
   //Serial.println(average);
 }
 
@@ -724,11 +726,50 @@ void loop() {
   getSerial();
   findplane();
   compassread();
-  
+
   // Do nothing? All the work happens in the callback() function below,
   // but we still need loop() here to keep the compiler happy.
 }
+/*
+void hsvtest(byte idx) {
+ if(fxVars[idx][0] == 0) {
+ fxVars[idx][0] = 1; // Effect initialized
+ 
+ 
+ }
+ }
+ */
 
+void menurender() {
+  strip.show();
+  byte *backPtr    = &imgData[backImgIdx][0],
+  r, g, b;
+  int  i;
+  for(i=0; i<numPixels; i++) {
+    r = gamma(*backPtr++);
+    g = gamma(*backPtr++);
+    b = gamma(*backPtr++);
+    strip.setPixelColor(i, r, g, b);
+  }
+  menu();
+}
+void menu() {
+  if(menuphase>=0){
+    menubuffer(xyheadingdegrees/60, red);
+  }
+  if(menuphase>=1){
+    menubuffer(xyheadingdegrees/60,green);
+  }
+}
+void menubuffer(uint8_t numberofpixels, long color){
+  byte *ptr = &imgData[0][0];
+  for(int i=0; i<numberofpixels; i++) {
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
+      *ptr++ = color; 
+  }
+   
+}
 // Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   // Very first thing here is to issue the strip data generated from the
@@ -844,9 +885,9 @@ void callback() {
 
 // Simplest rendering effect: fill entire image with solid color
 long getschemacolor(uint8_t y){
- long color;
- color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
- return color;
+  long color;
+  color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
+  return color;
 }
 
 void hsvtest(byte idx) {
@@ -939,10 +980,10 @@ void strobe(byte idx) {
     }
 
   }
-if(fxVars[idx][3]!=0){
-  fxVars[idx][1]++;
-  fxVars[idx][1]%=7;
-}
+  if(fxVars[idx][3]!=0){
+    fxVars[idx][1]++;
+    fxVars[idx][1]%=7;
+  }
   //Serial.println(fxVars[idx][1]);
   switch(abs(fxVars[idx][5])) //dutycycle=0-9
   {
@@ -1023,7 +1064,7 @@ void twoatonce(byte idx){
   else{
     rainbowChase(idx);
   }
- 
+
 }
 
 void fans(byte idx) {
@@ -1048,8 +1089,8 @@ void fans(byte idx) {
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
     for(int i=0; i<fxVars[idx][2]; i++) {
       if(fxVars[idx][6]/fxVars[idx][2]*i>abs(fxVars[idx][5])){//number of levels(frames) to change over nubmer of leds gives change per pixel
-     // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]), 255, 255);
-     color = getschemacolor(fxVars[idx][7]);
+        // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]), 255, 255);
+        color = getschemacolor(fxVars[idx][7]);
         *ptr++ = color >> 16;
         *ptr++ = color >> 8;
         *ptr++ = color;
@@ -1158,8 +1199,8 @@ void Dice(byte idx){
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     long color;
-// color = hsv2rgb(fxVars[idx][fxVars[idx][7]],255, 255);
-     color = getschemacolor(fxVars[idx][7]);
+    // color = hsv2rgb(fxVars[idx][fxVars[idx][7]],255, 255);
+    color = getschemacolor(fxVars[idx][7]);
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
@@ -1168,8 +1209,8 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-  "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("};
-const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("    };
+  const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
     fxVars[idx][1]=random(1536); //color were gonna use to cycle
@@ -1197,8 +1238,8 @@ const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOP
       // if(data>>i==1){
       if((data>>i)&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
-       // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),255, 255);
-         color = getschemacolor(fxVars[idx][7]);
+        // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),255, 255);
+        color = getschemacolor(fxVars[idx][7]);
         *ptr++ = color >> 16;
         *ptr++ = color >> 8;
         *ptr++ = color;
@@ -1234,68 +1275,68 @@ const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOP
 
 /*
 void PeteOV(byte idx) {
-if(fxVars[idx][0] == 0) {
-int i;
-fxVars[idx][1]=random(1536); //color were gonna use to cycle
-fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
-fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
-fxVars[idx][4]=30;//# of frames until next change
-fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
-fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
-fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
-fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
-//using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
-fxVars[idx][9]=0;// character counter
-fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
-fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
-fxVars[idx][0]=1;// Effect initialized
-}
-if(fxVars[idx][0] == -1) { //re init
-}
-fxVars[idx][3]++;
-byte *ptr = &imgData[idx][0];
-long color;
-for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
-for(int i=0; i<fxVars[idx][2]; i++) {
-byte data=0xfa;
-// if(data>>i==1){
-if((data>>i)&1){
-//led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
-color = hsv2rgb(((1536/fxVars[idx][8]+fxVars[idx][1])*fxVars[idx][7]),
-255, 255);
-*ptr++ = color >> 16;
-*ptr++ = color >> 8;
-*ptr++ = color;
-}
-else{
-*ptr++ = 0;
-*ptr++ = 0;
-*ptr++ = 0;
-}
-}
-fxVars[idx][7]++;
-}
-for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
-*ptr++ = 0;
-*ptr++ = 0;
-*ptr++ = 0;
-}
-if(fxVars[idx][3]>=fxVars[idx][4]){
-fxVars[idx][3]=0;
-fxVars[idx][5]++;
-}
-if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
-{
-fxVars[idx][5]=0;
-fxVars[idx][9]++;
-if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
-fxVars[idx][9]=0;
-}
-//Serial.println(fxVars[idx][5]);
-fxVars[idx][7]=0;
-}
-}
-*/
+ if(fxVars[idx][0] == 0) {
+ int i;
+ fxVars[idx][1]=random(1536); //color were gonna use to cycle
+ fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
+ fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
+ fxVars[idx][4]=30;//# of frames until next change
+ fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+ fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
+ fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
+ fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+ //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
+ fxVars[idx][9]=0;// character counter
+ fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+ fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
+ fxVars[idx][0]=1;// Effect initialized
+ }
+ if(fxVars[idx][0] == -1) { //re init
+ }
+ fxVars[idx][3]++;
+ byte *ptr = &imgData[idx][0];
+ long color;
+ for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+ for(int i=0; i<fxVars[idx][2]; i++) {
+ byte data=0xfa;
+ // if(data>>i==1){
+ if((data>>i)&1){
+ //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
+ color = hsv2rgb(((1536/fxVars[idx][8]+fxVars[idx][1])*fxVars[idx][7]),
+ 255, 255);
+ *ptr++ = color >> 16;
+ *ptr++ = color >> 8;
+ *ptr++ = color;
+ }
+ else{
+ *ptr++ = 0;
+ *ptr++ = 0;
+ *ptr++ = 0;
+ }
+ }
+ fxVars[idx][7]++;
+ }
+ for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
+ *ptr++ = 0;
+ *ptr++ = 0;
+ *ptr++ = 0;
+ }
+ if(fxVars[idx][3]>=fxVars[idx][4]){
+ fxVars[idx][3]=0;
+ fxVars[idx][5]++;
+ }
+ if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
+ {
+ fxVars[idx][5]=0;
+ fxVars[idx][9]++;
+ if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
+ fxVars[idx][9]=0;
+ }
+ //Serial.println(fxVars[idx][5]);
+ fxVars[idx][7]=0;
+ }
+ }
+ */
 //simple dual pixel chasin in opposite directions
 void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
   if(fxVars[idx][0] == 0) { // Initialize effect?
@@ -1374,7 +1415,7 @@ void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
     fxVars[idx][1]=0;//get new pacman color
-  // fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
+    // fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
     fxVars[idx][3]=numPixels/2;//pacman position
     fxVars[idx][4]=0;//lower edge
     fxVars[idx][5]=numPixels;//upper edge
@@ -1384,7 +1425,7 @@ void pacman(byte idx) { //hsv color chase for now
     fxVars[idx][0] = 1; // Effect initialized
   }
   if(fxVars[idx][0] == -1) { //re init
- // fxVars[idx][2]=fxVars[idx][1];
+    // fxVars[idx][2]=fxVars[idx][1];
     fxVars[idx][1]++;//get new pacman color
     fxVars[idx][3]=numPixels/2;//pacman position
     fxVars[idx][4]=0;//lower edge
@@ -1398,8 +1439,8 @@ void pacman(byte idx) { //hsv color chase for now
   for(i=0; i<numPixels; i++) {
     long color;
     if(i>=abs(fxVars[idx][3])-fxVars[idx][8]&&i<=abs(fxVars[idx][3])+fxVars[idx][8]){
-     
-     // color = hsv2rgb(fxVars[idx][1], 255, 255);
+
+      // color = hsv2rgb(fxVars[idx][1], 255, 255);
       color = getschemacolor(fxVars[idx][1]);
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
@@ -1407,15 +1448,15 @@ void pacman(byte idx) { //hsv color chase for now
     }
     else{
       if(i<=fxVars[idx][4]||i>=fxVars[idx][5]){
-   // color = hsv2rgb(fxVars[idx][1], 255, 255);
+        // color = hsv2rgb(fxVars[idx][1], 255, 255);
         color = getschemacolor(fxVars[idx][1]);
         *ptr++ = color >> 16;
         *ptr++ = color >> 8;
         *ptr++ = color;
       }
       else{
-      // color = hsv2rgb(fxVars[idx][2], 255, 255);
-      color = getschemacolor(fxVars[idx][1]+1);
+        // color = hsv2rgb(fxVars[idx][2], 255, 255);
+        color = getschemacolor(fxVars[idx][1]+1);
         *ptr++ = color >> 16;
         *ptr++ = color >> 8;
         *ptr++ = color;
@@ -1526,16 +1567,16 @@ void sineChase(byte idx) {
 // Can change this data to the colors of your own national flag,
 // favorite sports team colors, etc. OK to change number of elements.
 /*#define AAA 255
-#define BBB 255
-#define CCC 64
-#define C_RED AAA, BBB, CCC
-#define C_GREEEN CCC, AAA, BBB
-#define C_BLUE BBB, CCC, AAA
-PROGMEM prog_uchar flagTable[] = {
-C_BLUE , C_GREEEN, C_BLUE , C_GREEEN, C_BLUE , C_GREEEN, C_BLUE,
-C_RED , C_GREEEN, C_RED , C_GREEEN, C_RED , C_GREEEN, C_RED ,
-C_GREEEN, C_RED , C_GREEEN, C_RED , C_GREEEN, C_RED };
-*/
+ #define BBB 255
+ #define CCC 64
+ #define C_RED AAA, BBB, CCC
+ #define C_GREEEN CCC, AAA, BBB
+ #define C_BLUE BBB, CCC, AAA
+ PROGMEM prog_uchar flagTable[] = {
+ C_BLUE , C_GREEEN, C_BLUE , C_GREEEN, C_BLUE , C_GREEEN, C_BLUE,
+ C_RED , C_GREEEN, C_RED , C_GREEEN, C_RED , C_GREEEN, C_RED ,
+ C_GREEEN, C_RED , C_GREEEN, C_RED , C_GREEEN, C_RED };
+ */
 
 #define C_RED 160, 0, 0
 #define C_WHITE 255, 255, 255
@@ -1593,44 +1634,44 @@ void wavyFlag(byte idx) {
 
 /*
 void sineCompass(byte idx) {
-// Only needs to be rendered once, when effect is initialized:
-if(fxVars[idx][0] == 0) {
-Serial.println("effect=04");
-// fxVars[idx][1] = random(1536); // Random hue
-fxVars[idx][1] = 1; // Random hue
-// Number of repetitions (complete loops around color wheel);
-// any more than 4 per meter just looks too chaotic.
-// Store as distance around complete belt in half-degree units:
-// fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
-fxVars[idx][2] = 720; //we will vary this by xy heading change speed, xyspeed will be between 0 and 4
-// Frame-to-frame increment (speed) -- may be positive or negative,
-// but magnitude shouldn't be so small as to be boring. It's generally
-// still less than a full pixel per frame, making motion very smooth.
-//fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels; //original
-fxVars[idx][3] = 0; //no rotation
-// Reverse direction half the time.
-if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
-fxVars[idx][4] = 0; // Current position
-fxVars[idx][0] = 1; // Effect initialized
-}
-fxVars[idx][4] = map(average,0,360,0,720*4); // Current position
-byte *ptr = &imgData[idx][0];
-int foo;
-long color, i;
-for(long i=0; i<numPixels; i++) {
-foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
-// Peaks of sine wave are white, troughs are black, mid-range
-// values are pure hue (100% saturated).
-color = (foo >= 0) ? //black?
-hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
-hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
-*ptr++ = color >> 16;
-*ptr++ = color >> 8;
-*ptr++ = color;
-}
-// fxVars[idx][4] += fxVars[idx][3];
-}
-*/
+ // Only needs to be rendered once, when effect is initialized:
+ if(fxVars[idx][0] == 0) {
+ Serial.println("effect=04");
+ // fxVars[idx][1] = random(1536); // Random hue
+ fxVars[idx][1] = 1; // Random hue
+ // Number of repetitions (complete loops around color wheel);
+ // any more than 4 per meter just looks too chaotic.
+ // Store as distance around complete belt in half-degree units:
+ // fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
+ fxVars[idx][2] = 720; //we will vary this by xy heading change speed, xyspeed will be between 0 and 4
+ // Frame-to-frame increment (speed) -- may be positive or negative,
+ // but magnitude shouldn't be so small as to be boring. It's generally
+ // still less than a full pixel per frame, making motion very smooth.
+ //fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels; //original
+ fxVars[idx][3] = 0; //no rotation
+ // Reverse direction half the time.
+ if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+ fxVars[idx][4] = 0; // Current position
+ fxVars[idx][0] = 1; // Effect initialized
+ }
+ fxVars[idx][4] = map(average,0,360,0,720*4); // Current position
+ byte *ptr = &imgData[idx][0];
+ int foo;
+ long color, i;
+ for(long i=0; i<numPixels; i++) {
+ foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+ // Peaks of sine wave are white, troughs are black, mid-range
+ // values are pure hue (100% saturated).
+ color = (foo >= 0) ? //black?
+ hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
+ hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
+ *ptr++ = color >> 16;
+ *ptr++ = color >> 8;
+ *ptr++ = color;
+ }
+ // fxVars[idx][4] += fxVars[idx][3];
+ }
+ */
 void MonsterHunter(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=random(1536);
@@ -1661,7 +1702,7 @@ void MonsterHunter(byte idx) {
   for(int i=0,l=numPixels; i<numPixels,l>0; i++,l--) {
     long color;
     if(i>=fxVars[idx][4]-fxVars[idx][13]&&i<=fxVars[idx][4]+fxVars[idx][13]){
-     color = getschemacolor(0);
+      color = getschemacolor(0);
       //color = hsv2rgb(fxVars[idx][1], 255, 255);
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
@@ -1677,15 +1718,15 @@ void MonsterHunter(byte idx) {
       }
       else{
         if((i+(numPixels/2))%numPixels>=fxVars[idx][4]-fxVars[idx][13]&&(i+(numPixels/2))%numPixels<=fxVars[idx][4]+fxVars[idx][13]){
-      // color = hsv2rgb(fxVars[idx][7],255, 255);
-      color = getschemacolor(2);
+          // color = hsv2rgb(fxVars[idx][7],255, 255);
+          color = getschemacolor(2);
           *ptr++ = color >> 16;
           *ptr++ = color >> 8;
           *ptr++ = color;
         }
         else{
           if(((numPixels/2)-i+numPixels)%numPixels>=fxVars[idx][4]-fxVars[idx][13]&&((numPixels/2)-i+numPixels)%numPixels<=fxVars[idx][4]+fxVars[idx][13]){
-        // color = hsv2rgb(fxVars[idx][8], 255, 255);
+            // color = hsv2rgb(fxVars[idx][8], 255, 255);
             color = getschemacolor(3);
             *ptr++ = color >> 16;
             *ptr++ = color >> 8;
@@ -1699,8 +1740,8 @@ void MonsterHunter(byte idx) {
             }
 
             if(fxVars[idx][11]==1){
-            // color = hsv2rgb(fxVars[idx][9],128, 128);
-            color = getschemacolor(4);
+              // color = hsv2rgb(fxVars[idx][9],128, 128);
+              color = getschemacolor(4);
               *ptr++ = color >> 16;
               *ptr++ = color >> 8;
               *ptr++ = color;
@@ -1984,25 +2025,25 @@ void buttonpress(){
 
 /*
 void runningaverage(int newval) {
-// subtract the last reading:
-total= total - readings[index];
-// read from the sensor:
-readings[index] = newval;
-// add the reading to the total:
-total= total + readings[index];
-// advance to the next position in the array:
-index = index + 1;
-// if we're at the end of the array...
-if (index >= numReadings)
-// ...wrap around to the beginning:
-index = 0;
-// calculate the average:
-average = total / numReadings;
-// send it to the computer as ASCII digits
-// Serial.println(average);
-// delay(1); // delay in between reads for stability
-}
-*/
+ // subtract the last reading:
+ total= total - readings[index];
+ // read from the sensor:
+ readings[index] = newval;
+ // add the reading to the total:
+ total= total + readings[index];
+ // advance to the next position in the array:
+ index = index + 1;
+ // if we're at the end of the array...
+ if (index >= numReadings)
+ // ...wrap around to the beginning:
+ index = 0;
+ // calculate the average:
+ average = total / numReadings;
+ // send it to the computer as ASCII digits
+ // Serial.println(average);
+ // delay(1); // delay in between reads for stability
+ }
+ */
 void getSerial(){
   int num;
   if( readSerialString() ) {
@@ -2025,27 +2066,29 @@ void getSerial(){
     }
     if( cmd == 'b' ) {
       if (brightness <6){
-      brightness++;
-      Serial.print("brightness decreased, brightness at ");
-      Serial.println(brightness);
-    }else{
-        Serial.println("brightness already at minimum");
-      }
-    if( cmd == 'B' ) {
-      if (brightness >=2){
-        brightness--;
-        Serial.print("brightness increased, brightness at");
+        brightness++;
+        Serial.print("brightness decreased, brightness at ");
         Serial.println(brightness);
       }
       else{
-        Serial.println("brightness already at maximum");
+        Serial.println("brightness already at minimum");
       }
+      if( cmd == 'B' ) {
+        if (brightness >=2){
+          brightness--;
+          Serial.print("brightness increased, brightness at");
+          Serial.println(brightness);
+        }
+        else{
+          Serial.println("brightness already at maximum");
+        }
 
 
+      }
+      serInStr[0] = 0; // say we've used the string
     }
-    serInStr[0] = 0; // say we've used the string
   }
-}}
+}
 //read a string from the serial and store it in an array
 //you must supply the array variable
 uint8_t readSerialString()
@@ -2084,3 +2127,4 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
