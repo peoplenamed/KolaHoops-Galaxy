@@ -1,7 +1,7 @@
-int brightness = 2; //this is not right at all.
-int demo = 1;
+uint8_t brightness = 2; //this is not right at all.
+uint8_t demo = 1;
 uint8_t compassdebug = 0;
-int framerate= 120; // SIESURE WARNING?
+uint8_t framerate= 120; // SIESURE WARNING?
 void (*renderEffect[])(byte) = {
   //PeteOV,
   //   sineCompass, //need to get it built before we can learn the compass
@@ -72,7 +72,7 @@ Smoothing
 /*
 
  
- HMC5883L_Example.pde - Example sketch for integration with an HMC5883L triple axis magnetomerwe.
+ HMC5883L_Example.pde - Examhsvple sketch for integration with an HMC5883L triple axis magnetomerwe.
  Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)
  
  This program is free software: you can redistribute it and/or modify
@@ -297,7 +297,7 @@ char serInStr[30];  // array that will hold the serial input string
 #define whitesmoke 0xF5F5F5 
 #define white 0xFFFFFF 
 
-const long eightcolorschema[][8] PROGMEM={
+long eightcolorschema[][8] PROGMEM={
 azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //white ish
 red,green,blue,magenta,teal,yellow,white,black,
 0,0,0,0,0,0,0,0,
@@ -858,6 +858,11 @@ void callback() {
 // indexes, are automatically carried with them.
 
 // Simplest rendering effect: fill entire image with solid color
+long getschemacolor(uint8_t y){
+ int color;
+ color = pgm_read_byte(&eightcolorschema[colorschemeselector][y%7]);
+ return color;
+}
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -865,7 +870,7 @@ void hsvtest(byte idx) {
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
       long color;
-      color = eightcolorschema[0][6];
+      color = getschemacolor(random(0,7));
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
       *ptr++ = color;
@@ -904,10 +909,6 @@ void sparkle(byte idx) {
   long color;
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-    if(fxVars[idx][2]>1){
-      fxVars[idx][1] = random(1536);
-    }
-
     *ptr++ = color >> 16; 
     *ptr++ = color >> 8; 
     *ptr++ = color;
@@ -915,16 +916,15 @@ void sparkle(byte idx) {
 }
 void strobe(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1]=random(1536); //color were gonna use to cycle
-    fxVars[idx][2] =random(0,2); //increments of color drift per frame
-    fxVars[idx][3] =0; //strobe indicator, 0 is nothing written for the frame and anything else is write
-    fxVars[idx][4] =0; //frame counter 0-120
-    fxVars[idx][5] =random(0,2); //dutycycle, 1-5 for 10-90%
-    //  fxVars[idx][5] =2; //dutycycle, 1-5 for 10-90%
-    fxVars[idx][6] =random(0,5);//effect type,0 is one color strobe,1 is 2 color,2 is 3 color
-    fxVars[idx][7]=random(0,1);//if 1 replace black with second color 9
-    fxVars[idx][8]=60; // strobe duty cycle value
-    fxVars[idx][9]=random(1536);//color2
+    fxVars[idx][1] = 0; //
+    fxVars[idx][2] = random(0,2); //increments of color drift per frame
+    fxVars[idx][3] = 0; //strobe indicator, 0 is nothing written for the frame and anything else is write
+    fxVars[idx][4] = 0; //frame counter 0-120
+    fxVars[idx][5] = random(0,2); //dutycycle, 1-5 for 10-90%
+    fxVars[idx][6] = random(0,5);//effect type,0 is one color strobe,1 is 2 color,2 is 3 color
+    fxVars[idx][7] = random(0,1);//if 1 replace black with second color 9
+    fxVars[idx][8] = 60; // strobe duty cycle value
+    fxVars[idx][9] = 0; //
     fxVars[idx][0] = 1; // Effect initialized
   }
   //fxVars[idx][7]++;
@@ -938,8 +938,8 @@ void strobe(byte idx) {
   }
   for(int i=0; i<numPixels; i++) {
     long color;
-    color = hsv2rgb(fxVars[idx][1],
-    255, 255);
+    //color = hsv2rgb(fxVars[idx][1],255, 255);
+    color = getschemacolor(fxVars[idx][1]);
     if(fxVars[idx][3]==0){
 
       *ptr++ = 0; 
@@ -954,6 +954,10 @@ void strobe(byte idx) {
     }
 
   }
+if(fxVars[idx][3]!=0){
+  fxVars[idx][1]++;
+  fxVars[idx][1]%=7;
+}
   //Serial.println(fxVars[idx][1]);
   switch(abs(fxVars[idx][5])) //dutycycle=0-9
   {
@@ -1059,8 +1063,8 @@ void fans(byte idx) {
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
     for(int i=0; i<fxVars[idx][2]; i++) {  
       if(fxVars[idx][6]/fxVars[idx][2]*i>abs(fxVars[idx][5])){//number of levels(frames) to change over nubmer of leds gives change per pixel
-        color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
-        255, 255);
+     //   color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]), 255, 255);
+     color = getschemacolor(fxVars[idx][7]);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
         *ptr++ = color;
@@ -1151,12 +1155,12 @@ void skipAflash(byte idx) {
 
 void Dice(byte idx){
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1]=random(750,1536);
-    fxVars[idx][2]=fxVars[idx][1]*2%1536;
-    fxVars[idx][3]=fxVars[idx][1]*3%1536;
-    fxVars[idx][4]=fxVars[idx][1]*4%1536;
-    fxVars[idx][5]=fxVars[idx][1]*5%1536;
-    fxVars[idx][6]=fxVars[idx][1]*6%1536;
+    fxVars[idx][1]=0;
+    fxVars[idx][2]=1;
+    fxVars[idx][3]=2;
+    fxVars[idx][4]=3;
+    fxVars[idx][5]=4;
+    fxVars[idx][6]=5;
     fxVars[idx][7]=0;
     fxVars[idx][0]=1; //effect init
   }
@@ -1169,8 +1173,8 @@ void Dice(byte idx){
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     long color;
-    color = hsv2rgb(fxVars[idx][fxVars[idx][7]],
-    255, 255);
+//    color = hsv2rgb(fxVars[idx][fxVars[idx][7]],255, 255);
+     color = getschemacolor(fxVars[idx][7]);
     *ptr++ = color >> 16; 
     *ptr++ = color >> 8; 
     *ptr++ = color;
@@ -1208,8 +1212,8 @@ const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOP
       // if(data>>i==1){
       if((data>>i)&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
-        color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),
-        255, 255);
+       // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),255, 255);
+         color = getschemacolor(fxVars[idx][7]);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
         *ptr++ = color;
@@ -1385,8 +1389,8 @@ void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
-    fxVars[idx][1]=random(1536);//get new pacman color
-    fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
+    fxVars[idx][1]=0;//get new pacman color
+  //  fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
     fxVars[idx][3]=numPixels/2;//pacman position
     fxVars[idx][4]=0;//lower edge
     fxVars[idx][5]=numPixels;//upper edge
@@ -1396,8 +1400,8 @@ void pacman(byte idx) { //hsv color chase for now
     fxVars[idx][0] = 1; // Effect initialized
   }
   if(fxVars[idx][0] == -1) { //re init
-    fxVars[idx][2]=fxVars[idx][1];  
-    fxVars[idx][1]=fxVars[idx][1]+512%1536;//get new pacman color
+ //   fxVars[idx][2]=fxVars[idx][1];  
+    fxVars[idx][1]++;//get new pacman color
     fxVars[idx][3]=numPixels/2;//pacman position
     fxVars[idx][4]=0;//lower edge
     fxVars[idx][5]=numPixels;//upper edge
@@ -1410,23 +1414,24 @@ void pacman(byte idx) { //hsv color chase for now
   for(i=0; i<numPixels; i++) {
     long color;
     if(i>=abs(fxVars[idx][3])-fxVars[idx][8]&&i<=abs(fxVars[idx][3])+fxVars[idx][8]){
-      color = hsv2rgb(fxVars[idx][1],
-      255, 255);
+     
+     // color = hsv2rgb(fxVars[idx][1], 255, 255);
+      color = getschemacolor(fxVars[idx][1]);
       *ptr++ = color >> 16; 
       *ptr++ = color >> 8; 
       *ptr++ = color;
     }
     else{
       if(i<=fxVars[idx][4]||i>=fxVars[idx][5]){
-        color = hsv2rgb(fxVars[idx][1],
-        255, 255);
+   //     color = hsv2rgb(fxVars[idx][1], 255, 255);
+        color = getschemacolor(fxVars[idx][1]);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
         *ptr++ = color;
       }
       else{
-        color = hsv2rgb(fxVars[idx][2],
-        255, 255);
+      //  color = hsv2rgb(fxVars[idx][2], 255, 255);
+      color = getschemacolor(fxVars[idx][1]+1);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
         *ptr++ = color;
@@ -1675,32 +1680,32 @@ void MonsterHunter(byte idx) {
   for(int i=0,l=numPixels; i<numPixels,l>0; i++,l--) {
     long color;
     if(i>=fxVars[idx][4]-fxVars[idx][13]&&i<=fxVars[idx][4]+fxVars[idx][13]){
-      color = hsv2rgb(fxVars[idx][1],
-      255, 255);
+     color = getschemacolor(0);
+      //color = hsv2rgb(fxVars[idx][1], 255, 255);
       *ptr++ = color >> 16; 
       *ptr++ = color >> 8; 
       *ptr++ = color;
     }
     else{
       if(numPixels-i>=fxVars[idx][4]-fxVars[idx][13]&&numPixels-i<=fxVars[idx][4]+fxVars[idx][13]){
-        color = hsv2rgb(fxVars[idx][2],
-        255, 255);
+        //color = hsv2rgb(fxVars[idx][2], 255, 255);
+        color = getschemacolor(1);
         *ptr++ = color >> 16; 
         *ptr++ = color >> 8; 
         *ptr++ = color;
       }
       else{
         if((i+(numPixels/2))%numPixels>=fxVars[idx][4]-fxVars[idx][13]&&(i+(numPixels/2))%numPixels<=fxVars[idx][4]+fxVars[idx][13]){
-          color = hsv2rgb(fxVars[idx][7],
-          255, 255);
+      //    color = hsv2rgb(fxVars[idx][7],255, 255);
+      color = getschemacolor(2);
           *ptr++ = color >> 16; 
           *ptr++ = color >> 8; 
           *ptr++ = color;
         }
         else{
           if(((numPixels/2)-i+numPixels)%numPixels>=fxVars[idx][4]-fxVars[idx][13]&&((numPixels/2)-i+numPixels)%numPixels<=fxVars[idx][4]+fxVars[idx][13]){
-            color = hsv2rgb(fxVars[idx][8],
-            255, 255);
+        //    color = hsv2rgb(fxVars[idx][8], 255, 255);
+            color = getschemacolor(3);
             *ptr++ = color >> 16; 
             *ptr++ = color >> 8; 
             *ptr++ = color;
@@ -1713,15 +1718,15 @@ void MonsterHunter(byte idx) {
             }
 
             if(fxVars[idx][11]==1){
-              color = hsv2rgb(fxVars[idx][9],
-              128, 128);
+            //  color = hsv2rgb(fxVars[idx][9],128, 128);
+            color = getschemacolor(4);
               *ptr++ = color >> 16; 
               *ptr++ = color >> 8; 
               *ptr++ = color;
             }
             if(fxVars[idx][11]==2){              
-              color = hsv2rgb(fxVars[idx][9],
-              128, 128);
+              //color = hsv2rgb(fxVars[idx][9], 128, 128);
+              color = getschemacolor(5);
               if(fxVars[idx][12]==0){
                 *ptr++ = 0;
                 *ptr++ =0;
