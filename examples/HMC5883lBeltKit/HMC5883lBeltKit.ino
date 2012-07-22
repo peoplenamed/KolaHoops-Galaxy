@@ -2127,4 +2127,85 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
-
+/*
+void menu() {
+   byte *ptr = &imgData[0][0];
+   switch(menuphase){
+  case 0:
+    if(button==1){
+     menuphase0= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+     for(int i=0; i<xyheadingdegrees/60; i++) {
+     long color=red;
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
+      *ptr++ = color;
+  }
+    }
+    break;
+     case 1:
+    if(button==1){
+     menuphase1= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+     
+    }
+    break;
+     case 2:
+    if(button==1){
+     menuphase2= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+      
+    }
+    break;
+     case 3:
+    if(button==1){
+     menuphase3= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+     
+    }
+    break;
+     case 4:
+    if(button==1){
+     menuphase4= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+      
+    }
+    break;
+     case 5:
+    if(button==1){
+     menuphase5= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+     
+    }
+    break;
+     case 6:
+    if(button==1){
+     menuphase6= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+      
+    }
+    break;
+     case 7:
+    if(button==1){
+     menuphase7= xyheadingdegrees/60;
+     menuphase++;
+    }
+    else{
+      
+    }
+    break;
+  */
