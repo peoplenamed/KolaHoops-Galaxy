@@ -2,29 +2,30 @@ uint8_t brightness = 2; //this is not right at all.
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
-uint8_t colorschemeselector = 2;
+uint8_t colorschemeselector = 4;
 void (*renderEffect[])(byte) = {
-  //PeteOV,
+
   // sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
   // twoatonce,
-  Dice,
+//  Dice,
   //###########good codes, dont change these#####
-  hsvtest,
-  //  wavyFlag,// stock
-  colorDrift, // why wasn't this smooth? gamma.
-  strobe, //need to have a better system for duty cycle modulation
+//  hsvtest,
+//    wavyFlag,// stock
+//  colorDrift, // why wasn't this smooth? gamma.
+//  strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
-  MonsterHunter, //woah dont fuck with this guy
-  pacman, //bounces back from end to end and builds every time
-  rainbowChase, //stock rainbow chase doesnt work at 240 hz
-  sineChase, //stock sine chase
-  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+//  MonsterHunter, //woah dont fuck with this guy
+//  pacman, //bounces back from end to end and builds every time
+//  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+//  sineChase, //stock sine chase
+//  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
-  fans, // varied duty cycle per led per section strobe
-  skipAflash,
-  RandomColorsEverywhere,
+  scroll, // varied duty cycle per led per section strobe
+  //fans
+ // skipAflash,
+ // RandomColorsEverywhere,
 }
 ,
 (*renderAlpha[])(void) = {
@@ -291,19 +292,20 @@ char serInStr[30]; // array that will hold the serial input string
 #define white 0xFFFFFF
 
 long eightcolorschema[][8] PROGMEM={
-  azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //white ish
-  red,green,blue,magenta,teal,yellow,white,black,
-  grey,orange,seashell,peru,red,azure,black,silver,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
+  azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //0
+  red,green,blue,magenta,teal,yellow,white,black,//1
+  grey,orange,seashell,peru,red,azure,black,silver,//2
+  purple,black,green,black,purple,black,green,black,//3
+  purple,white,green,white,purple,white,green,white,//4
+  red,purple,blue,purple,red,purple,blue,purple,//5
+  green,teal,blue,teal,green,teal,blue,teal,//6
+  yellow,orange,white,cornflowerblue,mistyrose,gainsboro,whitesmoke,aliceblue,//7
+  red,0,0,0,0,0,0,0,
+  green,0,0,0,0,0,0,0,
+  blue,0,0,0,0,0,0,0,
+  purple,0,0,0,0,0,0,0,
+  orange,0,0,0,0,0,0,0,
+  cyan,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
@@ -336,7 +338,7 @@ const char led_chars[97][6] PROGMEM = {
   0xc4,0xc8,0x10,0x26,0x46,0x00, // %5
   0x6c,0x92,0xaa,0x44,0x0a,0x00, // &6
   0x00,0xa0,0xc0,0x00,0x00,0x00, // '7
-  0x00,0x38,0x44,0x82,0x00,0x00,	// (8
+  0x00,0x38,0x44,0x82,0x00,0x00,  // (8
   0x00,0x82,0x44,0x38,0x00,0x00, // )10
   0x28,0x10,0x7c,0x10,0x28,0x00, // *11
   0x10,0x10,0x7c,0x10,0x10,0x00, // +12
@@ -1187,7 +1189,6 @@ void twoatonce(byte idx){
   }
 
 }
-
 void fans(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
@@ -1243,6 +1244,44 @@ void fans(byte idx) {
     }
   }
   fxVars[idx][7]=0;
+}
+void scroll(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    int i;
+    fxVars[idx][1]=0;//frame counter operator
+    fxVars[idx][2]=random(7,14); //change every this # frames
+    fxVars[idx][3]=0;//
+    fxVars[idx][4]=0;//# of frames until next change
+    fxVars[idx][6]=fxVars[idx][2]*2;//number of different levels
+    fxVars[idx][5]=-fxVars[idx][6]+1;// level operator
+    fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
+    fxVars[idx][8]=8; //top level of whatever counter
+    fxVars[idx][9]=-fxVars[idx][8];
+    fxVars[idx][0]=1;// Effect initialized
+  }
+  if(fxVars[idx][0] == -1) { //re init
+  }
+  fxVars[idx][1]++;
+  byte *ptr = &imgData[idx][0];
+  long color;
+  for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+    for(int i=0; i<fxVars[idx][2]; i++) {
+        color = getschemacolor(i+fxVars[idx][9]);
+        *ptr++ = color >> 16;
+        *ptr++ = color >> 8;
+        *ptr++ = color;
+      }
+     }
+    if(fxVars[idx][1]%fxVars[idx][2]==0){
+      fxVars[idx][9]++;
+    fxVars[idx][9]%=fxVars[idx][8];}
+  
+  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
+    color = getschemacolor(i%8);
+        *ptr++ = color >> 16;
+        *ptr++ = color >> 8;
+        *ptr++ = color;
+  }
 }
 void skipAflash(byte idx) {
   // this will alternate which flash at different times
@@ -1753,6 +1792,10 @@ void wavyFlag(byte idx) {
 
 
 
+
+
+
+
 /*
 void sineCompass(byte idx) {
  // Only needs to be rendered once, when effect is initialized:
@@ -2209,6 +2252,19 @@ void getSerial(){
       colorschemeselector--;
       Serial.print("Color Scheme ");
       Serial.println(colorschemeselector);
+    }
+if( cmd == 'F' ) {
+      framerate*=2;
+      Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+      Serial.print("Framerate+: ");
+      Serial.println(framerate);
+    }
+
+if( cmd == 'f' ) {
+      framerate/=2;
+      Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+      Serial.print("Framerate-: ");
+      Serial.println(framerate);
     }
 
 
