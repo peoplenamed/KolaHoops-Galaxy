@@ -2,29 +2,29 @@ uint8_t brightness = 2; //this is not right at all.
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
-uint8_t colorschemeselector = 1;
+uint8_t colorschemeselector = 2;
 void (*renderEffect[])(byte) = {
   //PeteOV,
   // sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
-   twoatonce,
-   Dice,
+  twoatonce,
+  Dice,
   //###########good codes, dont change these#####
   hsvtest,
   //  wavyFlag,// stock
-   colorDrift, // why wasn't this smooth? gamma.
-    strobe, //need to have a better system for duty cycle modulation
+  colorDrift, // why wasn't this smooth? gamma.
+  strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
-   MonsterHunter, //woah dont fuck with this guy
-   pacman, //bounces back from end to end and builds every time
-   rainbowChase, //stock rainbow chase doesnt work at 240 hz
-    sineChase, //stock sine chase
-  // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  MonsterHunter, //woah dont fuck with this guy
+  pacman, //bounces back from end to end and builds every time
+  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  sineChase, //stock sine chase
+  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
-   fans, // varied duty cycle per led per section strobe
-  // skipAflash,
-  // RandomColorsEverywhere,
+  fans, // varied duty cycle per led per section strobe
+  skipAflash,
+  RandomColorsEverywhere,
 }
 ,
 (*renderAlpha[])(void) = {
@@ -483,7 +483,7 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
-    xyheadingdegreesmin=360;
+  xyheadingdegreesmin=360;
   xyheadingdegreesmax=0;//needed to start dynamic calibration right
   // for (int thisReading = 0; thisReading < numReadings; thisReading++)
   // readings[thisReading] = 0;
@@ -533,7 +533,7 @@ void setup() {
   Timer1.initialize();
   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
 
-//  attachInterrupt(0, buttonpress, RISING);
+  //  attachInterrupt(0, buttonpress, RISING);
 }
 
 void findplane(){
@@ -612,7 +612,7 @@ void compassread()
     xyheading -= 2*PI;
 
   // Convert radians to degrees for readability.
- // xyheadingDegreeslast = xyheadingDegrees;
+  // xyheadingDegreeslast = xyheadingDegrees;
   xyheadingdegrees = xyheading * 180/M_PI;
   // runningaverage(xyheadingDegrees);
 
@@ -634,9 +634,9 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
-    
-    //dynamic calibration
-     if (xyheadingdegrees>xyheadingdegreesmax){
+
+  //dynamic calibration
+  if (xyheadingdegrees>xyheadingdegreesmax){
     xyheadingdegreesmax=xyheadingdegrees;
   }
   else{
@@ -647,7 +647,7 @@ void compassread()
   xyheadingdegreescalibrated = map(xyheadingdegrees,xyheadingdegreesmin,xyheadingdegreesmax,0,360);
 
 
-    
+
   if (compassdebug==1){
     Serial.print("xy");
     Serial.println(xyheading);
@@ -742,9 +742,9 @@ if(xyheadingDegreesdelta>90){
 
 void loop() {
   getSerial();
- // findplane();
+  // findplane();
   compassread();
- // menurender();
+  // menurender();
 
   // Do nothing? All the work happens in the callback() function below,
   // but we still need loop() here to keep the compiler happy.
@@ -964,9 +964,14 @@ void callback() {
   }
 
   // Count up to next transition (or end of current one):
- if(demo==1||tCounter>=0){tCounter++;}
- if(button==1){tCounter=0;button=0;}
-  
+  if(demo==1||tCounter>=0){
+    tCounter++;
+  }
+  if(button==1){
+    tCounter=0;
+    button=0;
+  }
+
   if(tCounter == 0) { // Transition start
     //fxIdx[frontImgIdx] = random((sizeof(renderEffect) / sizeof(renderEffect[0]))); //original random selection
     fxIdx[frontImgIdx]++;//instead of random now its sequential
@@ -1340,7 +1345,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("    };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("            };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2195,39 +2200,30 @@ void getSerial(){
       compassdebug=1;
       Serial.println("enable compass serial output");
     }
-    if( cmd == 'b' ) {
-      if (brightness <6){
-        brightness++;
-        Serial.print("brightness decreased, brightness at ");
-        Serial.println(brightness);
+
+      if( cmd == 'M' ) {
+        Serial.println("Entering Menu");
+        Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
       }
-      else{
-        Serial.println("brightness already at minimum");
+      if( cmd == 'm' ) {
+        Serial.println("Entering callback");
+        Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
       }
-      if( cmd == 'B' ) {
-        if (brightness >=2){
-          brightness--;
-          Serial.print("brightness increased, brightness at");
-          Serial.println(brightness);
-        }
-        else{
-          Serial.println("brightness already at maximum");
-        }
-         if( cmd == 'M' ) {
-         Serial.println("Entering Menu");
-         Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
-         }
-         if( cmd == 'm' ) {
-         Serial.println("Entering callback");
-         Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
-         }
+      if( cmd == 'C' ) {
+        colorschemeselector++;
+        Serial.print("Color Scheme ");
+        Serial.println(colorschemeselector);
+      }
+      if( cmd == 'c' ) {
+        colorschemeselector--;
+        Serial.print("Color Scheme ");
+        Serial.println(colorschemeselector);
+      }
 
 
-      }
       serInStr[0] = 0; // say we've used the string
     }
-  }
-}
+    }
 //read a string from the serial and store it in an array
 //you must supply the array variable
 uint8_t readSerialString()
@@ -2266,3 +2262,6 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
+
+
