@@ -3,27 +3,26 @@ uint8_t demo = 1;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 1;
-uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 0,menuphase4 = 0,menuphase5 = 0,menuphase6 = 0,menuphase7 = 0;
 void (*renderEffect[])(byte) = {
   //PeteOV,
   // sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
-  // twoatonce,
-  // Dice,
+   twoatonce,
+   Dice,
   //###########good codes, dont change these#####
   hsvtest,
   //  wavyFlag,// stock
-  // colorDrift, // why wasn't this smooth? gamma.
-  //  strobe, //need to have a better system for duty cycle modulation
+   colorDrift, // why wasn't this smooth? gamma.
+    strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
-  // MonsterHunter, //woah dont fuck with this guy
-  // pacman, //bounces back from end to end and builds every time
-  // rainbowChase, //stock rainbow chase doesnt work at 240 hz
-  //  sineChase, //stock sine chase
+   MonsterHunter, //woah dont fuck with this guy
+   pacman, //bounces back from end to end and builds every time
+   rainbowChase, //stock rainbow chase doesnt work at 240 hz
+    sineChase, //stock sine chase
   // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
-  // fans, // varied duty cycle per led per section strobe
+   fans, // varied duty cycle per led per section strobe
   // skipAflash,
   // RandomColorsEverywhere,
 }
@@ -121,12 +120,15 @@ int tCounter = 1;
 //LPD8806 strip = LPD8806(numPixels);
 
 int crazycounter;
-
+//#####################menu stuffs
+uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 0,menuphase4 = 0,menuphase5 = 0,menuphase6 = 0,menuphase7 = 0;
 //##############compass maths
 int plane;
 boolean compassreadphase = 0;
 uint16_t xyheadingdegrees=0;
+uint16_t xyheadingdegreescalibrated,xyheadingdegreesmin,xyheadingdegreesmax;
 float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast, xytravel,xztravel,yztravel;
+
 //############### stuff for the averages for the compass
 //const int numReadings = 100;
 //int readings[numReadings]; // the readings from the analog input
@@ -349,7 +351,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x00,0x00,0x00,0x00,0x00, // space 0
   0x00,0x00,0xfa,0x00,0x00,0x00, // ! 1
   0x00,0xe0,0x00,0xe0,0x00,0x00,  // "2
-  0x28,0xfe,0x28,0xfe,0x28,0x00,	// #3
+  0x28,0xfe,0x28,0xfe,0x28,0x00,  // #3
   0x24,0x54,0xfe,0x54,0x48,0x00, // $4
   0xc4,0xc8,0x10,0x26,0x46,0x00, // %5
   0x6c,0x92,0xaa,0x44,0x0a,0x00, // &6
@@ -481,6 +483,8 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
+    xyheadingdegreesmin=360;
+  xyheadingdegreesmax=0;//needed to start dynamic calibration right
   // for (int thisReading = 0; thisReading < numReadings; thisReading++)
   // readings[thisReading] = 0;
 
@@ -527,7 +531,7 @@ void setup() {
   // the timer allows smooth transitions between effects (otherwise the
   // effects and transitions would jump around in speed...not attractive).
   Timer1.initialize();
-  Timer1.attachInterrupt(menurender, 1000000 / framerate); // x frames/second
+  Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
 
   attachInterrupt(0, buttonpress, RISING);
 }
@@ -630,6 +634,20 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
+    
+    //dynamic calibration
+     if (xyheadingdegrees>xyheadingdegreesmax){
+    xyheadingdegreesmax=xyheadingdegrees;
+  }
+  else{
+    if(xyheadingdegrees<xyheadingdegreesmin){
+      xyheadingdegreesmin=xyheadingdegrees;
+    }
+  }
+  xyheadingdegreescalibrated = map(xyheadingdegrees,xyheadingdegreesmin,xyheadingdegreesmax,0,360);
+
+
+    
   if (compassdebug==1){
     Serial.print("xy");
     Serial.println(xyheading);
@@ -724,8 +742,9 @@ if(xyheadingDegreesdelta>90){
 
 void loop() {
   getSerial();
-  findplane();
+ // findplane();
   compassread();
+ // menurender();
 
   // Do nothing? All the work happens in the callback() function below,
   // but we still need loop() here to keep the compiler happy.
@@ -754,21 +773,142 @@ void menurender() {
   menu();
 }
 void menu() {
-  if(menuphase>=0){
-    menubuffer(xyheadingdegrees/60, red);
-  }
-  if(menuphase>=1){
-    menubuffer(xyheadingdegrees/60,green);
-  }
-}
-void menubuffer(uint8_t numberofpixels, long color){
   byte *ptr = &imgData[0][0];
-  for(int i=0; i<numberofpixels; i++) {
-      *ptr++ = color >> 16;
-      *ptr++ = color >> 8;
-      *ptr++ = color; 
+  switch(menuphase){
+  case 0:
+    if(button==1){
+      menuphase0=xyheadingdegreescalibrated/60;
+      menuphase++;
+    }
+    else{
+      for(int i=0; i<numPixels; i++) {
+        long color=red;
+        if(i<=xyheadingdegreescalibrated/60){
+          *ptr++ = color >> 16;
+          *ptr++ = color >> 8;
+          *ptr++ = color;
+        }
+        else{
+          *ptr++=0;
+          *ptr++=0;
+          *ptr++=0;
+        }
+      }
+    }
+    break;
+  case 1:
+    if(button==1){
+      menuphase1=xyheadingdegreescalibrated/60;
+      menuphase++;
+    }
+    else{
+      for(int i=0; i<numPixels; i++) {
+        if(i<=menuphase0){
+          long color=red;
+          *ptr++ = color >> 16;
+          *ptr++ = color >> 8;
+          *ptr++ = color;
+        }
+        else{
+          if(i>=menuphase0&&i<=menuphase0+(xyheadingdegreescalibrated/60)){
+            long color=magenta;
+            *ptr++ = color >> 16;
+            *ptr++ = color >> 8;
+            *ptr++ = color;
+          }
+          else{
+            *ptr++=0;
+            *ptr++=0;
+            *ptr++=0;
+          }
+        }
+      }
+    }
+    break;
+  case 2:
+    if(button==1){
+      menuphase2=xyheadingdegreescalibrated/60;
+      menuphase++;
+    }
+    else{
+      for(int i=0; i<numPixels; i++) {
+        if(i<=menuphase0){
+          long color=red;
+          *ptr++ = color >> 16;
+          *ptr++ = color >> 8;
+          *ptr++ = color;
+        }
+        else{
+          if(i>=menuphase0&&i<=menuphase0+menuphase1){
+            long color=magenta;
+            *ptr++ = color >> 16;
+            *ptr++ = color >> 8;
+            *ptr++ = color;
+          }
+          else{
+            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+(xyheadingdegreescalibrated/60)){
+              long color=blue;
+              *ptr++ = color >> 16;
+              *ptr++ = color >> 8;
+              *ptr++ = color;
+            }
+            else{
+              *ptr++=0;
+              *ptr++=0;
+              *ptr++=0;
+            }
+          }
+        }
+      }
+    }
+    break;
+  case 3:
+    if(button==1){
+      menuphase3=xyheadingdegreescalibrated/60;
+      menuphase++;
+    }
+    else{
+      for(int i=0; i<numPixels; i++) {
+        if(i<=menuphase0){
+          long color=red;
+          *ptr++ = color >> 16;
+          *ptr++ = color >> 8;
+          *ptr++ = color;
+        }
+        else{
+          if(i>=menuphase0&&i<=menuphase0+menuphase1){
+            long color=magenta;
+            *ptr++ = color >> 16;
+            *ptr++ = color >> 8;
+            *ptr++ = color;
+          }
+          else{
+            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
+              long color=blue;
+              *ptr++ = color >> 16;
+              *ptr++ = color >> 8;
+              *ptr++ = color;
+            }
+            else{
+              if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+(xyheadingdegreescalibrated/60)){
+                //   if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+(xyheadingdegreescalibrated/60)){
+                long color=teal;
+                *ptr++ = color >> 16;
+                *ptr++ = color >> 8;
+                *ptr++ = color;
+              }
+              else{
+                *ptr++=0;
+                *ptr++=0;
+                *ptr++=0;
+              }
+            }
+          }
+        }
+      }  
+    }
+    break;
   }
-   
 }
 // Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
@@ -2082,6 +2222,14 @@ void getSerial(){
         else{
           Serial.println("brightness already at maximum");
         }
+         if( cmd == 'M' ) {
+         Serial.println("Entering Menu");
+         Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
+         }
+         if( cmd == 'm' ) {
+         Serial.println("Entering callback");
+         Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+         }
 
 
       }
@@ -2127,85 +2275,3 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
-/*
-void menu() {
-   byte *ptr = &imgData[0][0];
-   switch(menuphase){
-  case 0:
-    if(button==1){
-     menuphase0= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-     for(int i=0; i<xyheadingdegrees/60; i++) {
-     long color=red;
-      *ptr++ = color >> 16;
-      *ptr++ = color >> 8;
-      *ptr++ = color;
-  }
-    }
-    break;
-     case 1:
-    if(button==1){
-     menuphase1= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-     
-    }
-    break;
-     case 2:
-    if(button==1){
-     menuphase2= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-      
-    }
-    break;
-     case 3:
-    if(button==1){
-     menuphase3= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-     
-    }
-    break;
-     case 4:
-    if(button==1){
-     menuphase4= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-      
-    }
-    break;
-     case 5:
-    if(button==1){
-     menuphase5= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-     
-    }
-    break;
-     case 6:
-    if(button==1){
-     menuphase6= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-      
-    }
-    break;
-     case 7:
-    if(button==1){
-     menuphase7= xyheadingdegrees/60;
-     menuphase++;
-    }
-    else{
-      
-    }
-    break;
-  */
