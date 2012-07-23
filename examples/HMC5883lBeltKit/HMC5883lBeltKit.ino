@@ -1,5 +1,5 @@
 uint8_t brightness = 2; //this is not right at all.
-uint8_t demo = 1;
+uint8_t demo = 0;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 1;
@@ -292,7 +292,7 @@ char serInStr[30]; // array that will hold the serial input string
 long eightcolorschema[][8] PROGMEM={
   azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //white ish
   red,green,blue,magenta,teal,yellow,white,black,
-  0,0,0,0,0,0,0,0,
+  grey,orange,seashell,peru,red,azure,black,silver,
   0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
@@ -533,7 +533,7 @@ void setup() {
   Timer1.initialize();
   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
 
-  attachInterrupt(0, buttonpress, RISING);
+//  attachInterrupt(0, buttonpress, RISING);
 }
 
 void findplane(){
@@ -964,18 +964,9 @@ void callback() {
   }
 
   // Count up to next transition (or end of current one):
-  if(demo==0){ //these could be done better
-    if(button==1){
-      tCounter++;
-    }
-  }
-  else{
-    if(button==1){
-      tCounter=-1;
-      button=0;
-    }
-    tCounter++;
-  }
+ if(demo==1||tCounter>=0){tCounter++;}
+ if(button==1){tCounter=0;button=0;}
+  
   if(tCounter == 0) { // Transition start
     //fxIdx[frontImgIdx] = random((sizeof(renderEffect) / sizeof(renderEffect[0]))); //original random selection
     fxIdx[frontImgIdx]++;//instead of random now its sequential
@@ -2194,7 +2185,7 @@ void getSerial(){
     num = atoi(str); // the rest is arguments (maybe)
     if( cmd == '+' ) {
       Serial.println("Next Pattern");
-      tCounter=-1;
+      button=1;
     }
     if( cmd == 'd' ) {
       compassdebug=0;
