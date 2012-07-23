@@ -8,7 +8,7 @@ void (*renderEffect[])(byte) = {
   // sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
-  twoatonce,
+  // twoatonce,
   Dice,
   //###########good codes, dont change these#####
   hsvtest,
@@ -111,7 +111,7 @@ Smoothing
 // Instantiate LED strip; arguments are the total number of pixels in strip,
 // the data pin number and clock pin number:
 LPD8806 strip = LPD8806(numPixels);
-int tCounter = 1;
+int tCounter = 0;
 
 // You can also use hardware SPI for ultra-fast writes by omitting the data
 // and clock pin arguments. This is faster, but the data and clock are then
@@ -125,8 +125,9 @@ uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 
 //##############compass maths
 int plane;
 boolean compassreadphase = 0;
-uint16_t xyheadingdegrees=0;
-uint16_t xyheadingdegreescalibrated,xyheadingdegreesmin,xyheadingdegreesmax;
+uint16_t yzheadingdegrees,xzheadingdegrees,xyheadingdegrees,xyheadingdegreescalibrated,xyheadingdegreesmin,xyheadingdegreesmax,
+xzheadingdegreescalibrated,xzheadingdegreesmin,xzheadingdegreesmax,
+yzheadingdegreescalibrated,yzheadingdegreesmin,yzheadingdegreesmax,xyheadingdegreeslast,xzheadingdegreeslast,yzheadingdegreeslast;
 float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast, xytravel,xztravel,yztravel;
 
 //############### stuff for the averages for the compass
@@ -308,27 +309,6 @@ long eightcolorschema[][8] PROGMEM={
   0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,
 };
 
 //##############bitmap storage
@@ -483,8 +463,8 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
-  xyheadingdegreesmin=360;
-  xyheadingdegreesmax=0;//needed to start dynamic calibration right
+
+
   // for (int thisReading = 0; thisReading < numReadings; thisReading++)
   // readings[thisReading] = 0;
 
@@ -494,33 +474,37 @@ void setup() {
 
   // Initialize the serial port.
   Serial.begin(115200);
+  Serial.println();
+  Serial.println("Send a");
+  Serial.println("+ to press button");
+  //  Serial.println("B to increase brightness, ");
+  //  Serial.println("b to decrease brightness, ");
+  Serial.println("D to enable compass debug,");
+  Serial.println("d to disable compass debug");
+  Serial.println("C to + color scheme");
+  Serial.println("c to - color scheme");
+  Serial.println("M to enter menu");
+  Serial.println("m to go back to run");
 
-  /*Serial.println("Send a");
-   Serial.println("+ to increment pattern,");
-   Serial.println("B to increase brightness, ");
-   Serial.println("b to decrease brightness, ");
-   Serial.println("D to enable compass debug,");
-   Serial.println("d to disable compass debug");
-   */
-  // Serial.println("Starting the I2C interface.");
+  Serial.println("Starting the I2C interface.");
   Wire.begin(); // Start the I2C interface.
 
   // Serial.println("Constructing new HMC5883L");
   compass = HMC5883L(); // Construct a new HMC5883 compass.
 
-  // Serial.println("Setting scale to +/- 8.1 Ga");
+  Serial.println("Setting scale to +/- 8.1 Ga");
   error = compass.SetScale(compassscale); // Set the scale of the compass. //orig 1.3
-  // if(error != 0) // If there is an error, print it out.
-  // Serial.println(compass.GetErrorText(error));
+  if(error != 0) // If there is an error, print it out.
+    Serial.println(compass.GetErrorText(error));
 
-  // Serial.println("Setting measurement mode to continous.");
+  Serial.println("Setting measurement mode to continous.");
   error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-  // if(error != 0) // If there is an error, print it out.
-  // Serial.println(compass.GetErrorText(error));
+  if(error != 0) // If there is an error, print it out.
+    Serial.println(compass.GetErrorText(error));
 
 
   strip.begin();
-
+  Serial.println("LED Strip Online.");
   // Initialize random number generator from a floating analog input.
   randomSeed(analogRead(0));
   memset(imgData, 0, sizeof(imgData)); // Clear image data
@@ -532,25 +516,27 @@ void setup() {
   // effects and transitions would jump around in speed...not attractive).
   Timer1.initialize();
   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
-
+  Serial.print("Timer1 set at ");
+  Serial.print(framerate);
+  Serial.println(" fps.");
   //  attachInterrupt(0, buttonpress, RISING);
 }
 
 void findplane(){
-  MagnetometerRaw raw = compass.ReadRawAxis();
-  if(abs(raw.XAxis)>abs(raw.YAxis)&&abs(raw.XAxis)>abs(raw.ZAxis)) //in plane 1
+  MagnetometerScaled scaled = compass.ReadScaledAxis();
+  if(abs(scaled.XAxis)>abs(scaled.YAxis)&&abs(scaled.XAxis)>abs(scaled.ZAxis)) //in plane 1
   {
-    if(raw.XAxis>0){
+    if(scaled.XAxis>0){
       plane=1;
     }
     else{
       plane=-1;
     }
   }
-  if(abs(raw.YAxis)>abs(raw.XAxis)&&abs(raw.YAxis)>abs(raw.ZAxis)) //in plane 2
+  if(abs(scaled.YAxis)>abs(scaled.XAxis)&&abs(scaled.YAxis)>abs(scaled.ZAxis)) //in plane 2
 
   {
-    if(raw.YAxis>0){
+    if(scaled.YAxis>0){
       plane=2;
     }
     else{
@@ -558,10 +544,10 @@ void findplane(){
     }
   }
 
-  if(abs(raw.ZAxis)>abs(raw.YAxis)&&abs(raw.ZAxis)>abs(raw.XAxis)) //in plane 3
+  if(abs(scaled.ZAxis)>abs(scaled.YAxis)&&abs(scaled.ZAxis)>abs(scaled.XAxis)) //in plane 3
 
   {
-    if(raw.ZAxis>0){
+    if(scaled.ZAxis>0){
       plane=3;
     }
     else{
@@ -612,7 +598,7 @@ void compassread()
     xyheading -= 2*PI;
 
   // Convert radians to degrees for readability.
-  // xyheadingDegreeslast = xyheadingDegrees;
+  xyheadingdegreeslast = xyheadingdegrees;
   xyheadingdegrees = xyheading * 180/M_PI;
   // runningaverage(xyheadingDegrees);
 
@@ -626,7 +612,7 @@ void compassread()
     xzheading -= 2*PI;
 
   // Convert radians to degrees for readability.
-  // float xzheadingDegrees = xzheading * 180/M_PI;
+  xzheadingdegrees = xzheading * 180/M_PI;
   // Correct for when signs are reversed.
   if(yzheading < 0)
     yzheading += 2*PI;
@@ -634,30 +620,51 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
-
-  //dynamic calibration
-  if (xyheadingdegrees>xyheadingdegreesmax){
-    xyheadingdegreesmax=xyheadingdegrees;
-  }
-  else{
-    if(xyheadingdegrees<xyheadingdegreesmin){
-      xyheadingdegreesmin=xyheadingdegrees;
+  if(millis()>10000){
+    //xydynamic calibration
+    if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
+      xyheadingdegreesmax=xyheadingdegrees;
     }
+    else{
+      if(xyheadingdegrees<xyheadingdegreesmin||xyheadingdegreesmin==0){
+        xyheadingdegreesmin=xyheadingdegrees;
+      }
+    }
+    xyheadingdegreescalibrated = map(xyheadingdegrees,xyheadingdegreesmin,xyheadingdegreesmax,0,360);
+    //xzdynamic calibration
+    if (xzheadingdegrees>xzheadingdegreesmax||xzheadingdegreesmax==0){
+      xzheadingdegreesmax=xzheadingdegrees;
+    }
+    else{
+      if(xzheadingdegrees<xzheadingdegreesmin||xzheadingdegreesmin==0){
+        xzheadingdegreesmin=xzheadingdegrees;
+      }
+    }
+    xzheadingdegreescalibrated = map(xzheadingdegrees,xzheadingdegreesmin,xzheadingdegreesmax,0,360);
+    //yzdynamic calibration
+    if (yzheadingdegrees>yzheadingdegreesmax||yzheadingdegreesmax==0){
+      yzheadingdegreesmax=yzheadingdegrees;
+    }
+    else{
+      if(yzheadingdegrees<yzheadingdegreesmin||yzheadingdegreesmin==0){
+        yzheadingdegreesmin=yzheadingdegrees;
+      }
+    }
+    yzheadingdegreescalibrated = map(yzheadingdegrees,yzheadingdegreesmin,yzheadingdegreesmax,0,360);
   }
-  xyheadingdegreescalibrated = map(xyheadingdegrees,xyheadingdegreesmin,xyheadingdegreesmax,0,360);
-
 
 
   if (compassdebug==1){
     Serial.print("xy");
-    Serial.println(xyheading);
-    Serial.println(xytravel);
+    Serial.println(xyheadingdegreesmin);
+    Serial.println(xyheadingdegreesmax);
+    Serial.println(xyheadingdegrees);
     Serial.print("xz");
-    Serial.println(xzheading);
-    Serial.println(xztravel);
+    Serial.println(xzheadingdegrees);
+    Serial.println(xzheadingdegreescalibrated);
     Serial.print("yz");
-    Serial.println(yzheading);
-    Serial.println(yztravel);
+    Serial.println(yzheadingdegrees);
+    Serial.println(yzheadingdegreescalibrated);
     delay(250);
   }
 
@@ -742,23 +749,9 @@ if(xyheadingDegreesdelta>90){
 
 void loop() {
   getSerial();
-  // findplane();
+  findplane();
   compassread();
-  // menurender();
-
-  // Do nothing? All the work happens in the callback() function below,
-  // but we still need loop() here to keep the compiler happy.
 }
-/*
-void hsvtest(byte idx) {
- if(fxVars[idx][0] == 0) {
- fxVars[idx][0] = 1; // Effect initialized
- 
- 
- }
- }
- */
-
 void menurender() {
   strip.show();
   byte *backPtr    = &imgData[backImgIdx][0],
@@ -789,6 +782,7 @@ void menu() {
           *ptr++ = color;
         }
         else{
+          // for(int i=0; i<numPixels; i++) {
           *ptr++=0;
           *ptr++=0;
           *ptr++=0;
@@ -994,15 +988,7 @@ void callback() {
     else{
       tCounter = random(-7200 ,-14400); // Hold image ? to ? seconds
     }
-
   }
-
-  // if(compassreadphase==1){
-  //compassread();
-  //}else{
-  //findplane();
-  //}
-  // compassreadphase=!compassreadphase;
 }
 // ---------------------------------------------------------------------------
 // Image effect rendering functions. Each effect is generated parametrically
@@ -1028,11 +1014,10 @@ long getschemacolor(uint8_t y){
 
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][0] = 1; // Effect initialized
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
       long color;
-      color = getschemacolor(random(0,8));  //red,green,blue,magenta,teal,yellow,white,black,
+      color = getschemacolor(random(0,8)); 
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
       *ptr++ = color;
@@ -1345,7 +1330,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("            };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                  };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -1577,7 +1562,7 @@ void pacman(byte idx) { //hsv color chase for now
     if(i>=abs(fxVars[idx][3])-fxVars[idx][8]&&i<=abs(fxVars[idx][3])+fxVars[idx][8]){
 
       // color = hsv2rgb(fxVars[idx][1], 255, 255);
-      color = getschemacolor(fxVars[idx][1]);
+      color = getschemacolor(fxVars[idx][1]+1);
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
       *ptr++ = color;
@@ -1585,14 +1570,14 @@ void pacman(byte idx) { //hsv color chase for now
     else{
       if(i<=fxVars[idx][4]||i>=fxVars[idx][5]){
         // color = hsv2rgb(fxVars[idx][1], 255, 255);
-        color = getschemacolor(fxVars[idx][1]);
+        color = getschemacolor(fxVars[idx][1]+1);
         *ptr++ = color >> 16;
         *ptr++ = color >> 8;
         *ptr++ = color;
       }
       else{
         // color = hsv2rgb(fxVars[idx][2], 255, 255);
-        color = getschemacolor(fxVars[idx][1]+1);
+        color = getschemacolor(fxVars[idx][1]);
         *ptr++ = color >> 16;
         *ptr++ = color >> 8;
         *ptr++ = color;
@@ -2181,6 +2166,7 @@ void runningaverage(int newval) {
  }
  */
 void getSerial(){
+  byte *ptr = &imgData[0][0];
   int num;
   if( readSerialString() ) {
     Serial.println(serInStr);
@@ -2201,29 +2187,34 @@ void getSerial(){
       Serial.println("enable compass serial output");
     }
 
-      if( cmd == 'M' ) {
-        Serial.println("Entering Menu");
-        Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
-      }
-      if( cmd == 'm' ) {
-        Serial.println("Entering callback");
-        Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
-      }
-      if( cmd == 'C' ) {
-        colorschemeselector++;
-        Serial.print("Color Scheme ");
-        Serial.println(colorschemeselector);
-      }
-      if( cmd == 'c' ) {
-        colorschemeselector--;
-        Serial.print("Color Scheme ");
-        Serial.println(colorschemeselector);
-      }
+    if( cmd == 'M' ) {
+      Serial.println("Entering Menu");
+      // for(int i=0; i<numPixels; i++) {
+      // *ptr++=0;
+      // *ptr++=0;
+      // *ptr++=0;}
+      // strip.show();}
+      Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
+    }
+    if( cmd == 'm' ) {
+      Serial.println("Entering callback");
+      Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+    }
+    if( cmd == 'C' ) {
+      colorschemeselector++;
+      Serial.print("Color Scheme ");
+      Serial.println(colorschemeselector);
+    }
+    if( cmd == 'c' ) {
+      colorschemeselector--;
+      Serial.print("Color Scheme ");
+      Serial.println(colorschemeselector);
+    }
 
 
-      serInStr[0] = 0; // say we've used the string
-    }
-    }
+    serInStr[0] = 0; // say we've used the string
+  }
+}
 //read a string from the serial and store it in an array
 //you must supply the array variable
 uint8_t readSerialString()
@@ -2262,6 +2253,9 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
+
+
 
 
 
