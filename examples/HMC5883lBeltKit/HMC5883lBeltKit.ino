@@ -1,4 +1,4 @@
-uint8_t brightness = 2; //this is not right at all.
+uint8_t brightness = 2;//inverse output=(0-255)/brightness
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
@@ -9,23 +9,24 @@ void (*renderEffect[])(byte) = {
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
   // twoatonce,
-//  Dice,
+  Dice,
   //###########good codes, dont change these#####
-//  hsvtest,
-//    wavyFlag,// stock
-//  colorDrift, // why wasn't this smooth? gamma.
-//  strobe, //need to have a better system for duty cycle modulation
+  hsvtest,
+  //    wavyFlag,// stock
+
+  strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
-//  MonsterHunter, //woah dont fuck with this guy
-//  pacman, //bounces back from end to end and builds every time
-//  rainbowChase, //stock rainbow chase doesnt work at 240 hz
-//  sineChase, //stock sine chase
-//  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  MonsterHunter, //woah dont fuck with this guy
+  pacman, //bounces back from end to end and builds every time 
+  //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
-  scroll, // varied duty cycle per led per section strobe
-  //fans
- // skipAflash,
- // RandomColorsEverywhere,
+  //  scroll, // varied duty cycle per led per section strobe
+  fans
+    // skipAflash,
+  // RandomColorsEverywhere,
+  // colorDrift,
+  // rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  // sineChase, //stock sine chase
 }
 ,
 (*renderAlpha[])(void) = {
@@ -112,7 +113,7 @@ Smoothing
 // Instantiate LED strip; arguments are the total number of pixels in strip,
 // the data pin number and clock pin number:
 LPD8806 strip = LPD8806(numPixels);
-int tCounter = 0;
+int tCounter = -1;
 
 // You can also use hardware SPI for ultra-fast writes by omitting the data
 // and clock pin arguments. This is faster, but the data and clock are then
@@ -148,6 +149,8 @@ uint8_t error = 0;
 unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
 uint16_t debounceDelay = 200;
 uint8_t button = 0;
+uint8_t longbutton = 0;
+uint8_t lastbuttonstate = 0;
 char serInStr[30]; // array that will hold the serial input string
 
 
@@ -300,9 +303,9 @@ long eightcolorschema[][8] PROGMEM={
   red,purple,blue,purple,red,purple,blue,purple,//5
   green,teal,blue,teal,green,teal,blue,teal,//6
   yellow,orange,white,cornflowerblue,mistyrose,gainsboro,whitesmoke,aliceblue,//7
-  red,0,0,0,0,0,0,0,
-  green,0,0,0,0,0,0,0,
-  blue,0,0,0,0,0,0,0,
+  red,0,red,0,red,0,red,0,
+  green,0,green,0,green,0,green,0,
+  blue,0,blue,0,blue,0,blue,0,
   purple,0,0,0,0,0,0,0,
   orange,0,0,0,0,0,0,0,
   cyan,0,0,0,0,0,0,0,
@@ -349,7 +352,7 @@ const char led_chars[97][6] PROGMEM = {
   0x7c,0x8a,0x92,0xa2,0x7c,0x00, // 0 17
   0x00,0x42,0xfe,0x02,0x00,0x00, // 1 18
   0x42,0x86,0x8a,0x92,0x62,0x00, // 2 9
-  0x84,0x82,0xa2,0xd2,0x8c,0x00,	// 3 0
+  0x84,0x82,0xa2,0xd2,0x8c,0x00,  // 3 0
   0x18,0x28,0x48,0xfe,0x08,0x00,	// 4 1
   0xe5,0xa2,0xa2,0xa2,0x9c,0x00,	// 5 2
   0x3c,0x52,0x92,0x92,0x0c,0x00,	// 6 3
@@ -521,7 +524,7 @@ void setup() {
   Serial.print("Timer1 set at ");
   Serial.print(framerate);
   Serial.println(" fps.");
-  //  attachInterrupt(0, buttonpress, RISING);
+  //   attachInterrupt(0, buttonpress, RISING);
 }
 
 void findplane(){
@@ -625,7 +628,9 @@ void compassread()
   if(millis()>10000){
     //xydynamic calibration
     if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
-      xyheadingdegreesmax=xyheadingdegrees;
+      if( xyheadingdegrees>200){
+        xyheadingdegreesmax=xyheadingdegrees;
+      }
     }
     else{
       if(xyheadingdegrees<xyheadingdegreesmin||xyheadingdegreesmin==0){
@@ -639,6 +644,7 @@ void compassread()
     }
     else{
       if(xzheadingdegrees<xzheadingdegreesmin||xzheadingdegreesmin==0){
+
         xzheadingdegreesmin=xzheadingdegrees;
       }
     }
@@ -774,6 +780,8 @@ void menu() {
     if(button==1){
       menuphase0=xyheadingdegreescalibrated/60;
       menuphase++;
+      button=0;
+      return;
     }
     else{
       for(int i=0; i<numPixels; i++) {
@@ -796,6 +804,8 @@ void menu() {
     if(button==1){
       menuphase1=xyheadingdegreescalibrated/60;
       menuphase++;
+      button=0;
+      return;
     }
     else{
       for(int i=0; i<numPixels; i++) {
@@ -825,6 +835,8 @@ void menu() {
     if(button==1){
       menuphase2=xyheadingdegreescalibrated/60;
       menuphase++;
+      button=0;
+      return;
     }
     else{
       for(int i=0; i<numPixels; i++) {
@@ -862,6 +874,8 @@ void menu() {
     if(button==1){
       menuphase3=xyheadingdegreescalibrated/60;
       menuphase++;
+      button=0;
+      return;
     }
     else{
       for(int i=0; i<numPixels; i++) {
@@ -908,6 +922,14 @@ void menu() {
 }
 // Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
+  if(menuphase!=0){
+    menuphase=0;
+    menuphase0=0;
+    menuphase1=0;
+    menuphase2=0;
+    menuphase3=0;
+    menuphase4=0;
+  }
   // Very first thing here is to issue the strip data generated from the
   // *previous* callback. It's done this way on purpose because show() is
   // roughly constant-time, so the refresh will always occur on a uniform
@@ -1019,11 +1041,12 @@ void hsvtest(byte idx) {
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
       long color;
-      color = getschemacolor(random(0,8)); 
+      color = getschemacolor(i%8); 
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
       *ptr++ = color;
     }
+    // fxVars[idx][0]=1;
   }
 }
 void colorDrift(byte idx) {
@@ -1266,21 +1289,22 @@ void scroll(byte idx) {
   long color;
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
     for(int i=0; i<fxVars[idx][2]; i++) {
-        color = getschemacolor(i+fxVars[idx][9]);
-        *ptr++ = color >> 16;
-        *ptr++ = color >> 8;
-        *ptr++ = color;
-      }
-     }
-    if(fxVars[idx][1]%fxVars[idx][2]==0){
-      fxVars[idx][9]++;
-    fxVars[idx][9]%=fxVars[idx][8];}
-  
+      color = getschemacolor(i+fxVars[idx][9]);
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
+      *ptr++ = color;
+    }
+  }
+  if(fxVars[idx][1]%fxVars[idx][2]==0){
+    fxVars[idx][9]++;
+    fxVars[idx][9]%=fxVars[idx][8];
+  }
+
   for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
     color = getschemacolor(i%8);
-        *ptr++ = color >> 16;
-        *ptr++ = color >> 8;
-        *ptr++ = color;
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
   }
 }
 void skipAflash(byte idx) {
@@ -1369,7 +1393,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                  };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                      };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2182,9 +2206,15 @@ char fixCos(int angle) {
 
 void buttonpress(){
   if ((millis() - lastDebounceTime) > debounceDelay) {
+    //    if(lastbuttonstate==button){
+    //    longbutton=1;
+    //    lastbuttonstate=0;
+    //    }else{
     button=1;
+    //    lastbuttonstate=button;
+    //  }
+    lastDebounceTime = millis();
   }
-  lastDebounceTime = millis();
 }
 
 /*
@@ -2231,15 +2261,12 @@ void getSerial(){
     }
 
     if( cmd == 'M' ) {
+      Timer1.detachInterrupt();
       Serial.println("Entering Menu");
-      // for(int i=0; i<numPixels; i++) {
-      // *ptr++=0;
-      // *ptr++=0;
-      // *ptr++=0;}
-      // strip.show();}
       Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
     }
     if( cmd == 'm' ) {
+      Timer1.detachInterrupt();
       Serial.println("Entering callback");
       Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
     }
@@ -2253,14 +2280,14 @@ void getSerial(){
       Serial.print("Color Scheme ");
       Serial.println(colorschemeselector);
     }
-if( cmd == 'F' ) {
+    if( cmd == 'F' ) {
       framerate*=2;
       Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
       Serial.print("Framerate+: ");
       Serial.println(framerate);
     }
 
-if( cmd == 'f' ) {
+    if( cmd == 'f' ) {
       framerate/=2;
       Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
       Serial.print("Framerate-: ");
