@@ -1,4 +1,4 @@
-uint8_t brightness = 2;//inverse output=(0-255)/brightness
+uint8_t brightness = 2; //inverse
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
@@ -774,7 +774,7 @@ void menurender() {
   menu();
 }
 void menu() {
-  byte *ptr = &imgData[0][0];
+  byte *ptr = &imgData[backImgIdx][0];
   switch(menuphase){
   case 0:
     if(button==1){
@@ -918,7 +918,139 @@ void menu() {
       }  
     }
     break;
-  }
+  case 4:
+    if(button==1){
+      menuphase4=xyheadingdegreescalibrated/60;
+      menuphase++;
+      button=0;
+      return;
+    }
+    else{
+      for(int i=0; i<numPixels; i++) {
+        if(i<=menuphase0){
+          long color=red;
+          *ptr++ = color >> 16;
+          *ptr++ = color >> 8;
+          *ptr++ = color;
+        }
+        else{
+          if(i>=menuphase0&&i<=menuphase0+menuphase1){
+            long color=magenta;
+            *ptr++ = color >> 16;
+            *ptr++ = color >> 8;
+            *ptr++ = color;
+          }
+          else{
+            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
+              long color=blue;
+              *ptr++ = color >> 16;
+              *ptr++ = color >> 8;
+              *ptr++ = color;
+            }
+            else{
+              if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+menuphase3){
+                long color=teal;
+                *ptr++ = color >> 16;
+                *ptr++ = color >> 8;
+                *ptr++ = color;
+              }
+              else{
+                if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+(xyheadingdegreescalibrated/60)){
+                  long color=green;
+                  *ptr++ = color >> 16;
+                  *ptr++ = color >> 8;
+                  *ptr++ = color;
+                }
+                else{
+                  *ptr++=0;
+                  *ptr++=0;
+                  *ptr++=0;
+                }
+              }
+            }
+          }
+        }
+      }  
+    }
+    break;
+  case 5:
+    if(button==1){
+      menuphase5=xyheadingdegreescalibrated/60;
+      menuphase++;
+      button=0;
+      return;
+    }
+    else{
+      for(int i=0; i<numPixels; i++) {
+        if(i<=menuphase0){
+          long color=red;
+          *ptr++ = color >> 16;
+          *ptr++ = color >> 8;
+          *ptr++ = color;
+        }
+        else{
+          if(i>=menuphase0&&i<=menuphase0+menuphase1){
+            long color=magenta;
+            *ptr++ = color >> 16;
+            *ptr++ = color >> 8;
+            *ptr++ = color;
+          }
+          else{
+            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
+              long color=blue;
+              *ptr++ = color >> 16;
+              *ptr++ = color >> 8;
+              *ptr++ = color;
+            }
+            else{
+              if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+menuphase3){
+                long color=teal;
+                *ptr++ = color >> 16;
+                *ptr++ = color >> 8;
+                *ptr++ = color;
+              }
+              else{
+                if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4){
+                  //if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+(xyheadingdegreescalibrated/60)){
+                  long color=green;
+                  *ptr++ = color >> 16;
+                  *ptr++ = color >> 8;
+                  *ptr++ = color;
+                }
+                else{
+                  if(i>=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4&&i<=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4+(xyheadingdegreescalibrated/60))
+                  {  
+                    long color=orange;
+                    *ptr++ = color >> 16;
+                    *ptr++ = color >> 8;
+                    *ptr++ = color;
+                  }
+                  else{
+                    *ptr++=0;
+                    *ptr++=0;
+                    *ptr++=0;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }  
+    }
+    break;
+case 6:
+Timer1.detachInterrupt();
+Serial.println(menuphase0);
+Serial.println(menuphase1);
+Serial.println(menuphase2);
+Serial.println(menuphase3);
+Serial.println(menuphase4);
+Serial.println(menuphase5);
+
+Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
+menuphase=0;
+break;
+}
 }
 // Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
@@ -1393,7 +1525,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                      };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                        };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2336,6 +2468,7 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
 
 
 
