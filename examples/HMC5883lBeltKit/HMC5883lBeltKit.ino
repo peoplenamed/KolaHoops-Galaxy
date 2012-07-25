@@ -1225,6 +1225,7 @@ void schemefade(byte idx) {
    strip.setPixelColor(i, r, g, b);
    }
    */
+  fxVars[idx][8]++;
   if(fxVars[idx][8]==255){
     fxVars[idx][4]++;
     fxVars[idx][4]%=8;
@@ -1234,7 +1235,7 @@ void schemefade(byte idx) {
  //   fxVars[idx][4]++;
   //  fxVars[idx][4]%=8;
   }
-  fxVars[idx][8]++;
+
   // fxVars[idx][8] = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
   fxVars[idx][9] = map(abs(fxVars[idx][8]),0,255,256,1);
   //257 - abs(fxVars[idx][8]); // 1-256 (ditto)
