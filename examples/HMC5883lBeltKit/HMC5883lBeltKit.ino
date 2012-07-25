@@ -1225,12 +1225,12 @@ void schemefade(byte idx) {
    strip.setPixelColor(i, r, g, b);
    }
    */
-  if(fxVars[idx][8]==0){
+  if(fxVars[idx][8]==255){
     fxVars[idx][4]++;
     fxVars[idx][4]%=8;
   }
   if(fxVars[idx][8]>=255){
-    fxVars[idx][8]=-255;
+    fxVars[idx][8]=1;
  //   fxVars[idx][4]++;
   //  fxVars[idx][4]%=8;
   }
