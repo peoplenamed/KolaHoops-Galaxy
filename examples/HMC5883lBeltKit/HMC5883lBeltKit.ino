@@ -6,28 +6,29 @@ uint8_t colorschemeselector = 4;
 uint8_t nextpattern=0;
 void (*renderEffect[])(byte) = {
 
-//   sineCompass, //need to get it built before we can learn the compass
+  //   sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
   // twoatonce,
-//    Dice,
+  //    Dice,
   //###########good codes, dont change these#####
-//    hsvtest,
-//      wavyFlag,// stock
-  schemefade,
- //   strobe, //need to have a better system for duty cycle modulation
+  //    hsvtest,
+  //      wavyFlag,// stock
+  //  schemefade,
+  somekindaChase,
+  //   strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
   //  MonsterHunter, //woah dont fuck with this guy
   //  pacman, //bounces back from end to end and builds every time 
   //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
   //  scroll, // varied duty cycle per led per section strobe
- //   fans,
- //  skipAflash,
- //  RandomColorsEverywhere,
- //  colorDrift,
- //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
- //  sineChase, //stock sine chase
+  //   fans,
+  //  skipAflash,
+  //  RandomColorsEverywhere,
+  //  colorDrift,
+  //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  //  sineChase, //stock sine chase
 }
 ,
 (*renderAlpha[])(void) = {
@@ -1175,13 +1176,10 @@ long getschemacolor(uint8_t y){
 }
 void schemefade(byte idx) {
   long color,color2;
-  
+
   byte r,g,b,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
     fxVars[idx][4]=1;//starting color
-    fxVars[idx][5]=0;//last r
-    fxVars[idx][6]=0;//last g
-    fxVars[idx][7]=0;//lasg b
     fxVars[idx][8]=1;//alpha
     fxVars[idx][9]=0;//inverse
     fxVars[idx][10]=0;//direction counter
@@ -1205,7 +1203,7 @@ void schemefade(byte idx) {
   r=color >> 16;//to r
   g=color >> 8;//to g
   b=color;
-   color2 = getschemacolor(fxVars[idx][4]+1%8);
+  color2 = getschemacolor(fxVars[idx][4]+1);
   r2=color2 >> 16;//to r
   g2=color2 >> 8;//to g
   b2=color2;//to b // color = (foo >= 0) ?
@@ -1226,16 +1224,20 @@ void schemefade(byte idx) {
    }
    */
   fxVars[idx][8]++;
- 
-  if(fxVars[idx][8]>=255){
-    fxVars[idx][8]=0;
- //   fxVars[idx][4]++;
-  //  fxVars[idx][4]%=8;
+
+  if(fxVars[idx][8]>=256){
+    fxVars[idx][8]=1;
+    fxVars[idx][4]++;
+    fxVars[idx][4]%=8;
   }
 
   // fxVars[idx][8] = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-  fxVars[idx][9] = map(abs(fxVars[idx][8]),0,255,256,1);
-  //257 - abs(fxVars[idx][8]); // 1-256 (ditto)
+  fxVars[idx][9] = map(abs(fxVars[idx][8]),1,256,256,1);
+  //  fxVars[idx][9] = 255 - abs(fxVars[idx][8]); // 1-256 (ditto)
+  if(fxVars[idx][8]==1){
+    //    fxVars[idx][4]++;
+    //    fxVars[idx][4]%=8;
+  }
 
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
@@ -1244,10 +1246,7 @@ void schemefade(byte idx) {
     *ptr++ = (g2*abs(fxVars[idx][8])+g*fxVars[idx][9])>>8;
     *ptr++ = (b2*abs(fxVars[idx][8])+b*fxVars[idx][9])>>8;
   }
- if(fxVars[idx][8]==0){
-    fxVars[idx][4]++;
-    fxVars[idx][4]%=8;
-  }
+
 }
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -1619,7 +1618,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                              };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                                };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -1970,6 +1969,72 @@ void sineChase(byte idx) {
   }
   fxVars[idx][4] += fxVars[idx][3];
 }
+void somekindaChase(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][0] = 1; // Effect initialized
+    fxVars[idx][5] = random(0,3);
+  }
+
+  //*ptr++ = (r2*abs(fxVars[idx][8])+r*fxVars[idx][9])>>8;
+  //  *ptr++ = (g2*abs(fxVars[idx][8])+g*fxVars[idx][9])>>8;
+  // *ptr++ = (b2*abs(fxVars[idx][8])+b*fxVars[idx][9])>>8;
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i,o;
+  for(long i=0,o=numPixels; i<numPixels; i++,o--) {
+    switch(fxVars[idx][5]){
+    case 0:
+      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+      *ptr++ = 254 - (foo * 2);
+      *ptr++ = foo * 2;
+      *ptr++ = 0;
+      break;
+    case 1:  
+      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+      *ptr++ = 254 - (foo * 2);
+      *ptr++ = 0;
+      *ptr++ = foo * 2;
+      break;
+    case 2:
+      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+      *ptr++ = 0;
+      *ptr++ = foo * 2;
+      *ptr++ = 254 - (foo * 2);
+      break;
+    case 3:
+      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+      *ptr++ = foo * 2;
+      *ptr++ = 254 - (foo * 2);
+      *ptr++ = 0;
+      break;
+    case 4:
+      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+      *ptr++ = 0;
+      *ptr++ = 254 - (foo * 2);
+      *ptr++ = foo * 2;
+      break;
+    }
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+
+}
+
+
 
 // Data for American-flag-like colors (20 pixels representing
 // blue field, stars and stripes). This gets "stretched" as needed
@@ -2567,6 +2632,7 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
 
 
 
