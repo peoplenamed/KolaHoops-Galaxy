@@ -5,31 +5,34 @@ uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 4;
 uint8_t nextpattern=0;
 void (*renderEffect[])(byte) = {
-
-  //   sineCompass, //need to get it built before we can learn the compass
-  //sparkle, //need to make this look better, probably looks sweet when moving fas
-  //##########in development###########
-  // twoatonce,
-  //    Dice,
-  //###########good codes, dont change these#####
-      hsvtest,
+  
+  //############ stable colorscheme
+    schemetest,
+  //    schemefade,
   //      wavyFlag,// stock
-    schemefade,
-  //  somekindaChase,
-  //orbit,
-  //   strobe, //need to have a better system for duty cycle modulation
-  // SnakeChase, //serial monitor does not work with this one, too intesne
-  //  MonsterHunter, //woah dont fuck with this guy
-  //  pacman, //bounces back from end to end and builds every time 
+  //   strobe,
+  //  pacman,   //bounces back from end to end and builds every time 
   //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-  //needs to store index and message string in progmem
- //  scroll, // varied duty cycle per led per section strobe
   //   fans,
-  //  skipAflash,
-  //  RandomColorsEverywhere,
+  //###############stable full color
+  // somekindaChase,
   //  colorDrift,
   //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
   //  sineChase, //stock sine chase
+  
+    //##########in development###########
+  
+  
+  // sineCompass, //need to get it built before we can learn the compass
+  // sparkle, //need to make this look better, probably looks sweet when moving fas
+  // twoatonce,
+  //  Dice,
+  orbit,
+  // SnakeChase, //serial monitor does not work with this one, too intesne
+ //needs to store index and message string in progmem
+ //  scroll, // varied duty cycle per led per section strobe
+ //  RandomColorsEverywhere,
+  
 }
 ,
 (*renderAlpha[])(void) = {
@@ -1208,7 +1211,7 @@ if(fxVars[idx][8]>=255){
         fxVars[idx][4]++;
        }
 }
-void hsvtest(byte idx) {
+void schemetest(byte idx) {
   if(fxVars[idx][0] == 0) {
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
@@ -1246,38 +1249,51 @@ void blank(byte idx) {
 }
 void orbit(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][10]= random(1,8);
-    fxVars[idx][12] = numPixels*numPixels;
+    fxVars[idx][10]= random(1,4);
+       // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][12] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
     // Frame-to-frame increment (speed) -- may be positive or negative,
     // but magnitude shouldn't be so small as to be boring. It's generally
     // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][13] = 1;
+    fxVars[idx][13] = 4 + random(fxVars[idx][1]) / numPixels;
     // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][13] = -fxVars[idx][13];
-    fxVars[idx][14]=0;
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][14] = 0; // Current position
     fxVars[idx][0]=1;// init
   }
-  byte *ptr = &imgData[idx][0];
+  
+ //   color = (foo >= 0) ?
+//    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+ //   hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    
+  byte *ptr = &imgData[idx][0],r2,g2,b2,r1,g1,b1,r,g,b;
   long color,color1,color2,t1,t2,t3,t4,foo;
   byte alpha;
   for(int i=0; i<numPixels; i++) {
-    foo = fixSin(fxVars[idx][14] + fxVars[idx][12] * i / numPixels);
+  foo = fixSin(fxVars[idx][14] + fxVars[idx][12] * i / numPixels);
   t1 =  getschemacolor(fxVars[idx][10]);
-  t2 =  getschemacolor(fxVars[idx][10]+1);
+  t2 =  getschemacolor(fxVars[idx][10]+1);     
   t3 =  getschemacolor(fxVars[idx][10]+2);
   t4 =  getschemacolor(fxVars[idx][10]+3);  
-    color1 = (foo < 1) ? t1  : t2 ;
-  
-   color2 = (foo > 1) ? t3  : t4 ;
-   color1=black;
- //  color2=
-  color=mixColor24(color1,color2,127);
-    
-    
-    *ptr++ = color>>16;
-    *ptr++ = color>>8;
-    *ptr++ = color;
+   color1 = (foo < 0) ? t1  : t2 ;
+   color2 = (foo > 0) ? t3  : t4 ;
+   r2=color2>>16;
+   g2=color2>>8;
+   b2=color2;
+   //color1=black;
+   r1=color1>>16;
+   g1=color1>>8;
+   b1=color1;
+    r = mixColor8(color>>16,color2>>16,((foo-1) * 2));
+    g = mixColor8(color>>8,color2>>8,((foo-1) * 2));
+    b = mixColor8(color,(color2),((foo-1 )* 2));
+    *ptr++ = r;
+    *ptr++ = g;
+    *ptr++ = b;
   }
+//  Serial.println(foo);
   fxVars[idx][14] += fxVars[idx][13];
  }    
  byte mixColor8(byte color1, byte color2, byte alpha){
