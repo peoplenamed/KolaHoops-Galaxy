@@ -3,25 +3,26 @@ uint8_t demo = 0;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 4;
+uint8_t nextpattern=0;
 void (*renderEffect[])(byte) = {
 
   // sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
   // twoatonce,
-  Dice,
+  //  Dice,
   //###########good codes, dont change these#####
-  hsvtest,
+//  hsvtest,
   //    wavyFlag,// stock
-
-  strobe, //need to have a better system for duty cycle modulation
+  schemefade,
+//  strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
-  MonsterHunter, //woah dont fuck with this guy
-  pacman, //bounces back from end to end and builds every time 
+//  MonsterHunter, //woah dont fuck with this guy
+//  pacman, //bounces back from end to end and builds every time 
   //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
   //  scroll, // varied duty cycle per led per section strobe
-  fans
+//  fans
     // skipAflash,
   // RandomColorsEverywhere,
   // colorDrift,
@@ -353,7 +354,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x42,0xfe,0x02,0x00,0x00, // 1 18
   0x42,0x86,0x8a,0x92,0x62,0x00, // 2 9
   0x84,0x82,0xa2,0xd2,0x8c,0x00,  // 3 0
-  0x18,0x28,0x48,0xfe,0x08,0x00,	// 4 1
+  0x18,0x28,0x48,0xfe,0x08,0x00,  // 4 1
   0xe5,0xa2,0xa2,0xa2,0x9c,0x00,	// 5 2
   0x3c,0x52,0x92,0x92,0x0c,0x00,	// 6 3
   0x80,0x8e,0x90,0xa0,0xc0,0x00,	// 7 4
@@ -1038,19 +1039,19 @@ void menu() {
       }  
     }
     break;
-case 6:
-Timer1.detachInterrupt();
-Serial.println(menuphase0);
-Serial.println(menuphase1);
-Serial.println(menuphase2);
-Serial.println(menuphase3);
-Serial.println(menuphase4);
-Serial.println(menuphase5);
+  case 6:
+    Timer1.detachInterrupt();
+    Serial.println(menuphase0);
+    Serial.println(menuphase1);
+    Serial.println(menuphase2);
+    Serial.println(menuphase3);
+    Serial.println(menuphase4);
+    Serial.println(menuphase5);
 
-Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
-menuphase=0;
-break;
-}
+    Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
+    menuphase=0;
+    break;
+  }
 }
 // Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
@@ -1124,7 +1125,12 @@ void callback() {
 
   if(tCounter == 0) { // Transition start
     //fxIdx[frontImgIdx] = random((sizeof(renderEffect) / sizeof(renderEffect[0]))); //original random selection
+    //  if(nextpattern>0){
+    //    frontImgIdx=(sizeof(renderEffect) / sizeof(renderEffect[0]))%nextpattern;
+    //     nextpattern=0;
+    //  }else{
     fxIdx[frontImgIdx]++;//instead of random now its sequential
+    //  }
     if(fxIdx[frontImgIdx]>=(sizeof(renderEffect) / sizeof(renderEffect[0]))){
       fxIdx[frontImgIdx]=0;
     }
@@ -1167,7 +1173,68 @@ long getschemacolor(uint8_t y){
   color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
   return color;
 }
+void schemefade(byte idx) {
+  long color;
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][4]=0;//starting color
+    color = getschemacolor(fxVars[idx][4]);
+    fxVars[idx][1]=color >> 16;//to r
+    fxVars[idx][2]=color >> 8;//to g
+    fxVars[idx][3]=color;//to b
+    fxVars[idx][5]=0;//last r
+    fxVars[idx][6]=0;//last g
+    fxVars[idx][7]=0;//lasg b
+    fxVars[idx][8]=-255;//alpha
+    fxVars[idx][9]=0;//inverse
+    fxVars[idx][10]=0;//direction counter
+    fxVars[idx][0]=1; //init    
+  }
 
+  if(fxVars[idx][0] == -1) {
+    fxVars[idx][4]++;//starting color
+    fxVars[idx][4]%=8;
+    color = getschemacolor(fxVars[idx][4]);
+    fxVars[idx][1]=color >> 16;//to r
+    fxVars[idx][2]=color >> 8;//to g
+    fxVars[idx][3]=color;//to b
+    fxVars[idx][5]=0;//last r
+    fxVars[idx][6]=0;//last g
+    fxVars[idx][7]=0;//lasg b
+    fxVars[idx][0]=1; //init
+
+  }  // color = (foo >= 0) ?
+  //  hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+  //  hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    /*
+    for(i=0; i<numPixels; i++) {
+      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+      inv = 257 - alpha; // 1-256 (ditto)
+      // r, g, b are placed in variables (rather than directly in the
+      // setPixelColor parameter list) because of the postincrement pointer
+      // operations -- C/C++ leaves parameter evaluation order up to the
+      // implementation; left-to-right order isn't guaranteed.
+      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      strip.setPixelColor(i, r, g, b);
+    }
+  */
+
+      if(fxVars[idx][8]>=256){
+        fxVars[idx][8]=-256;
+      
+    }
+        fxVars[idx][8]++;
+     // fxVars[idx][8] = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+      fxVars[idx][9] = 257 - abs(fxVars[idx][8]); // 1-256 (ditto)
+      
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    *ptr++ = (fxVars[idx][5]*abs(fxVars[idx][8])+fxVars[idx][1]*fxVars[idx][9])>>8;
+    *ptr++ = (fxVars[idx][6]*abs(fxVars[idx][8])+fxVars[idx][2]*fxVars[idx][9])>>8;
+    *ptr++ = (fxVars[idx][7]*abs(fxVars[idx][8])+fxVars[idx][3]*fxVars[idx][9])>>8;
+  }
+}
 void hsvtest(byte idx) {
   if(fxVars[idx][0] == 0) {
     byte *ptr = &imgData[idx][0];
@@ -1178,9 +1245,22 @@ void hsvtest(byte idx) {
       *ptr++ = color >> 8;
       *ptr++ = color;
     }
-    // fxVars[idx][0]=1;
   }
 }
+void orbit(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    byte *ptr = &imgData[idx][0];
+    for(int i=0; i<numPixels; i++) {
+      long color;
+      color = getschemacolor(i%8); 
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
+      *ptr++ = color;
+    }
+  }
+}
+
+
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=random(0,1536); //color were gonna write initally
@@ -1525,7 +1605,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                        };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                            };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2339,13 +2419,18 @@ char fixCos(int angle) {
 void buttonpress(){
   if ((millis() - lastDebounceTime) > debounceDelay) {
     //    if(lastbuttonstate==button){
-    //    longbutton=1;
-    //    lastbuttonstate=0;
+    if(lastbuttonstate==1) {
+      longbutton=1;
+    }
+    lastbuttonstate=1;
     //    }else{
     button=1;
     //    lastbuttonstate=button;
     //  }
     lastDebounceTime = millis();
+  }
+  else{
+    lastbuttonstate=0;
   }
 }
 
@@ -2468,6 +2553,8 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
+
 
 
 
