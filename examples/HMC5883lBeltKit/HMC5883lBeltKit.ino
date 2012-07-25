@@ -1175,12 +1175,13 @@ long getschemacolor(uint8_t y){
 }
 void schemefade(byte idx) {
   long color;
+  byte r,g,b;
   if(fxVars[idx][0] == 0) {
     fxVars[idx][4]=0;//starting color
     color = getschemacolor(fxVars[idx][4]);
-    fxVars[idx][1]=color >> 16;//to r
-    fxVars[idx][2]=color >> 8;//to g
-    fxVars[idx][3]=color;//to b
+    r=color >> 16;//to r
+    g=color >> 8;//to g
+    b=color;//to b
     fxVars[idx][5]=0;//last r
     fxVars[idx][6]=0;//last g
     fxVars[idx][7]=0;//lasg b
@@ -1220,8 +1221,8 @@ void schemefade(byte idx) {
     }
   */
 
-      if(fxVars[idx][8]>=256){
-        fxVars[idx][8]=-256;
+      if(fxVars[idx][8]>=255){
+        fxVars[idx][8]=-255;
       
     }
         fxVars[idx][8]++;
@@ -1230,9 +1231,9 @@ void schemefade(byte idx) {
       
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-    *ptr++ = (fxVars[idx][5]*abs(fxVars[idx][8])+fxVars[idx][1]*fxVars[idx][9])>>8;
-    *ptr++ = (fxVars[idx][6]*abs(fxVars[idx][8])+fxVars[idx][2]*fxVars[idx][9])>>8;
-    *ptr++ = (fxVars[idx][7]*abs(fxVars[idx][8])+fxVars[idx][3]*fxVars[idx][9])>>8;
+    *ptr++ = (fxVars[idx][5]*abs(fxVars[idx][8])+r*fxVars[idx][9])/2;
+    *ptr++ = (fxVars[idx][6]*abs(fxVars[idx][8])+g*fxVars[idx][9])/2;
+    *ptr++ = (fxVars[idx][7]*abs(fxVars[idx][8])+b*fxVars[idx][9])/2;
   }
 }
 void hsvtest(byte idx) {
