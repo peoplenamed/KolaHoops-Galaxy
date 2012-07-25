@@ -12,10 +12,11 @@ void (*renderEffect[])(byte) = {
   // twoatonce,
   //    Dice,
   //###########good codes, dont change these#####
-  //    hsvtest,
+      hsvtest,
   //      wavyFlag,// stock
   //  schemefade,
-  somekindaChase,
+  //  somekindaChase,
+  orbit,
   //   strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
   //  MonsterHunter, //woah dont fuck with this guy
@@ -1260,19 +1261,140 @@ void hsvtest(byte idx) {
     }
   }
 }
-void orbit(byte idx) {
+
+void blank(byte idx) {
   if(fxVars[idx][0] == 0) {
-    byte *ptr = &imgData[idx][0];
-    for(int i=0; i<numPixels; i++) {
-      long color;
-      color = getschemacolor(i%8); 
-      *ptr++ = color >> 16;
-      *ptr++ = color >> 8;
-      *ptr++ = color;
-    }
+    fxVars[idx][1] =0;//
+    fxVars[idx][2]=0;//
+    fxVars[idx][3]=0;//
+    fxVars[idx][4]=0;//
+    fxVars[idx][5]=0;//
+    fxVars[idx][6]=0;//
+    fxVars[idx][7]=0;//
+    fxVars[idx][8]=0;//
+    fxVars[idx][9]=0;//
+    fxVars[idx][10]=0;//
+    fxVars[idx][0]=1;// init
+  }
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    long color;
+    color = getschemacolor(i%8); 
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
   }
 }
+void orbit(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1] =1;//framecounter
+    fxVars[idx][2]=0;//
+    fxVars[idx][3]=0;//
+    fxVars[idx][4]=0;//
+    fxVars[idx][5]=0;//
+    fxVars[idx][6]=0;//
+    fxVars[idx][7]=0;//
+    fxVars[idx][8]=0;//
+    fxVars[idx][9]=0;//
+    fxVars[idx][10]=0;//
+    fxVars[idx][11]=0;// framecounter limit
+    fxVars[idx][12] = (1 + random(2 * ((numPixels + 31) / 32))) * 720*2;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][13] = (4 + random(fxVars[idx][1]) / numPixels);
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][13] = -fxVars[idx][13];
+    fxVars[idx][14]=0;
+    fxVars[idx][15]=0;
+    fxVars[idx][0]=1;// init
+  }
+  fxVars[idx][1]++;
+  for(int i=0;i<fxVars[idx][1];i++){    
+    fxVars[idx][i+2]++;
+    fxVars[idx][i+2]%=numPixels;
+  }
+  fxVars[idx][1]%=8;
 
+  byte *ptr = &imgData[idx][0];
+
+
+  long color1,color2,t1,t2,foo;
+  byte alpha;
+  for(int i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][14] + fxVars[idx][12] * i / numPixels);
+  t1 =  getschemacolor(fxVars[idx][10]);
+  t2 =  getschemacolor(fxVars[idx][10]+1);
+    
+    color1 = (foo >= 0) ? t1  : t2 ;
+    
+ //   foo = fixSin(fxVars[idx][15] + fxVars[idx][12] * i / numPixels);
+ //   color2 = (foo >= 0) ? hsv2rgb(0, 254 - (foo * 2), 255) : hsv2rgb(0, 255, 254 + foo * 2);
+//    *ptr++ = mixColor(color1>>16,color2>>16,254+foo*2);
+//    *ptr++ = mixColor(color1>>8,color2>>8,254+foo*2);
+//    *ptr++ = mixColor(color1,color2,foo*254+foo*2);
+
+    *ptr++ = mixColor(color1>>16,color2>>16,254+127);
+    *ptr++ = mixColor(color1>>8,color2>>8,254+127);
+    *ptr++ = mixColor(color1,color2,foo*254+127);
+  
+    
+//    *ptr++ = ((color1>>16)*alpha+(color2>>16)*inv)>>8;
+//    *ptr++ = ((color1>>8)*alpha+(color2>>8)*inv)>>8;
+//    *ptr++ = ((color1)*alpha+(color2)*inv)>>8;
+  }
+  fxVars[idx][14] += fxVars[idx][13];
+ 
+
+}
+    
+byte mixColor(byte color1, byte color2, byte alpha){
+ byte inv = 257 - alpha;  
+return (color1*alpha+color2*inv)>>8;
+}
+/*
+void orbit(byte idx) {
+ if(fxVars[idx][0] == 0) {
+ fxVars[idx][1] =numPixels*6;//
+ fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+ // Frame-to-frame increment (speed) -- may be positive or negative,
+ // but magnitude shouldn't be so small as to be boring. It's generally
+ // still less than a full pixel per frame, making motion very smooth.
+ fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+ // Reverse direction half the time.
+ if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];     fxVars[idx][4]=0;//
+ fxVars[idx][4] = 0; // Current position
+ fxVars[idx][5]=0;//buddy0
+ fxVars[idx][6]=0;//buddy1
+ fxVars[idx][7]=0;//buddy2
+ fxVars[idx][8]=0;//buddy3
+ fxVars[idx][9]=0;//buddy4
+ fxVars[idx][10]=0;//buddy 5
+ fxVars[idx][0]=1;// init
+ 
+ 
+ }
+ long color,foo;
+ 
+ 
+ 
+ byte *ptr = &imgData[idx][0];
+ for(int i=0; i<numPixels; i++) {
+ foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+ long color;
+ 
+ 
+ // color = getschemacolor(i%8); 
+ color = (foo >= 0) ?
+ hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+ hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+ *ptr++ = color >> 16;
+ *ptr++ = color >> 8;
+ *ptr++ = color;
+ }
+ fxVars[idx][4] += fxVars[idx][3];
+ }
+ */
 
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -1618,7 +1740,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                                };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                                    };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2632,6 +2754,8 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
+
 
 
 
