@@ -1,33 +1,33 @@
 uint8_t brightness = 2; //inverse
-uint8_t demo = 0;
+uint8_t demo = 1;
 uint8_t compassdebug = 0;
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 4;
 uint8_t nextpattern=0;
 void (*renderEffect[])(byte) = {
 
-  // sineCompass, //need to get it built before we can learn the compass
+//   sineCompass, //need to get it built before we can learn the compass
   //sparkle, //need to make this look better, probably looks sweet when moving fas
   //##########in development###########
   // twoatonce,
-  //  Dice,
+//    Dice,
   //###########good codes, dont change these#####
-  //  hsvtest,
-  //    wavyFlag,// stock
+//    hsvtest,
+//      wavyFlag,// stock
   schemefade,
-  //  strobe, //need to have a better system for duty cycle modulation
+ //   strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
   //  MonsterHunter, //woah dont fuck with this guy
   //  pacman, //bounces back from end to end and builds every time 
   //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
   //  scroll, // varied duty cycle per led per section strobe
-  //  fans
-  // skipAflash,
-  // RandomColorsEverywhere,
-  // colorDrift,
-  // rainbowChase, //stock rainbow chase doesnt work at 240 hz
-  // sineChase, //stock sine chase
+ //   fans,
+ //  skipAflash,
+ //  RandomColorsEverywhere,
+ //  colorDrift,
+ //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+ //  sineChase, //stock sine chase
 }
 ,
 (*renderAlpha[])(void) = {
@@ -1174,8 +1174,9 @@ long getschemacolor(uint8_t y){
   return color;
 }
 void schemefade(byte idx) {
-  long color;
-  byte r,g,b;
+  long color,color2;
+  
+  byte r,g,b,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
     fxVars[idx][4]=1;//starting color
     fxVars[idx][5]=0;//last r
@@ -1203,7 +1204,11 @@ void schemefade(byte idx) {
   color = getschemacolor(fxVars[idx][4]);
   r=color >> 16;//to r
   g=color >> 8;//to g
-  b=color;//to b // color = (foo >= 0) ?
+  b=color;
+   color2 = getschemacolor(fxVars[idx][4]+1%8);
+  r2=color2 >> 16;//to r
+  g2=color2 >> 8;//to g
+  b2=color2;//to b // color = (foo >= 0) ?
   //  hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
   //  hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
   /*
@@ -1236,9 +1241,9 @@ void schemefade(byte idx) {
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
 
-    *ptr++ = (fxVars[idx][5]*abs(fxVars[idx][8])+r*fxVars[idx][9])>>8;
-    *ptr++ = (fxVars[idx][6]*abs(fxVars[idx][8])+g*fxVars[idx][9])>>8;
-    *ptr++ = (fxVars[idx][7]*abs(fxVars[idx][8])+b*fxVars[idx][9])>>8;
+    *ptr++ = (r2*abs(fxVars[idx][8])+r*fxVars[idx][9])>>8;
+    *ptr++ = (g2*abs(fxVars[idx][8])+g*fxVars[idx][9])>>8;
+    *ptr++ = (b2*abs(fxVars[idx][8])+b*fxVars[idx][9])>>8;
   }
 }
 void hsvtest(byte idx) {
