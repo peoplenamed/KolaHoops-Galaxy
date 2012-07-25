@@ -1226,10 +1226,7 @@ void schemefade(byte idx) {
    }
    */
   fxVars[idx][8]++;
-  if(fxVars[idx][8]==255){
-    fxVars[idx][4]++;
-    fxVars[idx][4]%=8;
-  }
+ 
   if(fxVars[idx][8]>=255){
     fxVars[idx][8]=0;
  //   fxVars[idx][4]++;
@@ -1246,6 +1243,10 @@ void schemefade(byte idx) {
     *ptr++ = (r2*abs(fxVars[idx][8])+r*fxVars[idx][9])>>8;
     *ptr++ = (g2*abs(fxVars[idx][8])+g*fxVars[idx][9])>>8;
     *ptr++ = (b2*abs(fxVars[idx][8])+b*fxVars[idx][9])>>8;
+  }
+ if(fxVars[idx][8]==0){
+    fxVars[idx][4]++;
+    fxVars[idx][4]%=8;
   }
 }
 void hsvtest(byte idx) {
