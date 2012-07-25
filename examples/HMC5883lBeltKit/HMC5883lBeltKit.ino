@@ -1054,8 +1054,7 @@ void menu() {
     menuphase=0;
     break;
   }
-}
-// Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
+}// Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   if(menuphase!=0){
     menuphase=0;
@@ -1315,7 +1314,7 @@ void orbit(byte idx) {
   }
   fxVars[idx][14] += fxVars[idx][13];
  }    
-byte mixColor8(byte color1, byte color2, byte alpha){
+ byte mixColor8(byte color1, byte color2, byte alpha){
  byte inv = 257 - alpha;  
 return (color1*alpha+color2*inv)>>8;
 }
@@ -2602,12 +2601,9 @@ void buttonpress(){
     //    if(lastbuttonstate==button){
     if(lastbuttonstate==1) {
       longbutton=1;
-    }
+    }else{lastbuttonstate=0;}
     lastbuttonstate=1;
-    //    }else{
     button=1;
-    //    lastbuttonstate=button;
-    //  }
     lastDebounceTime = millis();
   }
   else{
