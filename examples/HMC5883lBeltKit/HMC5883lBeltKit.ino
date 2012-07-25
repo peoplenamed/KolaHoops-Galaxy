@@ -12,18 +12,18 @@ void (*renderEffect[])(byte) = {
   // twoatonce,
   //  Dice,
   //###########good codes, dont change these#####
-//  hsvtest,
+  //  hsvtest,
   //    wavyFlag,// stock
   schemefade,
-//  strobe, //need to have a better system for duty cycle modulation
+  //  strobe, //need to have a better system for duty cycle modulation
   // SnakeChase, //serial monitor does not work with this one, too intesne
-//  MonsterHunter, //woah dont fuck with this guy
-//  pacman, //bounces back from end to end and builds every time 
+  //  MonsterHunter, //woah dont fuck with this guy
+  //  pacman, //bounces back from end to end and builds every time 
   //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //needs to store index and message string in progmem
   //  scroll, // varied duty cycle per led per section strobe
-//  fans
-    // skipAflash,
+  //  fans
+  // skipAflash,
   // RandomColorsEverywhere,
   // colorDrift,
   // rainbowChase, //stock rainbow chase doesnt work at 240 hz
@@ -1177,15 +1177,11 @@ void schemefade(byte idx) {
   long color;
   byte r,g,b;
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][4]=0;//starting color
-    color = getschemacolor(fxVars[idx][4]);
-    r=color >> 16;//to r
-    g=color >> 8;//to g
-    b=color;//to b
+    fxVars[idx][4]=1;//starting color
     fxVars[idx][5]=0;//last r
     fxVars[idx][6]=0;//last g
     fxVars[idx][7]=0;//lasg b
-    fxVars[idx][8]=-255;//alpha
+    fxVars[idx][8]=1;//alpha
     fxVars[idx][9]=0;//inverse
     fxVars[idx][10]=0;//direction counter
     fxVars[idx][0]=1; //init    
@@ -1203,37 +1199,46 @@ void schemefade(byte idx) {
     fxVars[idx][7]=0;//lasg b
     fxVars[idx][0]=1; //init
 
-  }  // color = (foo >= 0) ?
+  } 
+  color = getschemacolor(fxVars[idx][4]);
+  r=color >> 16;//to r
+  g=color >> 8;//to g
+  b=color;//to b // color = (foo >= 0) ?
   //  hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
   //  hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
-    /*
+  /*
     for(i=0; i<numPixels; i++) {
-      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-      inv = 257 - alpha; // 1-256 (ditto)
-      // r, g, b are placed in variables (rather than directly in the
-      // setPixelColor parameter list) because of the postincrement pointer
-      // operations -- C/C++ leaves parameter evaluation order up to the
-      // implementation; left-to-right order isn't guaranteed.
-      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      strip.setPixelColor(i, r, g, b);
-    }
-  */
+   alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+   inv = 257 - alpha; // 1-256 (ditto)
+   // r, g, b are placed in variables (rather than directly in the
+   // setPixelColor parameter list) because of the postincrement pointer
+   // operations -- C/C++ leaves parameter evaluation order up to the
+   // implementation; left-to-right order isn't guaranteed.
+   r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+   g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+   b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+   strip.setPixelColor(i, r, g, b);
+   }
+   */
+  if(fxVars[idx][8]==0){
 
-      if(fxVars[idx][8]>=255){
-        fxVars[idx][8]=-255;
-      
-    }
-        fxVars[idx][8]++;
-     // fxVars[idx][8] = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-      fxVars[idx][9] = 257 - abs(fxVars[idx][8]); // 1-256 (ditto)
-      
+  }
+  if(fxVars[idx][8]>=255){
+    fxVars[idx][8]=-255;
+    fxVars[idx][4]++;
+    fxVars[idx][4]%=8;
+  }
+  fxVars[idx][8]++;
+  // fxVars[idx][8] = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+  fxVars[idx][9] = map(abs(fxVars[idx][8]),1,256,256,1);
+  //257 - abs(fxVars[idx][8]); // 1-256 (ditto)
+
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-    *ptr++ = (fxVars[idx][5]*abs(fxVars[idx][8])+r*fxVars[idx][9])/2;
-    *ptr++ = (fxVars[idx][6]*abs(fxVars[idx][8])+g*fxVars[idx][9])/2;
-    *ptr++ = (fxVars[idx][7]*abs(fxVars[idx][8])+b*fxVars[idx][9])/2;
+
+    *ptr++ = (fxVars[idx][5]*abs(fxVars[idx][8])+r*fxVars[idx][9])>>8;
+    *ptr++ = (fxVars[idx][6]*abs(fxVars[idx][8])+g*fxVars[idx][9])>>8;
+    *ptr++ = (fxVars[idx][7]*abs(fxVars[idx][8])+b*fxVars[idx][9])>>8;
   }
 }
 void hsvtest(byte idx) {
@@ -1606,7 +1611,7 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                            };
+    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                              };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2554,6 +2559,7 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
 
 
 
