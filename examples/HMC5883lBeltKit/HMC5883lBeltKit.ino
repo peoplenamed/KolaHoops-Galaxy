@@ -14,6 +14,7 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 void (*renderEffect[])(byte) = {
   
   //############ stable colorscheme
+   
     schemetest,
     schemetestlong,
       schemefade,
@@ -21,7 +22,7 @@ void (*renderEffect[])(byte) = {
      strobe,
     pacman,   //bounces back from end to end and builds every time 
     POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-     fans,
+      fans,
   //###############stable full color
  
   //  colorDrift,
@@ -383,7 +384,7 @@ const char led_chars[97][6] PROGMEM = {
   0x18,0x28,0x48,0xfe,0x08,0x00,  // 4 1
   0xe5,0xa2,0xa2,0xa2,0x9c,0x00,  // 5 2
   0x3c,0x52,0x92,0x92,0x0c,0x00,  // 6 3
-  0x80,0x8e,0x90,0xa0,0xc0,0x00,	// 7 4
+  0x80,0x8e,0x90,0xa0,0xc0,0x00,  // 7 4
   0x6c,0x92,0x92,0x92,0x6c,0x00,	// 8 5
   0x60,0x92,0x92,0x94,0x78,0x00,	// 9 6
   0x00,0x6c,0x6c,0x00,0x00,0x00,	// : 7
@@ -1252,16 +1253,38 @@ void schemetest(byte idx) {
   }
 }
 void schemetestlong(byte idx) {
+  byte r1,g1,b1,r2,g2,b2;
+  long color,color1,color2;
   if(fxVars[idx][0] == 0) {
+  fxVars[idx][0]=1;
+  fxVars[idx][1]=numPixels;//rotation placeholder
+  fxVars[idx][2]=-fxVars[idx][1];// rotation operator
+  fxVars[idx][4]=255;//frame counter placeholder
+  fxVars[idx][5]=-255;//frame counter operator
+  }
+   if(fxVars[idx][1]==fxVars[idx][2]){ //if rotation op = rotation holder set to start
+ fxVars[idx][2]=-fxVars[idx][1];// rotation operator  
+ }
+  if(fxVars[idx][4]==fxVars[idx][5]){ //if frame operator = frame holder set to start
+ fxVars[idx][5]=-framerate+1;// rotation operator  
+ fxVars[idx][2]++; //increment rotation operator
+ }
+   fxVars[idx][5]++;//increment frame counter operator
+   
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
-      long color;
-      color = getschemacolor(i/8); 
-      *ptr++ = color >> 16;
-      *ptr++ = color >> 8;
-      *ptr++ = color;
+
+    color2 = getschemacolor((i+fxVars[idx][2])/8); 
+   color1 = getschemacolor(((i+fxVars[idx][2])/8)+1);  
+    *ptr++ = mixColor8(color1>>16,color2>>16,abs(fxVars[idx][5]));
+    *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][5]));
+    *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][5]));
+     
+   //  *ptr++ = color1 >> 16;
+  //    *ptr++ = color1 >> 8;
+  //   *ptr++ = color1;
     }
-  }
+  
 }
 
 void blank(byte idx) {
