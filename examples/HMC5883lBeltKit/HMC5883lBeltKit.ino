@@ -2,7 +2,7 @@ uint8_t brightness = 2; //DO NOT BRING <2
 uint8_t demo = 1;
 uint8_t compassdebug = 0;
 boolean serialoutput=false;// will the serial respond?
-uint8_t framerate= 240; // SIESURE WARNING?
+uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 0;
 uint8_t nextpattern=0;
 uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
@@ -1843,10 +1843,10 @@ void POV(byte idx) {
     *ptr++ = 0;
     *ptr++ = 0;
   }
-  if(fxVars[idx][3]>=fxVars[idx][4]){
-    fxVars[idx][3]=0;
+ // if(fxVars[idx][3]>=fxVars[idx][4]){
+ //   fxVars[idx][3]=0;
     fxVars[idx][5]++;
-  }
+//  }
   if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
   {
     fxVars[idx][5]=0;
