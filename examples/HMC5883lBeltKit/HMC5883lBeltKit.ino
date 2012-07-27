@@ -2,10 +2,10 @@ uint8_t brightness = 2; //DO NOT BRING <2
 uint8_t demo = 1;
 uint8_t compassdebug = 0;
 boolean serialoutput=false;// will the serial respond?
-uint8_t framerate= 120; // SIESURE WARNING?
+uint8_t framerate= 240; // SIESURE WARNING?
 uint8_t colorschemeselector = 0;
 uint8_t nextpattern=0;
-uint16_t patternswitchspeed = 60; //# of seconds between pattern switches
+uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
 uint16_t transitionspeed = 1;// # of secconds transition lasts 
@@ -15,14 +15,14 @@ void (*renderEffect[])(byte) = {
   
   //############ stable colorscheme
    
-    schemetest,
-    schemetestlong,
-      schemefade,
+  //  schemetest,
+  //  schemetestlong,
+   //   schemefade,
      //   wavyFlag,// stock
-     strobe,
-    pacman,   //bounces back from end to end and builds every time 
+  //   strobe,
+  //  pacman,   //bounces back from end to end and builds every time 
     POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-      fans,
+   //   fans,
   //###############stable full color
  
   //  colorDrift,
@@ -1790,7 +1790,12 @@ void Dice(byte idx){
 
 void POV(byte idx) {
   const String Message[5] = {
-    "KolaHoops.com ","MAKE ","HACK ","CREATE ",":)?#@&:("                                    };
+    "KolaHoops.com ",
+    "MAKE ",
+    "HACK ",
+    "CREATE ",
+  //  "!$?#@&*",
+  };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
     int i;
@@ -1804,7 +1809,7 @@ void POV(byte idx) {
     fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][10]=random(0,5);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
     fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
   }
