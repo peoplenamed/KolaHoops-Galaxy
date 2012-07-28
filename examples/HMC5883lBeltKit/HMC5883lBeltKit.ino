@@ -13,16 +13,17 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
+  blank,
   schemetest,
-  schemetestlong,
   schemetestfade,
+  schemetestlong,
   schemetestlongfade,
   schemefade,
 
   //   wavyFlag,// stock
-  strobe,
+
   pacman,   //bounces back from end to end and builds every time 
-  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+//  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   fans,
   //###############stable full color
 
@@ -48,7 +49,8 @@ void (*renderEffect[])(byte) = {
 (*renderAlpha[])(void) = {
   renderAlpha00,
   renderAlpha01,
-  renderAlpha02 };
+//  renderAlpha02 
+};
 
 //########################################################################################################################
 /*
@@ -129,7 +131,7 @@ Smoothing
 // Instantiate LED strip; arguments are the total number of pixels in strip,
 // the data pin number and clock pin number:
 LPD8806 strip = LPD8806(numPixels);
-int tCounter = 0;
+int tCounter = -1;
 
 // You can also use hardware SPI for ultra-fast writes by omitting the data
 // and clock pin arguments. This is faster, but the data and clock are then
@@ -1226,9 +1228,8 @@ void schemefade(byte idx) {
   byte r,g,b,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
     fxVars[idx][4]=1;//starting color
-    fxVars[idx][8]=0;//alpha
+    fxVars[idx][8]=254;//alpha
     fxVars[idx][9]=0;//inverse
-    fxVars[idx][10]=0;//direction counter
     fxVars[idx][10]=random(2,6)/2;
     fxVars[idx][0]=1; //init    
   }
@@ -1248,8 +1249,8 @@ void schemefade(byte idx) {
     *ptr++ = (b2*abs((fxVars[idx][8]))+b*fxVars[idx][9])>>8;
   }
  fxVars[idx][8]+=fxVars[idx][10];
-if(fxVars[idx][8]>=255){
-   fxVars[idx][8]=0;
+if(fxVars[idx][8]>=255-fxVars[idx][10]){
+   fxVars[idx][8]=-255;
   }
  if(fxVars[idx][8]==0){
         fxVars[idx][4]++;
@@ -1274,7 +1275,6 @@ void schemetestlongfade(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
-    fxVars[idx][10]=random(2,6)/2;
     fxVars[idx][0]=1; //init    
   }
   byte *ptr = &imgData[idx][0];
@@ -1340,7 +1340,7 @@ void schemetestlong(byte idx) {
     byte *ptr = &imgData[idx][0];
     for(int i=0; i<numPixels; i++) {
       long color;
-      color = getschemacolor(i%8); 
+      color = getschemacolor(i/8+1); 
       *ptr++ = color >> 16;
       *ptr++ = color >> 8;
       *ptr++ = color;
