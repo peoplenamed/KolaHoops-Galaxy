@@ -13,19 +13,19 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
-  blank,
+ // blank,
   schemetest,
-  schemetestfade,
-  schemetestlong,
-  schemetestlongfade,
+ // schemetestfade,
+//  schemetestlong,
+//  schemetestlongfade,
   schemefade,
 
   //   wavyFlag,// stock
 
-  pacman,   //bounces back from end to end and builds every time 
+//  pacman,   //bounces back from end to end and builds every time 
 //  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-  fans,
-  //###############stable full color
+//  fans,
+//  //###############stable full color
 
   //  colorDrift,
    //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
@@ -389,7 +389,7 @@ const char led_chars[97][6] PROGMEM = {
   0x3c,0x52,0x92,0x92,0x0c,0x00,  // 6 3
   0x80,0x8e,0x90,0xa0,0xc0,0x00,  // 7 4
   0x6c,0x92,0x92,0x92,0x6c,0x00,  // 8 5
-  0x60,0x92,0x92,0x94,0x78,0x00,	// 9 6
+  0x60,0x92,0x92,0x94,0x78,0x00,  // 9 6
   0x00,0x6c,0x6c,0x00,0x00,0x00,	// : 7
   0x00,0x6a,0x6c,0x00,0x00,0x00,	// ;8
   0x10,0x28,0x44,0x82,0x00,0x00,	// <9
@@ -1227,17 +1227,19 @@ void schemefade(byte idx) {
   long color,color2;
   byte r,g,b,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][4]=1;//starting color
+    fxVars[idx][4]=0;//starting color
+    fxVars[idx][8]=1;//starting color2
     fxVars[idx][8]=254;//alpha
     fxVars[idx][9]=0;//inverse
     fxVars[idx][10]=random(2,6)/2;
     fxVars[idx][0]=1; //init    
   }
   color = getschemacolor(fxVars[idx][4]);
+  color2 = getschemacolor(fxVars[idx][5]);
   r=color >> 16;//to r
   g=color >> 8;//to g
   b=color;
-  color2 = getschemacolor(fxVars[idx][4]+1);
+
   r2=color2 >> 16;//to r
   g2=color2 >> 8;//to g
   b2=color2;//to b // color = (foo >= 0) ?
@@ -1248,12 +1250,14 @@ void schemefade(byte idx) {
     *ptr++ = (g2*abs((fxVars[idx][8]))+g*fxVars[idx][9])>>8;
     *ptr++ = (b2*abs((fxVars[idx][8]))+b*fxVars[idx][9])>>8;
   }
- fxVars[idx][8]+=fxVars[idx][10];
+// fxVars[idx][8]+=fxVars[idx][10];
+fxVars[idx][8]++;
 if(fxVars[idx][8]>=255-fxVars[idx][10]){
    fxVars[idx][8]=-255;
+   fxVars[idx][4]++;
   }
  if(fxVars[idx][8]==0){
-        fxVars[idx][4]++;
+        fxVars[idx][5]++;
        }
 }
 void schemetest(byte idx) {
