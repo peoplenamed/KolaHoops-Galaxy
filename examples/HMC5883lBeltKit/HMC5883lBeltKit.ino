@@ -1229,9 +1229,9 @@ void schemefade(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=1;//starting color2
-    fxVars[idx][8]=254;//alpha
+    fxVars[idx][8]=0;//alpha
     fxVars[idx][9]=0;//inverse
-    fxVars[idx][10]=random(2,6)/2;
+    fxVars[idx][10]=random(2,12)/2;
     fxVars[idx][0]=1; //init    
   }
   color = getschemacolor(fxVars[idx][4]);
@@ -1250,13 +1250,13 @@ void schemefade(byte idx) {
     *ptr++ = (g2*abs((fxVars[idx][8]))+g*fxVars[idx][9])>>8;
     *ptr++ = (b2*abs((fxVars[idx][8]))+b*fxVars[idx][9])>>8;
   }
-// fxVars[idx][8]+=fxVars[idx][10];
-fxVars[idx][8]++;
+ fxVars[idx][8]+=fxVars[idx][10];
+//fxVars[idx][8]++;
 if(fxVars[idx][8]>=255-fxVars[idx][10]){
-   fxVars[idx][8]=-255;
+   fxVars[idx][8]=-fxVars[idx][8];
    fxVars[idx][4]++;
   }
- if(fxVars[idx][8]==0){
+ if(fxVars[idx][8]<=fxVars[idx][10]&&fxVars[idx][8]>0){
         fxVars[idx][5]++;
        }
 }
