@@ -5,6 +5,7 @@ boolean serialoutput=false;// will the serial respond?
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 uint8_t nextpattern=0;
+uint8_t nextspeed=random(1,9)*2/3;
 uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
@@ -13,25 +14,25 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
- // blank,
+  // blank,
   schemetest,
- // schemetestfade,
-//  schemetestlong,
-//  schemetestlongfade,
+  schemetestfade,
+  schemetestlong,
+  schemetestlongfade,
   schemefade,
 
   //   wavyFlag,// stock
 
-//  pacman,   //bounces back from end to end and builds every time 
-//  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-//  fans,
-//  //###############stable full color
+  pacman,   //bounces back from end to end and builds every time 
+  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  fans,
+  //  //###############stable full color
 
   //  colorDrift,
-   //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
-   //   sineChase, //stock sine chase
+  //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  //   sineChase, //stock sine chase
 
-    //##########in development###########
+  //##########in development###########
   //  somekindaChase,
 
   // sineCompass, //need to get it built before we can learn the compass
@@ -49,7 +50,7 @@ void (*renderEffect[])(byte) = {
 (*renderAlpha[])(void) = {
   renderAlpha00,
   renderAlpha01,
-//  renderAlpha02 
+  //  renderAlpha02 
 };
 
 //########################################################################################################################
@@ -125,6 +126,9 @@ Smoothing
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
 #define numPixels 84
+uint8_t upperend,framecounter,framecounter1;
+uint8_t rotationspeed=1;
+
 // 'const' makes subsequent array declarations possible, otherwise there
 // would be a pile of malloc() calls later.
 
@@ -390,7 +394,7 @@ const char led_chars[97][6] PROGMEM = {
   0x80,0x8e,0x90,0xa0,0xc0,0x00,  // 7 4
   0x6c,0x92,0x92,0x92,0x6c,0x00,  // 8 5
   0x60,0x92,0x92,0x94,0x78,0x00,  // 9 6
-  0x00,0x6c,0x6c,0x00,0x00,0x00,	// : 7
+  0x00,0x6c,0x6c,0x00,0x00,0x00,  // : 7
   0x00,0x6a,0x6c,0x00,0x00,0x00,	// ;8
   0x10,0x28,0x44,0x82,0x00,0x00,	// <9
   0x28,0x28,0x28,0x28,0x28,0x00,	// =0
@@ -1105,6 +1109,29 @@ void menu() {
   }
 }// Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
+  framecounter++;
+  framecounter1++;
+  if(framecounter1==30){
+    if(nextspeed==rotationspeed){
+    }
+    else{
+      if(nextspeed>rotationspeed){
+        rotationspeed++;
+      }
+      if(nextspeed<rotationspeed){
+        rotationspeed--;
+      }
+      framecounter1=0;
+    }
+  }
+  if(framecounter>=rotationspeed){
+  if(rotationspeed==0){upperend==0;}else{
+      upperend++;
+      upperend%=numPixels;
+      framecounter=0;
+  }
+  }
+
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1128,7 +1155,9 @@ void callback() {
 
   // Always render back image based on current effect index:
   (*renderEffect[fxIdx[backImgIdx]])(backImgIdx);
-
+  if(tCounter==0){
+    nextspeed=random(1,9)*2/3;
+  }
   // Front render and composite only happen during transitions...
   if(tCounter > 0) {
     // Transition in progress
@@ -1140,7 +1169,19 @@ void callback() {
     (*renderAlpha[fxIdx[2]])();
 
     // ...then composite front over back:
-    for(i=0; i<numPixels; i++) {
+    for(i=upperend; i<numPixels; i++) {
+      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+      inv = 257 - alpha; // 1-256 (ditto)
+      // r, g, b are placed in variables (rather than directly in the
+      // setPixelColor parameter list) because of the postincrement pointer
+      // operations -- C/C++ leaves parameter evaluation order up to the
+      // implementation; left-to-right order isn't guaranteed.
+      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      strip.setPixelColor(i, r, g, b);
+    }
+    for(i=0; i<upperend; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
       // r, g, b are placed in variables (rather than directly in the
@@ -1155,7 +1196,14 @@ void callback() {
   }
   else {
     // No transition in progress; just show back image
-    for(i=0; i<numPixels; i++) {
+    for(i=upperend; i<numPixels; i++) {
+      // See note above re: r, g, b vars.
+      r = gamma(*backPtr++);
+      g = gamma(*backPtr++);
+      b = gamma(*backPtr++);
+      strip.setPixelColor(i, r, g, b);
+    }
+    for(i=0; i<upperend; i++) {
       // See note above re: r, g, b vars.
       r = gamma(*backPtr++);
       g = gamma(*backPtr++);
@@ -1243,22 +1291,22 @@ void schemefade(byte idx) {
   r2=color2 >> 16;//to r
   g2=color2 >> 8;//to g
   b2=color2;//to b // color = (foo >= 0) ?
- fxVars[idx][9] = 257 - abs(fxVars[idx][8]); // 1-256 (ditto)
+  fxVars[idx][9] = 257 - abs(fxVars[idx][8]); // 1-256 (ditto)
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     *ptr++ = (r2*abs((fxVars[idx][8]))+r*fxVars[idx][9])>>8;
     *ptr++ = (g2*abs((fxVars[idx][8]))+g*fxVars[idx][9])>>8;
     *ptr++ = (b2*abs((fxVars[idx][8]))+b*fxVars[idx][9])>>8;
   }
- fxVars[idx][8]+=fxVars[idx][10];
-//fxVars[idx][8]++;
-if(fxVars[idx][8]>=255-fxVars[idx][10]){
-   fxVars[idx][8]=-fxVars[idx][8];
-   fxVars[idx][4]++;
+  fxVars[idx][8]+=fxVars[idx][10];
+  //fxVars[idx][8]++;
+  if(fxVars[idx][8]>=255-fxVars[idx][10]){
+    fxVars[idx][8]=-fxVars[idx][8];
+    fxVars[idx][4]++;
   }
- if(fxVars[idx][8]<=fxVars[idx][10]&&fxVars[idx][8]>0){
-        fxVars[idx][5]++;
-       }
+  if(fxVars[idx][8]<=fxVars[idx][10]&&fxVars[idx][8]>0){
+    fxVars[idx][5]++;
+  }
 }
 void schemetest(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -1283,15 +1331,17 @@ void schemetestlongfade(byte idx) {
   }
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-  color1 = getschemacolor((i+fxVars[idx][4])/8);
-  r1=color1 >> 16;//to r
-  g1=color1 >> 8;//to g
-  b1=color1;
-  color2 = getschemacolor((((i+fxVars[idx][4])/8)+1));
-  r2=color2 >> 16;//to r
-  g2=color2 >> 8;//to g
-  b2=color2;//to b
-  if(abs(fxVars[idx][8])==0){fxVars[idx][8]=1;}
+    color1 = getschemacolor((i+fxVars[idx][4])/8);
+    r1=color1 >> 16;//to r
+    g1=color1 >> 8;//to g
+    b1=color1;
+    color2 = getschemacolor((((i+fxVars[idx][4])/8)+1));
+    r2=color2 >> 16;//to r
+    g2=color2 >> 8;//to g
+    b2=color2;//to b
+    if(abs(fxVars[idx][8])==0){
+      fxVars[idx][8]=1;
+    }
     *ptr++ = mixColor8(color1>>16,color2>>16,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
@@ -1302,8 +1352,8 @@ void schemetestlongfade(byte idx) {
   }
   if(fxVars[idx][8]==0){
   }
-   // Serial.println(fxVars[idx][8]);
-  
+  // Serial.println(fxVars[idx][8]);
+
 }
 void schemetestfade(byte idx) {
   long color1,color2;
@@ -1316,15 +1366,17 @@ void schemetestfade(byte idx) {
   }
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-  color1 = getschemacolor((i+fxVars[idx][4])%8);
-  r1=color1 >> 16;//to r
-  g1=color1 >> 8;//to g
-  b1=color1;
-  color2 = getschemacolor((((i+fxVars[idx][4])%8)+1));
-  r2=color2 >> 16;//to r
-  g2=color2 >> 8;//to g
-  b2=color2;//to b
-  if(abs(fxVars[idx][8])==0){fxVars[idx][8]=1;}
+    color1 = getschemacolor((i+fxVars[idx][4])%8);
+    r1=color1 >> 16;//to r
+    g1=color1 >> 8;//to g
+    b1=color1;
+    color2 = getschemacolor((((i+fxVars[idx][4])%8)+1));
+    r2=color2 >> 16;//to r
+    g2=color2 >> 8;//to g
+    b2=color2;//to b
+    if(abs(fxVars[idx][8])==0){
+      fxVars[idx][8]=1;
+    }
     *ptr++ = mixColor8(color1>>16,color2>>16,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
@@ -1335,8 +1387,8 @@ void schemetestfade(byte idx) {
   }
   if(fxVars[idx][8]==0){
   }
-   // Serial.println(fxVars[idx][8]);
-  
+  // Serial.println(fxVars[idx][8]);
+
 }
 
 void schemetestlong(byte idx) {
@@ -2841,6 +2893,7 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
 
 
 
