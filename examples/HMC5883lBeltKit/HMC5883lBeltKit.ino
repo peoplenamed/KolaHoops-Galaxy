@@ -4,8 +4,7 @@ uint8_t compassdebug = 0;
 boolean serialoutput=false;// will the serial respond?
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
-uint8_t nextpattern=0;
-uint8_t nextspeed=random(1,9)*2/3;
+int nextspeed=random(-9,9);
 uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
@@ -16,8 +15,8 @@ void (*renderEffect[])(byte) = {
   //############ stable colorscheme
   // blank,
 //  schemetest,
+  schemetestlong,
   schemetestfade,
-//  schemetestlong,
   schemetestlongfade,
   schemefade,
 //  MonsterHunter,
@@ -37,10 +36,10 @@ void (*renderEffect[])(byte) = {
 
   // sineCompass, //need to get it built before we can learn the compass
   // sparkle, //need to make this look better, probably looks sweet when moving fas
-  //  twoatonce,
+    twoatonce,
   //  Dice,
   //  orbit,
-  // SnakeChase, //serial monitor does not work with this one, too intesne
+   SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -126,8 +125,9 @@ Smoothing
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
 #define numPixels 84
-uint8_t upperend,framecounter,framecounter1;
-uint8_t rotationspeed=1;
+uint8_t framecounter,framecounter1;
+int rotationspeed;
+int upperend;
 
 // 'const' makes subsequent array declarations possible, otherwise there
 // would be a pile of malloc() calls later.
@@ -396,7 +396,7 @@ const char led_chars[97][6] PROGMEM = {
   0x60,0x92,0x92,0x94,0x78,0x00,  // 9 6
   0x00,0x6c,0x6c,0x00,0x00,0x00,  // : 7
   0x00,0x6a,0x6c,0x00,0x00,0x00,  // ;8
-  0x10,0x28,0x44,0x82,0x00,0x00,	// <9
+  0x10,0x28,0x44,0x82,0x00,0x00,  // <9
   0x28,0x28,0x28,0x28,0x28,0x00,	// =0
   0x00,0x82,0x44,0x28,0x10,0x00,	// >1
   0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
@@ -1114,7 +1114,6 @@ void menu() {
       Serial.println(menuphase4);
       Serial.println(menuphase5);
     }
-
     Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
     menuphase=0;
     break;
@@ -1137,13 +1136,11 @@ void callback() {
     }
   }
   if(framecounter>=rotationspeed){
-  if(rotationspeed==0){upperend==0;}else{
-      upperend++;
+  if(rotationspeed>0){upperend++;}else{
+      upperend--;}
       upperend%=numPixels;
       framecounter=0;
   }
-  }
-
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
