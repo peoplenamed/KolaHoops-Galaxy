@@ -15,12 +15,12 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
   // blank,
-  schemetest,
+//  schemetest,
   schemetestfade,
-  schemetestlong,
+//  schemetestlong,
   schemetestlongfade,
   schemefade,
-
+//  MonsterHunter,
   //   wavyFlag,// stock
 
   pacman,   //bounces back from end to end and builds every time 
@@ -395,7 +395,7 @@ const char led_chars[97][6] PROGMEM = {
   0x6c,0x92,0x92,0x92,0x6c,0x00,  // 8 5
   0x60,0x92,0x92,0x94,0x78,0x00,  // 9 6
   0x00,0x6c,0x6c,0x00,0x00,0x00,  // : 7
-  0x00,0x6a,0x6c,0x00,0x00,0x00,	// ;8
+  0x00,0x6a,0x6c,0x00,0x00,0x00,  // ;8
   0x10,0x28,0x44,0x82,0x00,0x00,	// <9
   0x28,0x28,0x28,0x28,0x28,0x00,	// =0
   0x00,0x82,0x44,0x28,0x10,0x00,	// >1
@@ -481,15 +481,27 @@ int fxVars[3][50]; // Effect instance variables (explained later)
 int transitionTime; // Duration (in frames) of current transition
 float fxFloats[3][4];
 // function prototypes, leave these be :)
-void renderEffect00(byte idx);
-void renderEffect01(byte idx);
-void renderEffect02(byte idx);
-void renderEffect03(byte idx);
+void schemetest(byte idx);
+void schemetestfade(byte idx);
+void schemetestlong(byte idx);
+void schemetestlongfade(byte idx);
+void schemefade(byte idx);
+void MonsterHunter(byte idx);
+void wavyFlag(byte idx);// stock
+void pacman(byte idx);   //bounces back from end to end and builds every time 
+void POV(byte idx); //if using uno comment this out. 2k of ram is not enough! or is it?
+void fans(byte idx);
 void renderAlpha00(void);
 void renderAlpha01(void);
 void renderAlpha02(void);
 void renderAlpha03(void);
+byte mixColor8(byte color1, byte color2, uint8_t alpha);
 void callback();
+void menu();
+void menurender();
+void getSerial();
+void findplane();
+void compassread();
 byte gamma(byte x);
 long hsv2rgb(long h, byte s, byte v);
 char fixSin(int angle);
