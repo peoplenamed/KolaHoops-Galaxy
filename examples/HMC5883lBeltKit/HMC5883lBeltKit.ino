@@ -13,18 +13,18 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
-  // blank,
-//  schemetest,
-  schemetestlong,
-  schemetestfade,
-  schemetestlongfade,
-  schemefade,
-//  MonsterHunter,
+  blank,
+  //  schemetest,
+  //schemetestlong,
+  //schemetestfade,
+  //schemetestlongfade,
+  //schemefade,
+  //  MonsterHunter,
   //   wavyFlag,// stock
 
-  pacman,   //bounces back from end to end and builds every time 
-  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-  fans,
+    // pacman,   //bounces back from end to end and builds every time 
+  // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  // fans,
   //  //###############stable full color
 
   //  colorDrift,
@@ -36,10 +36,16 @@ void (*renderEffect[])(byte) = {
 
   // sineCompass, //need to get it built before we can learn the compass
   // sparkle, //need to make this look better, probably looks sweet when moving fas
-    twoatonce,
+//  raindance,
+//  rainStrobe2at1,
+//strobefans2at1,
+  schemetest2at1,
+  MonsterStrobe2at1,
+  schemetestlongrain2at1,
+  schemetestrain2at1,    
   //  Dice,
   //  orbit,
-   SnakeChase, //serial monitor does not work with this one, too intesne
+  //  SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -1122,6 +1128,7 @@ void menu() {
 void callback() {
   framecounter++;
   framecounter1++;
+
   if(framecounter1==30){
     if(nextspeed==rotationspeed){
     }
@@ -1135,12 +1142,18 @@ void callback() {
       framecounter1=0;
     }
   }
+
   if(framecounter>=rotationspeed){
-  if(rotationspeed>0){upperend++;}else{
-      upperend--;}
-      upperend%=numPixels;
-      framecounter=0;
+    if(rotationspeed>0){
+      upperend++;
+    }
+    else{
+      upperend--;
+    }
+    upperend%=numPixels;
+    framecounter=0;
   }
+
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1695,8 +1708,98 @@ void RandomColorsEverywhere(byte idx) {
   }
 }
 
-void twoatonce(byte idx){
+void rainStrobe2at1(byte idx){
+  crazycounter++;
+  if(crazycounter>50){
+    crazycounter=0;
+  }
 
+  if(crazycounter>25){
+    fxVars[0][0]=0;
+    strobe(idx);
+  }
+  else{
+    fxVars[0][0]=0;
+    rainbowChase(idx);
+  }
+}
+
+void raindance(byte idx){
+  if(random(0,20)==1){
+    fxVars[0][0]=0;
+  }
+  rainbowChase(idx);
+}
+void schemetestlongrain2at1(byte idx){
+  crazycounter++;
+  if(crazycounter>90){
+    crazycounter=0;
+  }
+
+  if(crazycounter>45){
+    fxVars[0][0]=0;
+    strobe(idx);
+  }
+  else{
+    fxVars[0][0]=0;
+    rainbowChase(idx);
+
+  }
+
+}
+void schemetestrain2at1(byte idx){
+  crazycounter++;
+  if(crazycounter>90){
+    crazycounter=0;
+  }
+
+  if(crazycounter>45){
+    fxVars[0][0]=0;
+    schemetest(idx);
+  }
+  else{
+    fxVars[0][0]=0;
+    rainbowChase(idx);
+
+  }
+
+}
+
+void schemetest2at1(byte idx){
+  crazycounter++;
+  if(crazycounter>90){
+    crazycounter=0;
+  }
+
+  if(crazycounter>45){
+    fxVars[0][0]=0;
+    schemetest(idx);
+  }
+  else{
+    fxVars[0][0]=0;
+    schemetestlong(idx);
+
+  }
+
+}
+void strobefans2at1(byte idx){
+  crazycounter++;
+  if(crazycounter>120){
+    crazycounter=0;
+  }
+
+  if(crazycounter>16){
+    fxVars[0][0]=0;
+    fans(idx);
+  }
+  else{
+    fxVars[0][0]=0;
+    strobe(idx);
+
+  }
+
+}
+void MonsterStrobe2at1(byte idx){
   crazycounter++;
   if(crazycounter>60){
     crazycounter=0;
@@ -1708,11 +1811,14 @@ void twoatonce(byte idx){
   }
   else{
     fxVars[0][0]=0;
-    rainbowChase(idx);
+    MonsterHunter(idx);
 
   }
 
 }
+
+
+
 void fans(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
@@ -2154,7 +2260,6 @@ void pacman(byte idx) { //hsv color chase for now
 // practically part of the Geneva Convention by now.
 void rainbowChase(byte idx) {
   if(fxVars[idx][0] == 0) {
-
     // Number of repetitions (complete loops around color wheel); any
     // more than 4 per meter just looks too chaotic and un-rainbow-like.
     // Store as hue 'distance' around complete belt:
@@ -2169,7 +2274,13 @@ void rainbowChase(byte idx) {
     fxVars[idx][3] = 0; // Current position
     fxVars[idx][0] = 1; // Effect initialized
   }
-
+  if(fxVars[idx][0] == -1) {
+    fxVars[idx][2] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse speed and hue shift direction half the time.
+    if(random(2) == 0) fxVars[idx][1] = -fxVars[idx][1];
+    //   if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
+    fxVars[idx][0] = 1; // Effect initialized
+  }
   byte *ptr = &imgData[idx][0];
   long color, i;
   for(i=0; i<numPixels; i++) {
@@ -2902,6 +3013,7 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+
 
 
 
