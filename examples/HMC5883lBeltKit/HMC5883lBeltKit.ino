@@ -4,7 +4,7 @@ uint8_t compassdebug = 0;
 boolean serialoutput=false;// will the serial respond?
 uint8_t framerate= 120; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
-int nextspeed=random(-9,9);
+int nextspeed=0;
 uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
@@ -14,7 +14,8 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
   blank,
-  //  schemetest,
+  thingeyDrift,
+  //schemetest,
   //schemetestlong,
   //schemetestfade,
   //schemetestlongfade,
@@ -403,7 +404,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x6c,0x6c,0x00,0x00,0x00,  // : 7
   0x00,0x6a,0x6c,0x00,0x00,0x00,  // ;8
   0x10,0x28,0x44,0x82,0x00,0x00,  // <9
-  0x28,0x28,0x28,0x28,0x28,0x00,	// =0
+  0x28,0x28,0x28,0x28,0x28,0x00,  // =0
   0x00,0x82,0x44,0x28,0x10,0x00,	// >1
   0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
   0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
@@ -1129,7 +1130,7 @@ void callback() {
   framecounter++;
   framecounter1++;
 
-  if(framecounter1==30){
+/*  if(framecounter1==30){
     if(nextspeed==rotationspeed){
     }
     else{
@@ -1153,7 +1154,7 @@ void callback() {
     upperend%=numPixels;
     framecounter=0;
   }
-
+*/
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1191,7 +1192,7 @@ void callback() {
     (*renderAlpha[fxIdx[2]])();
 
     // ...then composite front over back:
-    for(i=upperend; i<numPixels; i++) {
+  /*  for(i=upperend; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
       // r, g, b are placed in variables (rather than directly in the
@@ -1204,6 +1205,20 @@ void callback() {
       strip.setPixelColor(i, r, g, b);
     }
     for(i=0; i<upperend; i++) {
+      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+      inv = 257 - alpha; // 1-256 (ditto)
+      // r, g, b are placed in variables (rather than directly in the
+      // setPixelColor parameter list) because of the postincrement pointer
+      // operations -- C/C++ leaves parameter evaluation order up to the
+      // implementation; left-to-right order isn't guaranteed.
+      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      strip.setPixelColor(i, r, g, b);
+    }
+    
+   */
+       for(i=0; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
       // r, g, b are placed in variables (rather than directly in the
@@ -1218,7 +1233,7 @@ void callback() {
   }
   else {
     // No transition in progress; just show back image
-    for(i=upperend; i<numPixels; i++) {
+   /* for(i=upperend; i<numPixels; i++) {
       // See note above re: r, g, b vars.
       r = gamma(*backPtr++);
       g = gamma(*backPtr++);
@@ -1226,6 +1241,14 @@ void callback() {
       strip.setPixelColor(i, r, g, b);
     }
     for(i=0; i<upperend; i++) {
+      // See note above re: r, g, b vars.
+      r = gamma(*backPtr++);
+      g = gamma(*backPtr++);
+      b = gamma(*backPtr++);
+      strip.setPixelColor(i, r, g, b);
+    }
+*/
+  for(i=0; i<numPixels;i++) {
       // See note above re: r, g, b vars.
       r = gamma(*backPtr++);
       g = gamma(*backPtr++);
@@ -1442,12 +1465,129 @@ void blank(byte idx) {
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     long color;
-    color = getschemacolor(i%8); 
+   // color = getschemacolor(i%8); 
+   color=black;
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
   }
 }
+
+/*
+void sineChase(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+}
+
+*/
+void thingeyDrift(byte idx) {
+ long i;
+   uint8_t thingeynum = 3;
+  if(fxVars[idx][0] == 0) {
+   
+   for(i=1;i<1+thingeynum;i++){ //1-10 thingey position!
+     fxVars[idx][i]=0;
+   }
+   
+   for(i=11;i<thingeynum+11;i++){ //11-20 direction/speed
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][i] = random(5,60);
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][i] = -fxVars[idx][i]; 
+   }
+   
+   for(i=21;i<21+thingeynum;i++){ //21-30 intended direction/speed
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][i] = random(5,60);
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][i] = -fxVars[idx][i]; 
+   }  
+    fxVars[idx][0] = 2 * 720;// init
+  }
+ long foo[thingeynum];
+byte *ptr = &imgData[idx][0],r,g,b;
+  for(i=0; i<numPixels ;i++) {
+   
+    for(int q=1;q<thingeynum+1;q++){  
+    foo[q] = fixSin(fxVars[idx][q] + fxVars[idx][0] * i / numPixels);
+ long   color = getschemacolor(8);
+    r =mixColor8(r,color>>16,foo[q]*2); //bling
+    g =mixColor8(g,color>>8,foo[q]*2);
+    b =mixColor8(b,color,foo[q]*2);  
+   }
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    //long getschemacolor(uint8_t y)
+
+     
+//    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+//    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+  //  r =mixColor8(color1>>16,color2>>16,foo*2); //bling
+  //  g =mixColor8(color1>>8,color2>>8,foo*2);
+  //  b =mixColor8(color1,color2,foo*2);
+    
+    *ptr++ = r;
+    *ptr++ = g;
+    *ptr++ = b;
+  } 
+ /* byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    long color;
+    color = getschemacolor(i%8); 
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+ */ 
+  for(i=1;i<1+thingeynum;i++){ //add position
+    fxVars[idx][i] += fxVars[idx][10+i];
+    if(fxVars[idx][20+i]==fxVars[idx][10+i]){ //check if intended direction is = current dirrecton
+     // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][10+i] = 4 + random(1536) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][10+i] = -fxVars[idx][10+i]; 
+    }
+    
+  }
+}
+
 void orbit(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][10]= random(1,4);
@@ -3013,19 +3153,3 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
