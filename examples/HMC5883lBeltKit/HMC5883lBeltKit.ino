@@ -1,8 +1,8 @@
-uint8_t brightness = 3; //DO NOT BRING >2
-uint8_t demo = 1;
+uint8_t brightness = 4; //DO NOT BRING >2
+uint8_t demo = 0;
 uint8_t compassdebug = 0;
 boolean serialoutput=false;// will the serial respond?
-uint8_t framerate= 120; // SIESURE WARNING?
+uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
 uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
@@ -27,16 +27,16 @@ void (*renderEffect[])(byte) = {
   POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   fans,
   //  //###############stable full color
-
+ strobe,
   //  colorDrift,
   rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
 
     //##########in development###########
-  //  somekindaChase,
+    somekindaChase,
 
   // sineCompass, //need to get it built before we can learn the compass
-  // sparkle, //need to make this look better, probably looks sweet when moving fas
+   sparkle, //need to make this look better, probably looks sweet when moving fas
   //  raindance,
   //  rainStrobe2at1,
   //strobefans2at1,
@@ -45,8 +45,8 @@ void (*renderEffect[])(byte) = {
   schemetestlongrain2at1,
   schemetestrain2at1,    
   //  Dice,
-  //  orbit,
-  //  SnakeChase, //serial monitor does not work with this one, too intesne
+    orbit,
+    SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -113,7 +113,7 @@ Smoothing
 
 // Example to control LPD8806-based RGB LED Modules in a strip; originally
 // intended for the Adafruit Digital Programmable LED Belt Kit.
-// REQUIRES TIMER1 LIBRARY: http://www.arduino.cc/playground/Code/Timer1
+// REQUIRES //Timer1 LIBRARY: http://www.arduino.cc/playground/Code///Timer1
 // ALSO REQUIRES LPD8806 LIBRARY, which should be included with this code.
 
 // I'm generally not fond of canned animation patterns. Wanting something
@@ -129,10 +129,9 @@ Smoothing
 int irrxpin=19;
 IRrecv irrecv(irrxpin);
 decode_results results;
-unsigned long irc[18] = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-#define ircsetup 12
-boolean irsetupflag = false;
+#define ircsetup 13
+unsigned long irc[ircsetup];
+//boolean irsetupflag = false;
 //eeprom stuffs\
 //using the eeprom code modified from
 //http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
@@ -545,7 +544,7 @@ void setup() {
     i2 = (i*4);
     EEPread(i2);
   }
-  irrecv.enableIRIn();
+  
   //  Serial.println("IR Reciever setup ");
   patternswitchspeed= patternswitchspeed*framerate;
   patternswitchspeedvariance=patternswitchspeedvariance*framerate;
@@ -606,18 +605,20 @@ void setup() {
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
 
-  // Timer1 is used so the strip will update at a known fixed frame rate.
+  // //Timer1 is used so the strip will update at a known fixed frame rate.
   // Each effect rendering function varies in processing complexity, so
   // the timer allows smooth transitions between effects (otherwise the
   // effects and transitions would jump around in speed...not attractive).
-  Timer1.initialize();
-  Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
+  irrecv.enableIRIn();
+ // Timer1.initialize();
+ // Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
   if(serialoutput==true){  
     Serial.print("Timer1 set at ");
     Serial.print(framerate);
     Serial.println(" fps.");
   }
   //   attachInterrupt(0, buttonpress, RISING);
+
 }
 
 void findplane(){
@@ -854,11 +855,11 @@ if(xyheadingDegreesdelta>90){
 
 void loop() {
   getSerial();
-  //if(irsetupflag==0){
-      getir();
-  //}
+
+  getir();
   // findplane();
   // compassread();
+  callback();
 }
 void menurender() {
   strip.show();
@@ -1148,16 +1149,18 @@ void menu() {
       Serial.println(menuphase4);
       Serial.println(menuphase5);
     }
-    Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
+    //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
     menuphase=0;
     break;
   }
-}// Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
+}// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   strip.show();
   framecounter++;
   framecounter1++;
-
+ if (framecounter==framerate){
+  getir();
+framecounter=0;}
   /*  if(framecounter1==30){
    if(nextspeed==rotationspeed){
    }
@@ -1194,7 +1197,7 @@ void callback() {
   // Very first thing here is to issue the strip data generated from the
   // *previous* callback. It's done this way on purpose because show() is
   // roughly constant-time, so the refresh will always occur on a uniform
-  // beat with respect to the Timer1 interrupt. The various effects
+  // beat with respect to the //Timer1 interrupt. The various effects
   // rendering and compositing code is not constant-time, and that
   // unevenness would be apparent if show() were called at the end.
 
@@ -3094,29 +3097,37 @@ void getSerial(){
         Serial.println("enable compass serial output");
       }
     }
+   if( cmd == 'Q' ) {
+     
+    for (int i =0; i<ircsetup; i++){
+    Serial.print (irc[i]);
+    Serial.print(" , " );
+    Serial.println (i);
+    }
+    }
 
     if( cmd == 'M' ) {
-      Timer1.detachInterrupt();
+      //Timer1.detachInterrupt();
       if(serialoutput==true){ 
         Serial.println("Entering Menu");
       }
-      Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
+      //Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
     }
     if( cmd == 'm' ) {
-      Timer1.detachInterrupt();
+      //Timer1.detachInterrupt();
       if(serialoutput==true){ 
         Serial.println("Entering callback");
       }
-      Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+      //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
     }
     if( cmd == 'I' ) {
-      Timer1.detachInterrupt();
+      //Timer1.detachInterrupt();
       if(serialoutput==true){ 
         Serial.println("Entering irsetup");
       }
       //  irrecv.enableIRIn();
       delay(100);
-      Timer1.attachInterrupt(irsetup, 1000000);//redirect interrupt to menu
+      //Timer1.attachInterrupt(irsetup, 1000000);//redirect interrupt to menu
     }
     //  boolean serialoutput=false;// will the serial respond?
     if( cmd == 'S' ) {
@@ -3149,7 +3160,7 @@ void getSerial(){
     }
     if( cmd == 'F' ) {
       framerate*=2;
-      Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+      //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
       if(serialoutput==true){ 
         Serial.print("Framerate+: ");
         Serial.println(framerate);
@@ -3158,7 +3169,7 @@ void getSerial(){
 
     if( cmd == 'f' ) {
       framerate/=2;
-      Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+      //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
       if(serialoutput==true){  
         Serial.print("Framerate-: ");
         Serial.println(framerate);
@@ -3222,9 +3233,9 @@ void EEPwrite(int p_address, unsigned long p_value)
   firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
   secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
   secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
-  //  Serial.print("wrote ");
+    Serial.print("wrote ");
 
-  //  Serial.println(firstTwoBytes + secondTwoBytes, DEC);
+   Serial.println(firstTwoBytes + secondTwoBytes, DEC);
 
   firstTwoBytes = 0;
   secondTwoBytes = 0;
@@ -3246,20 +3257,20 @@ void EEPread(int p_address)
 
 
   irc[i] = firstTwoBytes + secondTwoBytes;
-  //  Serial.print("Read code from eeprom spots ");
-  //  Serial.print(p_address);
-  //  Serial.print(" to ");
-  //  Serial.print(p_address + 3);
-  //  Serial.print(" as ");
-  // Serial.print(firstTwoBytes + secondTwoBytes, DEC);
-  // Serial.print(" in irc spot ");
-  //Serial.println(i);
+    Serial.print("Read code from eeprom spots ");
+    Serial.print(p_address);
+    Serial.print(" to ");
+    Serial.print(p_address + 3);
+    Serial.print(" as ");
+   Serial.print(firstTwoBytes + secondTwoBytes, DEC);
+   Serial.print(" in irc spot ");
+  Serial.println(i);
   firstTwoBytes = 0;
   secondTwoBytes = 0;
 }
 int i;
 void irsetup() {
-  irsetupflag=1;
+ // irsetupflag=1;
   if (irrecv.decode(&results)) {
     if(serialoutput==true){
       Serial.print("got code ");
@@ -3289,8 +3300,7 @@ void irsetup() {
           Serial.println("Writing to eeprom");
         }
         i2 = (i*4);
-        EEPwrite(i2
-          ,irc[i]);
+        EEPwrite(i2,irc[i]);
       }
       delay(1000);
       if(serialoutput==true){  
@@ -3300,7 +3310,7 @@ void irsetup() {
     }
   }
   delay(100);
-  irsetupflag=0;
+ // irsetupflag=0;
 }
 
 void getir(){
@@ -3308,20 +3318,30 @@ void getir(){
   //  Serial.println(i);
   //irsetup();
   if (irrecv.decode(&results)) {
+    unsigned long temp= results.value;
     if(serialoutput==true){
-      Serial.print("got raw code ");
+     // Serial.print("got raw code ");
+     
       Serial.println(results.value, DEC);
     }
-    if (results.value == irc[0]) {
+   
+ 
+    if (temp == irc[0]) {
+      if(serialoutput==true){
+         Serial.println("recognised 0 on ir");}
       button=1;
     }
-    if (results.value == irc[11]) {
+    if (temp == irc[1]) {
+       if(serialoutput==true){
+         Serial.println("recognised 1 on ir");}
       colorschemeselector--;
     }  
-    if (results.value == irc[10]) {
+    if (temp == irc[2]) {
+       if(serialoutput==true){
+         Serial.println("recognised 2 on ir");}
       colorschemeselector++;
-    }     
-    //   delay(1500);
+    }    
+    
     irrecv.resume();
   }
 
