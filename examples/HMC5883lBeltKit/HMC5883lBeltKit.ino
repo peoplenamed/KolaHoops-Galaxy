@@ -23,7 +23,7 @@ void (*renderEffect[])(byte) = {
   //  MonsterHunter,
   //   wavyFlag,// stock
 
-    // pacman,   //bounces back from end to end and builds every time 
+  // pacman,   //bounces back from end to end and builds every time 
   // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   // fans,
   //  //###############stable full color
@@ -37,9 +37,9 @@ void (*renderEffect[])(byte) = {
 
   // sineCompass, //need to get it built before we can learn the compass
   // sparkle, //need to make this look better, probably looks sweet when moving fas
-//  raindance,
-//  rainStrobe2at1,
-//strobefans2at1,
+  //  raindance,
+  //  rainStrobe2at1,
+  //strobefans2at1,
   schemetest2at1,
   MonsterStrobe2at1,
   schemetestlongrain2at1,
@@ -123,6 +123,22 @@ Smoothing
 // coding techniques may be a bit obtuse (e.g. function arrays), so novice
 // programmers may have an easier time starting out with the 'strandtest'
 // program also included with the LPD8806 library.
+
+//ir remote stuffs
+#include <IRremote.h>
+
+int irrxpin =4;
+IRrecv irrecv(irrxpin);
+decode_results results;
+unsigned long irc[18] = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+#define ircsetup 18
+//eeprom stuffs\
+//using the eeprom code modified from
+//http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
+#include <EEPROM.h>
+unsigned long firstTwoBytes;
+unsigned long secondTwoBytes;
 
 #include <avr/pgmspace.h>
 #include "SPI.h"
@@ -405,7 +421,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x6a,0x6c,0x00,0x00,0x00,  // ;8
   0x10,0x28,0x44,0x82,0x00,0x00,  // <9
   0x28,0x28,0x28,0x28,0x28,0x00,  // =0
-  0x00,0x82,0x44,0x28,0x10,0x00,	// >1
+  0x00,0x82,0x44,0x28,0x10,0x00,  // >1
   0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
   0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
   0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
@@ -522,7 +538,14 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
-
+  int i;
+  pinMode(irrxpin, INPUT);
+  for (i = 0; i < ircsetup; i ++){
+    int i2;
+    i2 = (i*4);
+    EEPread(i2);
+  }
+  Serial.println("IR Reciever setup ");
   patternswitchspeed= patternswitchspeed*framerate;
   patternswitchspeedvariance=patternswitchspeedvariance*framerate;
   transitionspeed=transitionspeed*framerate;
@@ -1130,31 +1153,31 @@ void callback() {
   framecounter++;
   framecounter1++;
 
-/*  if(framecounter1==30){
-    if(nextspeed==rotationspeed){
-    }
-    else{
-      if(nextspeed>rotationspeed){
-        rotationspeed++;
-      }
-      if(nextspeed<rotationspeed){
-        rotationspeed--;
-      }
-      framecounter1=0;
-    }
-  }
-
-  if(framecounter>=rotationspeed){
-    if(rotationspeed>0){
-      upperend++;
-    }
-    else{
-      upperend--;
-    }
-    upperend%=numPixels;
-    framecounter=0;
-  }
-*/
+  /*  if(framecounter1==30){
+   if(nextspeed==rotationspeed){
+   }
+   else{
+   if(nextspeed>rotationspeed){
+   rotationspeed++;
+   }
+   if(nextspeed<rotationspeed){
+   rotationspeed--;
+   }
+   framecounter1=0;
+   }
+   }
+   
+   if(framecounter>=rotationspeed){
+   if(rotationspeed>0){
+   upperend++;
+   }
+   else{
+   upperend--;
+   }
+   upperend%=numPixels;
+   framecounter=0;
+   }
+   */
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1192,33 +1215,33 @@ void callback() {
     (*renderAlpha[fxIdx[2]])();
 
     // ...then composite front over back:
-  /*  for(i=upperend; i<numPixels; i++) {
-      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-      inv = 257 - alpha; // 1-256 (ditto)
-      // r, g, b are placed in variables (rather than directly in the
-      // setPixelColor parameter list) because of the postincrement pointer
-      // operations -- C/C++ leaves parameter evaluation order up to the
-      // implementation; left-to-right order isn't guaranteed.
-      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      strip.setPixelColor(i, r, g, b);
-    }
-    for(i=0; i<upperend; i++) {
-      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-      inv = 257 - alpha; // 1-256 (ditto)
-      // r, g, b are placed in variables (rather than directly in the
-      // setPixelColor parameter list) because of the postincrement pointer
-      // operations -- C/C++ leaves parameter evaluation order up to the
-      // implementation; left-to-right order isn't guaranteed.
-      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      strip.setPixelColor(i, r, g, b);
-    }
-    
-   */
-       for(i=0; i<numPixels; i++) {
+    /*  for(i=upperend; i<numPixels; i++) {
+     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+     inv = 257 - alpha; // 1-256 (ditto)
+     // r, g, b are placed in variables (rather than directly in the
+     // setPixelColor parameter list) because of the postincrement pointer
+     // operations -- C/C++ leaves parameter evaluation order up to the
+     // implementation; left-to-right order isn't guaranteed.
+     r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+     g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+     b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+     strip.setPixelColor(i, r, g, b);
+     }
+     for(i=0; i<upperend; i++) {
+     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+     inv = 257 - alpha; // 1-256 (ditto)
+     // r, g, b are placed in variables (rather than directly in the
+     // setPixelColor parameter list) because of the postincrement pointer
+     // operations -- C/C++ leaves parameter evaluation order up to the
+     // implementation; left-to-right order isn't guaranteed.
+     r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+     g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+     b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+     strip.setPixelColor(i, r, g, b);
+     }
+     
+     */
+    for(i=0; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
       // r, g, b are placed in variables (rather than directly in the
@@ -1233,22 +1256,22 @@ void callback() {
   }
   else {
     // No transition in progress; just show back image
-   /* for(i=upperend; i<numPixels; i++) {
-      // See note above re: r, g, b vars.
-      r = gamma(*backPtr++);
-      g = gamma(*backPtr++);
-      b = gamma(*backPtr++);
-      strip.setPixelColor(i, r, g, b);
-    }
-    for(i=0; i<upperend; i++) {
-      // See note above re: r, g, b vars.
-      r = gamma(*backPtr++);
-      g = gamma(*backPtr++);
-      b = gamma(*backPtr++);
-      strip.setPixelColor(i, r, g, b);
-    }
-*/
-  for(i=0; i<numPixels;i++) {
+    /* for(i=upperend; i<numPixels; i++) {
+     // See note above re: r, g, b vars.
+     r = gamma(*backPtr++);
+     g = gamma(*backPtr++);
+     b = gamma(*backPtr++);
+     strip.setPixelColor(i, r, g, b);
+     }
+     for(i=0; i<upperend; i++) {
+     // See note above re: r, g, b vars.
+     r = gamma(*backPtr++);
+     g = gamma(*backPtr++);
+     b = gamma(*backPtr++);
+     strip.setPixelColor(i, r, g, b);
+     }
+     */
+    for(i=0; i<numPixels;i++) {
       // See note above re: r, g, b vars.
       r = gamma(*backPtr++);
       g = gamma(*backPtr++);
@@ -1291,7 +1314,7 @@ void callback() {
       button=0;
     }
     else{
-      tCounter = random(-(patternswitchspeed-patternswitchspeedvariance)),-(patternswitchspeed+patternswitchspeedvariance); // Hold image ? to ? seconds
+      tCounter = random(-(patternswitchspeed-patternswitchspeedvariance),-(patternswitchspeed+patternswitchspeedvariance)); // Hold image ? to ? seconds
     }
   }
 }
@@ -1465,8 +1488,8 @@ void blank(byte idx) {
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     long color;
-   // color = getschemacolor(i%8); 
-   color=black;
+    // color = getschemacolor(i%8); 
+    color=black;
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
@@ -1475,116 +1498,116 @@ void blank(byte idx) {
 
 /*
 void sineChase(byte idx) {
-
-  if(fxVars[idx][0] == 0) {
-
-    fxVars[idx][1] = random(1536); // Random hue
-    // Number of repetitions (complete loops around color wheel);
-    // any more than 4 per meter just looks too chaotic.
-    // Store as distance around complete belt in half-degree units:
-    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
-    // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring. It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
-    // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
-    fxVars[idx][4] = 0; // Current position
-    fxVars[idx][0] = 1; // Effect initialized
-  }
-
-  byte *ptr = &imgData[idx][0];
-  int foo;
-  long color, i;
-  for(long i=0; i<numPixels; i++) {
-    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
-    // Peaks of sine wave are white, troughs are black, mid-range
-    // values are pure hue (100% saturated).
-    color = (foo >= 0) ?
-    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
-    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
-    *ptr++ = color >> 16;
-    *ptr++ = color >> 8;
-    *ptr++ = color;
-  }
-  fxVars[idx][4] += fxVars[idx][3];
-}
-
-*/
+ 
+ if(fxVars[idx][0] == 0) {
+ 
+ fxVars[idx][1] = random(1536); // Random hue
+ // Number of repetitions (complete loops around color wheel);
+ // any more than 4 per meter just looks too chaotic.
+ // Store as distance around complete belt in half-degree units:
+ fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+ // Frame-to-frame increment (speed) -- may be positive or negative,
+ // but magnitude shouldn't be so small as to be boring. It's generally
+ // still less than a full pixel per frame, making motion very smooth.
+ fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+ // Reverse direction half the time.
+ if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+ fxVars[idx][4] = 0; // Current position
+ fxVars[idx][0] = 1; // Effect initialized
+ }
+ 
+ byte *ptr = &imgData[idx][0];
+ int foo;
+ long color, i;
+ for(long i=0; i<numPixels; i++) {
+ foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+ // Peaks of sine wave are white, troughs are black, mid-range
+ // values are pure hue (100% saturated).
+ color = (foo >= 0) ?
+ hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+ hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+ *ptr++ = color >> 16;
+ *ptr++ = color >> 8;
+ *ptr++ = color;
+ }
+ fxVars[idx][4] += fxVars[idx][3];
+ }
+ 
+ */
 void thingeyDrift(byte idx) {
- long i;
-   uint8_t thingeynum = 3;
+  long i;
+  uint8_t thingeynum = 3;
   if(fxVars[idx][0] == 0) {
-   
-   for(i=1;i<1+thingeynum;i++){ //1-10 thingey position!
-     fxVars[idx][i]=0;
-   }
-   
-   for(i=11;i<thingeynum+11;i++){ //11-20 direction/speed
-    // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring. It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][i] = random(5,60);
-    // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][i] = -fxVars[idx][i]; 
-   }
-   
-   for(i=21;i<21+thingeynum;i++){ //21-30 intended direction/speed
-    // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring. It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][i] = random(5,60);
-    // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][i] = -fxVars[idx][i]; 
-   }  
+
+    for(i=1;i<1+thingeynum;i++){ //1-10 thingey position!
+      fxVars[idx][i]=0;
+    }
+
+    for(i=11;i<thingeynum+11;i++){ //11-20 direction/speed
+      // Frame-to-frame increment (speed) -- may be positive or negative,
+      // but magnitude shouldn't be so small as to be boring. It's generally
+      // still less than a full pixel per frame, making motion very smooth.
+      fxVars[idx][i] = random(5,60);
+      // Reverse direction half the time.
+      if(random(2) == 0) fxVars[idx][i] = -fxVars[idx][i]; 
+    }
+
+    for(i=21;i<21+thingeynum;i++){ //21-30 intended direction/speed
+      // Frame-to-frame increment (speed) -- may be positive or negative,
+      // but magnitude shouldn't be so small as to be boring. It's generally
+      // still less than a full pixel per frame, making motion very smooth.
+      fxVars[idx][i] = random(5,60);
+      // Reverse direction half the time.
+      if(random(2) == 0) fxVars[idx][i] = -fxVars[idx][i]; 
+    }  
     fxVars[idx][0] = 2 * 720;// init
   }
- long foo[thingeynum];
-byte *ptr = &imgData[idx][0],r,g,b;
+  long foo[thingeynum];
+  byte *ptr = &imgData[idx][0],r,g,b;
   for(i=0; i<numPixels ;i++) {
-   
+
     for(int q=1;q<thingeynum+1;q++){  
-    foo[q] = fixSin(fxVars[idx][q] + fxVars[idx][0] * i / numPixels);
- long   color = getschemacolor(8);
-    r =mixColor8(r,color>>16,foo[q]*2); //bling
-    g =mixColor8(g,color>>8,foo[q]*2);
-    b =mixColor8(b,color,foo[q]*2);  
-   }
+      foo[q] = fixSin(fxVars[idx][q] + fxVars[idx][0] * i / numPixels);
+      long   color = getschemacolor(8);
+      r =mixColor8(r,color>>16,foo[q]*2); //bling
+      g =mixColor8(g,color>>8,foo[q]*2);
+      b =mixColor8(b,color,foo[q]*2);  
+    }
     // Peaks of sine wave are white, troughs are black, mid-range
     // values are pure hue (100% saturated).
     //long getschemacolor(uint8_t y)
 
-     
-//    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
-//    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
-  //  r =mixColor8(color1>>16,color2>>16,foo*2); //bling
-  //  g =mixColor8(color1>>8,color2>>8,foo*2);
-  //  b =mixColor8(color1,color2,foo*2);
-    
+
+    //    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+    //    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    //  r =mixColor8(color1>>16,color2>>16,foo*2); //bling
+    //  g =mixColor8(color1>>8,color2>>8,foo*2);
+    //  b =mixColor8(color1,color2,foo*2);
+
     *ptr++ = r;
     *ptr++ = g;
     *ptr++ = b;
   } 
- /* byte *ptr = &imgData[idx][0];
-  for(int i=0; i<numPixels; i++) {
-    long color;
-    color = getschemacolor(i%8); 
-    *ptr++ = color >> 16;
-    *ptr++ = color >> 8;
-    *ptr++ = color;
-  }
- */ 
+  /* byte *ptr = &imgData[idx][0];
+   for(int i=0; i<numPixels; i++) {
+   long color;
+   color = getschemacolor(i%8); 
+   *ptr++ = color >> 16;
+   *ptr++ = color >> 8;
+   *ptr++ = color;
+   }
+   */
   for(i=1;i<1+thingeynum;i++){ //add position
     fxVars[idx][i] += fxVars[idx][10+i];
     if(fxVars[idx][20+i]==fxVars[idx][10+i]){ //check if intended direction is = current dirrecton
-     // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring. It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][10+i] = 4 + random(1536) / numPixels;
-    // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][10+i] = -fxVars[idx][10+i]; 
+      // Frame-to-frame increment (speed) -- may be positive or negative,
+      // but magnitude shouldn't be so small as to be boring. It's generally
+      // still less than a full pixel per frame, making motion very smooth.
+      fxVars[idx][10+i] = 4 + random(1536) / numPixels;
+      // Reverse direction half the time.
+      if(random(2) == 0) fxVars[idx][10+i] = -fxVars[idx][10+i]; 
     }
-    
+
   }
 }
 
@@ -3153,3 +3176,123 @@ uint8_t toHex(char hi, char lo)
   } // else error
   return 0;
 }
+void EEPwrite(int p_address, unsigned long p_value)
+{
+  int i;
+  byte Byte1 = ((p_value >> 0) & 0xFF);
+  byte Byte2 = ((p_value >> 8) & 0xFF);
+  byte Byte3 = ((p_value >> 16) & 0xFF);
+  byte Byte4 = ((p_value >> 24) & 0xFF);
+
+  EEPROM.write(p_address, Byte1);
+  EEPROM.write(p_address + 1, Byte2);
+  EEPROM.write(p_address + 2, Byte3);
+  EEPROM.write(p_address + 3, Byte4);
+  firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
+  secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
+  secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
+  Serial.print("wrote ");
+
+  Serial.println(firstTwoBytes + secondTwoBytes, DEC);
+
+  firstTwoBytes = 0;
+  secondTwoBytes = 0;
+}
+
+
+
+void EEPread(int p_address)
+{
+  int i;
+  byte Byte1 = EEPROM.read(p_address);
+  byte Byte2 = EEPROM.read(p_address + 1);
+  byte Byte3 = EEPROM.read(p_address + 2);
+  byte Byte4 = EEPROM.read(p_address + 3);
+
+  firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
+  secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
+  secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
+
+
+  irc[i] = firstTwoBytes + secondTwoBytes;
+  Serial.print("Read code from eeprom spots ");
+  Serial.print(p_address);
+  Serial.print(" to ");
+  Serial.print(p_address + 3);
+  Serial.print(" as ");
+  Serial.print(firstTwoBytes + secondTwoBytes, DEC);
+  Serial.print(" in irc spot ");
+  Serial.println(i);
+  firstTwoBytes = 0;
+  secondTwoBytes = 0;
+}
+
+void irsetup() {
+  int i;
+  if (irrecv.decode(&results)) {
+    Serial.print("got code ");
+    irc[i] = results.value;
+    Serial.println(results.value, DEC);
+    Serial.print("Stored in slot ");
+    Serial.println(i);    
+    i++;
+    delay(750);//needed for frequent button presses
+    irrecv.resume();
+
+
+
+    if (i == ircsetup){
+      int i2;
+      for (i = 0; i < ircsetup; i ++){
+        Serial.print("Spot ");
+        Serial.print(i);
+        Serial.print(" has code ");
+        Serial.println(irc[i], DEC);
+        Serial.println("Writing to eeprom");
+        i2 = (i*4);
+        EEPwrite(i2
+          ,irc[i]);
+      }
+      delay(1000);
+      Serial.println("Ready.");
+      return;
+    }
+  }
+
+
+  delay(100);
+
+
+}
+
+void getir(){
+  int i;
+  //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
+  //  Serial.println(i);
+  //irsetup();
+  if (irrecv.decode(&results)) {
+    Serial.print("got raw code ");
+    Serial.println(results.value, DEC);
+     for (i = 0; i < 9; i++){
+    if (results.value == irc[i]) {
+      Serial.print("code match found at loc # ");
+      Serial.println(i);
+     
+      irrecv.resume();  
+      return;
+    } 
+  }
+    if (results.value == irc[10]){ //when caught code match to slot 14
+      //do your stuff here
+      
+      return;
+    }
+    
+  }
+ 
+}
+
+
+
+
+
