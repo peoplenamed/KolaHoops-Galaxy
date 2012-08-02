@@ -1,4 +1,4 @@
-uint8_t brightness = 2; //DO NOT BRING >2
+uint8_t brightness = 3; //DO NOT BRING >2
 uint8_t demo = 1;
 uint8_t compassdebug = 0;
 boolean serialoutput=false;// will the serial respond?
@@ -8,31 +8,31 @@ int nextspeed=0;
 uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
-uint16_t transitionspeed = 1;// # of secconds transition lasts 
-uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
+uint16_t transitionspeed = 2;// # of secconds transition lasts 
+uint8_t transitionspeedvariance = 1;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
-  blank,
-  thingeyDrift,
-  //schemetest,
-  //schemetestlong,
-  //schemetestfade,
-  //schemetestlongfade,
-  //schemefade,
-  //  MonsterHunter,
+  //blank,
+  // thingeyDrift,
+  schemetest,
+  schemetestlong,
+  schemetestfade,
+  schemetestlongfade,
+  schemefade,
+  MonsterHunter,
   //   wavyFlag,// stock
 
-  // pacman,   //bounces back from end to end and builds every time 
-  // POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-  // fans,
+  pacman,   //bounces back from end to end and builds every time 
+  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  fans,
   //  //###############stable full color
 
   //  colorDrift,
-  //  rainbowChase, //stock rainbow chase doesnt work at 240 hz
-  //   sineChase, //stock sine chase
+  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  sineChase, //stock sine chase
 
-  //##########in development###########
+    //##########in development###########
   //  somekindaChase,
 
   // sineCompass, //need to get it built before we can learn the compass
@@ -126,13 +126,13 @@ Smoothing
 
 //ir remote stuffs
 #include <IRremote.h>
-
-int irrxpin =4;
+int irrxpin=19;
 IRrecv irrecv(irrxpin);
 decode_results results;
 unsigned long irc[18] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-#define ircsetup 18
+#define ircsetup 12
+boolean irsetupflag = false;
 //eeprom stuffs\
 //using the eeprom code modified from
 //http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
@@ -422,7 +422,7 @@ const char led_chars[97][6] PROGMEM = {
   0x10,0x28,0x44,0x82,0x00,0x00,  // <9
   0x28,0x28,0x28,0x28,0x28,0x00,  // =0
   0x00,0x82,0x44,0x28,0x10,0x00,  // >1
-  0x40,0x80,0x8a,0x90,0x60,0x00,	// ?2
+  0x40,0x80,0x8a,0x90,0x60,0x00,  // ?2
   0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
   0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
@@ -545,7 +545,8 @@ void setup() {
     i2 = (i*4);
     EEPread(i2);
   }
-  Serial.println("IR Reciever setup ");
+  irrecv.enableIRIn();
+  //  Serial.println("IR Reciever setup ");
   patternswitchspeed= patternswitchspeed*framerate;
   patternswitchspeedvariance=patternswitchspeedvariance*framerate;
   transitionspeed=transitionspeed*framerate;
@@ -853,6 +854,9 @@ if(xyheadingDegreesdelta>90){
 
 void loop() {
   getSerial();
+  //if(irsetupflag==0){
+      getir();
+  //}
   // findplane();
   // compassread();
 }
@@ -1150,6 +1154,7 @@ void menu() {
   }
 }// Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
+  strip.show();
   framecounter++;
   framecounter1++;
 
@@ -1192,7 +1197,9 @@ void callback() {
   // beat with respect to the Timer1 interrupt. The various effects
   // rendering and compositing code is not constant-time, and that
   // unevenness would be apparent if show() were called at the end.
-  strip.show();
+
+
+//  getir();
 
   byte frontImgIdx = 1 - backImgIdx,
   *backPtr = &imgData[backImgIdx][0],
@@ -3102,6 +3109,30 @@ void getSerial(){
       }
       Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
     }
+    if( cmd == 'I' ) {
+      Timer1.detachInterrupt();
+      if(serialoutput==true){ 
+        Serial.println("Entering irsetup");
+      }
+      //  irrecv.enableIRIn();
+      delay(100);
+      Timer1.attachInterrupt(irsetup, 1000000);//redirect interrupt to menu
+    }
+    //  boolean serialoutput=false;// will the serial respond?
+    if( cmd == 'S' ) {
+      serialoutput=true;
+      if(serialoutput==true){  
+        Serial.print("Serial output enabled");
+      }
+    }
+    if( cmd == 's' ) {
+
+      if(serialoutput==true){  
+        Serial.print("Serial output disabled");
+        serialoutput=false;
+      }
+    }
+
     if( cmd == 'C' ) {
       colorschemeselector++;
       if(serialoutput==true){  
@@ -3191,9 +3222,9 @@ void EEPwrite(int p_address, unsigned long p_value)
   firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
   secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
   secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
-  Serial.print("wrote ");
+  //  Serial.print("wrote ");
 
-  Serial.println(firstTwoBytes + secondTwoBytes, DEC);
+  //  Serial.println(firstTwoBytes + secondTwoBytes, DEC);
 
   firstTwoBytes = 0;
   secondTwoBytes = 0;
@@ -3215,82 +3246,88 @@ void EEPread(int p_address)
 
 
   irc[i] = firstTwoBytes + secondTwoBytes;
-  Serial.print("Read code from eeprom spots ");
-  Serial.print(p_address);
-  Serial.print(" to ");
-  Serial.print(p_address + 3);
-  Serial.print(" as ");
-  Serial.print(firstTwoBytes + secondTwoBytes, DEC);
-  Serial.print(" in irc spot ");
-  Serial.println(i);
+  //  Serial.print("Read code from eeprom spots ");
+  //  Serial.print(p_address);
+  //  Serial.print(" to ");
+  //  Serial.print(p_address + 3);
+  //  Serial.print(" as ");
+  // Serial.print(firstTwoBytes + secondTwoBytes, DEC);
+  // Serial.print(" in irc spot ");
+  //Serial.println(i);
   firstTwoBytes = 0;
   secondTwoBytes = 0;
 }
-
+int i;
 void irsetup() {
-  int i;
+  irsetupflag=1;
   if (irrecv.decode(&results)) {
-    Serial.print("got code ");
+    if(serialoutput==true){
+      Serial.print("got code ");
+    }
     irc[i] = results.value;
-    Serial.println(results.value, DEC);
-    Serial.print("Stored in slot ");
-    Serial.println(i);    
+    if(serialoutput==true){   
+      Serial.println(results.value, DEC);
+      Serial.print("Stored in slot ");
+      Serial.println(i); 
+    }   
     i++;
-    delay(750);//needed for frequent button presses
+    delay(1500);//needed for frequent button presses
+
     irrecv.resume();
-
-
+    if(serialoutput==true){
+      Serial.println("ready for next button");
+    }
 
     if (i == ircsetup){
       int i2;
       for (i = 0; i < ircsetup; i ++){
-        Serial.print("Spot ");
-        Serial.print(i);
-        Serial.print(" has code ");
-        Serial.println(irc[i], DEC);
-        Serial.println("Writing to eeprom");
+        if(serialoutput==true){  
+          Serial.print("Spot ");
+          Serial.print(i);
+          Serial.print(" has code ");
+          Serial.println(irc[i], DEC);
+          Serial.println("Writing to eeprom");
+        }
         i2 = (i*4);
         EEPwrite(i2
           ,irc[i]);
       }
       delay(1000);
-      Serial.println("Ready.");
+      if(serialoutput==true){  
+        Serial.println("Ready.");
+      }
       return;
     }
   }
-
-
   delay(100);
-
-
+  irsetupflag=0;
 }
 
 void getir(){
-  int i;
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup();
   if (irrecv.decode(&results)) {
-    Serial.print("got raw code ");
-    Serial.println(results.value, DEC);
-     for (i = 0; i < 9; i++){
-    if (results.value == irc[i]) {
-      Serial.print("code match found at loc # ");
-      Serial.println(i);
-     
-      irrecv.resume();  
-      return;
-    } 
-  }
-    if (results.value == irc[10]){ //when caught code match to slot 14
-      //do your stuff here
-      
-      return;
+    if(serialoutput==true){
+      Serial.print("got raw code ");
+      Serial.println(results.value, DEC);
     }
-    
+    if (results.value == irc[0]) {
+      button=1;
+    }
+    if (results.value == irc[11]) {
+      colorschemeselector--;
+    }  
+    if (results.value == irc[10]) {
+      colorschemeselector++;
+    }     
+    //   delay(1500);
+    irrecv.resume();
   }
- 
+
 }
+
+
 
 
 
