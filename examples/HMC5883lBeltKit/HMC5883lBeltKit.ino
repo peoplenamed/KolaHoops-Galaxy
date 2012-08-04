@@ -1,6 +1,10 @@
 uint8_t brightness = 4; //DO NOT BRING >2
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
+int qf=0;
+int qz=0;
+int lmheading;
+uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=false;// will the serial respond?
 uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
@@ -15,6 +19,8 @@ void (*renderEffect[])(byte) = {
   //############ stable colorscheme
   //blank,
   // thingeyDrift,
+  compassheading,
+  Dice,
   schemetest,
   schemetestlong,
   schemetestfade,
@@ -27,26 +33,26 @@ void (*renderEffect[])(byte) = {
   POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   fans,
   //  //###############stable full color
- strobe,
+  strobe,
   //  colorDrift,
   rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
 
     //##########in development###########
-    somekindaChase,
+  // somekindaChase,
 
   // sineCompass, //need to get it built before we can learn the compass
-   sparkle, //need to make this look better, probably looks sweet when moving fas
+  sparkle, //need to make this look better, probably looks sweet when moving fas
   //  raindance,
   //  rainStrobe2at1,
   //strobefans2at1,
   schemetest2at1,
   MonsterStrobe2at1,
-  schemetestlongrain2at1,
+  //  schemetestlongrain2at1,
   schemetestrain2at1,    
   //  Dice,
-    orbit,
-    SnakeChase, //serial monitor does not work with this one, too intesne
+  //  orbit,
+  SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -124,6 +130,15 @@ Smoothing
 // programmers may have an easier time starting out with the 'strandtest'
 // program also included with the LPD8806 library.
 
+#include "LSM303.h"
+LSM303 compass;
+LSM303::vector running_min = {
+  2047, 2047, 2047}
+, running_max = {
+  -2048, -2048, -2048};
+
+
+
 //ir remote stuffs
 #include <IRremote.h>
 int irrxpin=19;
@@ -157,7 +172,7 @@ int upperend;
 // Instantiate LED strip; arguments are the total number of pixels in strip,
 // the data pin number and clock pin number:
 LPD8806 strip = LPD8806(numPixels);
-int tCounter = -1;
+int tCounter = 0;
 
 // You can also use hardware SPI for ultra-fast writes by omitting the data
 // and clock pin arguments. This is faster, but the data and clock are then
@@ -183,11 +198,7 @@ float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglas
 //int total = 0; // the running total
 //int average = 0;
 //#############compass stuff
-#include <HMC5883L.h>
-HMC5883L compass;
 uint8_t error = 0;
-#define compassscale 8.1
-//acceptable values are 0.88, 1.3, 1.9, 2.5, 4.0, 4.7, 5.6, 8.1
 
 //#############software debounce for the button and button
 unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
@@ -422,7 +433,7 @@ const char led_chars[97][6] PROGMEM = {
   0x28,0x28,0x28,0x28,0x28,0x00,  // =0
   0x00,0x82,0x44,0x28,0x10,0x00,  // >1
   0x40,0x80,0x8a,0x90,0x60,0x00,  // ?2
-  0x4c,0x92,0x9e,0x82,0x7c,0x00,	// @3
+  0x4c,0x92,0x9e,0x82,0x7c,0x00,  // @3
   0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
   0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
@@ -539,12 +550,9 @@ char fixCos(int angle);
 void setup() {
   int i;
   pinMode(irrxpin, INPUT);
-  for (i = 0; i < ircsetup; i ++){
-    int i2;
-    i2 = (i*4);
-    EEPread(i2);
-  }
-  
+  EEPreadirc();
+
+
   //  Serial.println("IR Reciever setup ");
   patternswitchspeed= patternswitchspeed*framerate;
   patternswitchspeedvariance=patternswitchspeedvariance*framerate;
@@ -576,26 +584,8 @@ void setup() {
   }
   Wire.begin(); // Start the I2C interface.
 
-  // Serial.println("Constructing new HMC5883L");
-  compass = HMC5883L(); // Construct a new HMC5883 compass.
-  if(serialoutput==true){
-    Serial.println("Setting scale to +/- 8.1 Ga");
-  }
-  error = compass.SetScale(compassscale); // Set the scale of the compass. //orig 1.3
-  if(serialoutput==true){
-    if(error != 0) // If there is an error, print it out.
-      Serial.println(compass.GetErrorText(error));
-  }
-  if(serialoutput==true){
-    Serial.println("Setting measurement mode to continous.");
-  }
-  error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-  if(serialoutput==true){  
-    if(error != 0) // If there is an error, print it out.
-      Serial.println(compass.GetErrorText(error));
-  }
-
-
+  compass.init();
+  compass.enableDefault();
   strip.begin();
   if(serialoutput==true){
     Serial.println("LED Strip Online.");
@@ -610,8 +600,8 @@ void setup() {
   // the timer allows smooth transitions between effects (otherwise the
   // effects and transitions would jump around in speed...not attractive).
   irrecv.enableIRIn();
- // Timer1.initialize();
- // Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
+  // Timer1.initialize();
+  // Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
   if(serialoutput==true){  
     Serial.print("Timer1 set at ");
     Serial.print(framerate);
@@ -622,20 +612,20 @@ void setup() {
 }
 
 void findplane(){
-  MagnetometerScaled scaled = compass.ReadScaledAxis();
-  if(abs(scaled.XAxis)>abs(scaled.YAxis)&&abs(scaled.XAxis)>abs(scaled.ZAxis)) //in plane 1
+  // MagnetometerScaled scaled = compass.ReadScaledAxis();
+  if(abs(compass.m.x)>abs(compass.m.y)&&abs(compass.m.x)>abs(compass.m.z)) //in plane 1
   {
-    if(scaled.XAxis>0){
+    if(compass.m.x>0){
       plane=1;
     }
     else{
       plane=-1;
     }
   }
-  if(abs(scaled.YAxis)>abs(scaled.XAxis)&&abs(scaled.YAxis)>abs(scaled.ZAxis)) //in plane 2
+  if(abs(compass.m.y)>abs(compass.m.x)&&abs(compass.m.y)>abs(compass.m.z)) //in plane 2
 
   {
-    if(scaled.YAxis>0){
+    if(compass.m.y>0){
       plane=2;
     }
     else{
@@ -643,10 +633,10 @@ void findplane(){
     }
   }
 
-  if(abs(scaled.ZAxis)>abs(scaled.YAxis)&&abs(scaled.ZAxis)>abs(scaled.XAxis)) //in plane 3
+  if(abs(compass.m.z)>abs(compass.m.y)&&abs(compass.m.z)>abs(compass.m.x)) //in plane 3
 
   {
-    if(scaled.ZAxis>0){
+    if(compass.m.z>0){
       plane=3;
     }
     else{
@@ -654,31 +644,24 @@ void findplane(){
     }
 
   }
-  if(compassdebug==1){
-    if(serialoutput==true){  
-      Serial.println();
-      Serial.print("plane:");
-      Serial.println(plane);
-    }
+  if(qf==1){
+
+    Serial.println();
+    Serial.print("plane:");
+    Serial.println(plane);
+
   }
 }
 
 void compassread()
-{
-  // Retrive the raw values from the compass (not scaled).
-  // MagnetometerRaw raw = compass.ReadRawAxis();
-  // Retrived the scaled values from the compass (scaled to the configured scale).
-  MagnetometerScaled scaled = compass.ReadScaledAxis();
-
-  // Values are accessed like so:
-  // int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
+{ 
   xyheadinglast = xyheading;
   xzheadinglast = xzheading;
   yzheadinglast = yzheading;
   // Calculate heading when the magnetometer is level, then correct for signs of axis.
-  xyheading = atan2(scaled.YAxis, scaled.XAxis);
-  xzheading = atan2(scaled.XAxis, scaled.ZAxis);
-  yzheading = atan2(scaled.ZAxis, scaled.YAxis);
+  xyheading = atan2(compass.m.y, compass.m.x);
+  xzheading = atan2(compass.m.x, compass.m.z);
+  yzheading = atan2(compass.m.z, compass.m.y);
   xytravel = atan2(xyheading,xyheadinglast);
   xztravel = atan2(xzheading,xzheadinglast);
   yztravel = atan2(yzheading,yzheadinglast);
@@ -721,12 +704,13 @@ void compassread()
   // Check for wrap due to addition of declination.
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
+
   if(millis()>10000){
     //xydynamic calibration
     if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
-      if( xyheadingdegrees>200){
-        xyheadingdegreesmax=xyheadingdegrees;
-      }
+
+      xyheadingdegreesmax=xyheadingdegrees;
+
     }
     else{
       if(xyheadingdegrees<xyheadingdegreesmin||xyheadingdegreesmin==0){
@@ -758,20 +742,16 @@ void compassread()
   }
 
 
-  if (compassdebug==1){
-    if(serialoutput==true){ 
-      Serial.print("xy");
-      Serial.println(xyheadingdegreesmin);
-      Serial.println(xyheadingdegreesmax);
-      Serial.println(xyheadingdegrees);
-      Serial.print("xz");
-      Serial.println(xzheadingdegrees);
-      Serial.println(xzheadingdegreescalibrated);
-      Serial.print("yz");
-      Serial.println(yzheadingdegrees);
-      Serial.println(yzheadingdegreescalibrated);
-      delay(250);
-    }
+  if (qz==1){
+
+    Serial.print("xy");
+    Serial.println(xyheadingdegrees);
+    Serial.print("xz");
+    Serial.println(xzheadingdegrees);
+    Serial.print("yz");
+    Serial.println(yzheadingdegrees);
+    //delay(250);
+
   }
 
 
@@ -840,11 +820,11 @@ if(xyheadingDegreesdelta>90){
 // Serial.print(raw.ZAxis);
 // Serial.print(" \tScaled:\t");
 
-// Serial.print(scaled.XAxis);
+// Serial.print(compass.m.x);
 // Serial.print(" ");
-// Serial.print(scaled.YAxis);
+// Serial.print(compass.m.y);
 // Serial.print(" ");
-// Serial.print(scaled.ZAxis);
+// Serial.print(compass.m.z);
 
 // Serial.print(" \tHeading:\t");
 /// Serial.print(heading);
@@ -855,11 +835,55 @@ if(xyheadingDegreesdelta>90){
 
 void loop() {
   getSerial();
-
+  compass.read();
+  calibrate();
+  getheading();
   getir();
-  // findplane();
-  // compassread();
+  findplane();
+  compassread();
   callback();
+}
+
+
+void calibrate(){
+  running_min.x = min(running_min.x, compass.m.x);
+  running_min.y = min(running_min.y, compass.m.y);
+  running_min.z = min(running_min.z, compass.m.z);
+
+  running_max.x = max(running_max.x, compass.m.x);
+  running_max.y = max(running_max.y, compass.m.y);
+  running_max.z = max(running_max.z, compass.m.z);
+
+  if(serialoutput==true&&compassdebug==true){  
+    Serial.print("M min ");
+    Serial.print("X: ");
+    Serial.print((int)running_min.x);
+    Serial.print(" Y: ");
+    Serial.print((int)running_min.y);
+    Serial.print(" Z: ");
+    Serial.print((int)running_min.z);
+
+    Serial.print(" M max ");  
+    Serial.print("X: ");
+    Serial.print((int)running_max.x);
+    Serial.print(" Y: ");
+    Serial.print((int)running_max.y);
+    Serial.print(" Z: ");
+    Serial.println((int)running_max.z);
+  }
+  //recalculate calibration
+
+  // Calibration values. Use the Calibrate example program to get the values for
+  // your compass.
+
+  compass.m_min.x = running_min.x; 
+  compass.m_min.y = running_min.y;
+  compass.m_min.z = running_min.z;
+  compass.m_max.x = running_max.x;
+  compass.m_max.y = running_max.y;
+  compass.m_max.z = running_max.z;
+
+
 }
 void menurender() {
   strip.show();
@@ -1156,11 +1180,6 @@ void menu() {
 }// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   strip.show();
-  framecounter++;
-  framecounter1++;
- if (framecounter==framerate){
-  getir();
-framecounter=0;}
   /*  if(framecounter1==30){
    if(nextspeed==rotationspeed){
    }
@@ -1202,7 +1221,7 @@ framecounter=0;}
   // unevenness would be apparent if show() were called at the end.
 
 
-//  getir();
+  //  getir();
 
   byte frontImgIdx = 1 - backImgIdx,
   *backPtr = &imgData[backImgIdx][0],
@@ -1505,6 +1524,42 @@ void blank(byte idx) {
     *ptr++ = color;
   }
 }
+
+
+void compassheading(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//
+    fxVars[idx][2]=0;//
+    fxVars[idx][3]=0;//
+    fxVars[idx][4]=0;//
+    fxVars[idx][5]=0;//
+    fxVars[idx][6]=0;//
+    fxVars[idx][7]=0;//
+    fxVars[idx][8]=0;//
+    fxVars[idx][9]=0;//
+    fxVars[idx][10]=0;//
+    fxVars[idx][0]=1;// init
+  }
+  fxVars[idx][1] =map(xyheadingdegrees,0,360,0,numPixels);
+  fxVars[idx][2] =map(xzheadingdegrees,0,360,0,numPixels);
+  fxVars[idx][3] =map(yzheadingdegrees,0,360,0,numPixels);
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    long color;
+    // color = getschemacolor(i%8); 
+      if (i==fxVars[idx][1]){color=getschemacolor(0);}
+      else{
+      if (i==fxVars[idx][2]){color=getschemacolor(1);}
+      else{
+      if (i==fxVars[idx][3]){color=getschemacolor(2);}
+      else{
+        color=black;}}}
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  }
+  
 
 /*
 void sineChase(byte idx) {
@@ -3097,13 +3152,13 @@ void getSerial(){
         Serial.println("enable compass serial output");
       }
     }
-   if( cmd == 'Q' ) {
-     
-    for (int i =0; i<ircsetup; i++){
-    Serial.print (irc[i]);
-    Serial.print(" , " );
-    Serial.println (i);
-    }
+    if( cmd == 'Q' ) {
+
+      for (int i =0; i<ircsetup; i++){
+        Serial.print (irc[i]);
+        Serial.print(" , " );
+        Serial.println (i);
+      }
     }
 
     if( cmd == 'M' ) {
@@ -3233,9 +3288,9 @@ void EEPwrite(int p_address, unsigned long p_value)
   firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
   secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
   secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
-    Serial.print("wrote ");
+  Serial.print("wrote ");
 
-   Serial.println(firstTwoBytes + secondTwoBytes, DEC);
+  Serial.println(firstTwoBytes + secondTwoBytes, DEC);
 
   firstTwoBytes = 0;
   secondTwoBytes = 0;
@@ -3243,34 +3298,36 @@ void EEPwrite(int p_address, unsigned long p_value)
 
 
 
-void EEPread(int p_address)
+void EEPreadirc()
 {
   int i;
-  byte Byte1 = EEPROM.read(p_address);
-  byte Byte2 = EEPROM.read(p_address + 1);
-  byte Byte3 = EEPROM.read(p_address + 2);
-  byte Byte4 = EEPROM.read(p_address + 3);
+  for(i=0;i<ircsetup;i++){
+    byte Byte1 = EEPROM.read(i);
+    byte Byte2 = EEPROM.read(i + 1);
+    byte Byte3 = EEPROM.read(i + 2);
+    byte Byte4 = EEPROM.read(i + 3);
 
-  firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
-  secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
-  secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
+    firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
+    secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
+    secondTwoBytes *= 65536; // multiply by 2 to power 16 - bit shift 24 to the left
 
 
-  irc[i] = firstTwoBytes + secondTwoBytes;
+    irc[i] = firstTwoBytes + secondTwoBytes;
     Serial.print("Read code from eeprom spots ");
-    Serial.print(p_address);
+    Serial.print(i);
     Serial.print(" to ");
-    Serial.print(p_address + 3);
+    Serial.print(i + 3);
     Serial.print(" as ");
-   Serial.print(firstTwoBytes + secondTwoBytes, DEC);
-   Serial.print(" in irc spot ");
-  Serial.println(i);
-  firstTwoBytes = 0;
-  secondTwoBytes = 0;
+    Serial.print(firstTwoBytes + secondTwoBytes, DEC);
+    Serial.print(" in irc spot ");
+    Serial.println(i);
+    firstTwoBytes = 0;
+    secondTwoBytes = 0;
+  }
 }
 int i;
 void irsetup() {
- // irsetupflag=1;
+  // irsetupflag=1;
   if (irrecv.decode(&results)) {
     if(serialoutput==true){
       Serial.print("got code ");
@@ -3281,8 +3338,7 @@ void irsetup() {
       Serial.print("Stored in slot ");
       Serial.println(i); 
     }   
-    i++;
-    delay(1500);//needed for frequent button presses
+    i++;   // delay(1500);//needed for frequent button presses
 
     irrecv.resume();
     if(serialoutput==true){
@@ -3310,7 +3366,7 @@ void irsetup() {
     }
   }
   delay(100);
- // irsetupflag=0;
+  // irsetupflag=0;
 }
 
 void getir(){
@@ -3318,36 +3374,100 @@ void getir(){
   //  Serial.println(i);
   //irsetup();
   if (irrecv.decode(&results)) {
-    unsigned long temp= results.value;
     if(serialoutput==true){
-     // Serial.print("got raw code ");
-     
-      Serial.println(results.value, DEC);
+      if (results.value == irc[0]) {
+        if(serialoutput==true){
+          Serial.println("recognised 0 on ir");
+        }
+        button=1;
+      }
+      if (results.value == irc[1]) {
+        if(serialoutput==true){
+          Serial.println("recognised 1 on ir");
+        }
+        colorschemeselector++;
+      }  
+      if (results.value == irc[2]) {
+        if(serialoutput==true){
+          Serial.println("recognised 2 on ir");
+        }
+        //do stuff here
+      }
+      if (results.value == irc[3]) {
+        if(serialoutput==true){
+          Serial.println("recognised 3 on ir");
+        }
+        //do stuff here
+      }
+      if (results.value == irc[4]) {
+        if(serialoutput==true){
+          Serial.println("recognised 4 on ir");
+        }
+        colorschemeselector;
+      }
+      if (results.value == irc[5]) {
+        if(serialoutput==true){
+          Serial.println("recognised 5 on ir");//serial message here    
+        }
+        //do stuff here
+      }    
+      if (results.value == irc[6]) {
+        if(serialoutput==true){
+          Serial.println("recognised 6 on ir");//serial message here    
+        }
+        //do stuff here
+      }
+      if (results.value == irc[7]) {
+        if(serialoutput==true){
+          Serial.println("recognised 7 on ir");  //serial message here    
+        }
+        //do stuff here
+      }
+      if (results.value == irc[8]) {
+        if(serialoutput==true){
+          Serial.println("recognised 8 on ir");  //serial message here    
+        }
+        //do stuff here
+      }
+      if (results.value == irc[9]) {
+        if(serialoutput==true){
+          Serial.println("recognised 9 on ir");   //serial message here    
+        }
+        //do stuff here
+      }
+      if (results.value == irc[10]) {
+        if(serialoutput==true){
+          Serial.println("recognised e1 on ir"); //serial message here    
+        }
+        //do stuff here
+      }
+      if (results.value == irc[11]) {
+        if(serialoutput==true){
+          Serial.println("recognised e2 on ir"); //serial message here    
+        }
+        //do stuff here
+      }
+      if (results.value == irc[12]) {
+        if(serialoutput==true){
+          //serial message here    
+        }
+        //do stuff here
+      }
+      irrecv.resume();
     }
-   
- 
-    if (temp == irc[0]) {
-      if(serialoutput==true){
-         Serial.println("recognised 0 on ir");}
-      button=1;
-    }
-    if (temp == irc[1]) {
-       if(serialoutput==true){
-         Serial.println("recognised 1 on ir");}
-      colorschemeselector--;
-    }  
-    if (temp == irc[2]) {
-       if(serialoutput==true){
-         Serial.println("recognised 2 on ir");}
-      colorschemeselector++;
-    }    
-    
-    irrecv.resume();
   }
-
 }
 
 
+
+void getheading(){
+  lmheading = compass.heading((LSM303::vector){
+    0,-1,0    }
+  );
+  if(serialoutput==true&&compassdebug==true){
+    Serial.println(lmheading);
+  } 
+}
 
 
 
