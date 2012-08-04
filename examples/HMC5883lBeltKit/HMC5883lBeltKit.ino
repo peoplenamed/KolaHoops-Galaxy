@@ -42,7 +42,7 @@ void (*renderEffect[])(byte) = {
   // somekindaChase,
 
   // sineCompass, //need to get it built before we can learn the compass
-  sparkle, //need to make this look better, probably looks sweet when moving fas
+//  sparkle, //need to make this look better, probably looks sweet when moving fas
   //  raindance,
   //  rainStrobe2at1,
   //strobefans2at1,
@@ -3302,10 +3302,10 @@ void EEPreadirc()
 {
   int i;
   for(i=0;i<ircsetup;i++){
-    byte Byte1 = EEPROM.read(i);
-    byte Byte2 = EEPROM.read(i + 1);
-    byte Byte3 = EEPROM.read(i + 2);
-    byte Byte4 = EEPROM.read(i + 3);
+    byte Byte1 = EEPROM.read(i*4);
+    byte Byte2 = EEPROM.read(i*4 + 1);
+    byte Byte3 = EEPROM.read(i*4 + 2);
+    byte Byte4 = EEPROM.read(i*4 + 3);
 
     firstTwoBytes = ((Byte1 << 0) & 0xFF) + ((Byte2 << 8) & 0xFF00);
     secondTwoBytes = (((Byte3 << 0) & 0xFF) + ((Byte4 << 8) & 0xFF00));
