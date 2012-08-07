@@ -1,6 +1,7 @@
 uint8_t brightness = 4; //DO NOT BRING >2
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
+int opmode; //0==normal ,1=menu,2=irsetup
 int qf=0;
 int qz=0;
 int lmheading;
@@ -9,40 +10,42 @@ boolean serialoutput=false;// will the serial respond?
 uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
-uint16_t patternswitchspeed = 10; //# of seconds between pattern switches
+uint16_t patternswitchspeed = 100; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
-uint16_t transitionspeed = 2;// # of secconds transition lasts 
-uint8_t transitionspeedvariance = 1;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
+uint16_t transitionspeed = 90;// # of secconds transition lasts 
+uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
   //############ stable colorscheme
   //blank,
   // thingeyDrift,
+  
   compassheading,
   Dice,
   schemetest,
   schemetestlong,
-  schemetestfade,
+//  schemetestfade,
   schemetestlongfade,
   schemefade,
   MonsterHunter,
   //   wavyFlag,// stock
 
   pacman,   //bounces back from end to end and builds every time 
-  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
+  
   fans,
+  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //  //###############stable full color
   strobe,
   //  colorDrift,
-  rainbowChase, //stock rainbow chase doesnt work at 240 hz
+ // rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
 
     //##########in development###########
   // somekindaChase,
 
   // sineCompass, //need to get it built before we can learn the compass
-//  sparkle, //need to make this look better, probably looks sweet when moving fas
+  //  sparkle, //need to make this look better, probably looks sweet when moving fas
   //  raindance,
   //  rainStrobe2at1,
   //strobefans2at1,
@@ -144,8 +147,20 @@ LSM303::vector running_min = {
 int irrxpin=19;
 IRrecv irrecv(irrxpin);
 decode_results results;
-#define ircsetup 13
+#define ircsetup 11
 unsigned long irc[ircsetup];
+unsigned long irc2[ircsetup]= {
+279939191,
+279928991,
+279937151,
+279933071,
+279941231,
+279912671,
+279949391,
+279920831,
+279965711,
+279904511,
+279961631};
 //boolean irsetupflag = false;
 //eeprom stuffs\
 //using the eeprom code modified from
@@ -705,6 +720,12 @@ void compassread()
   if(yzheading > 2*PI)
     yzheading -= 2*PI;
 
+  // Convert radians to degrees for readability.
+  yzheadingdegreeslast = yzheadingdegrees;
+  yzheadingdegrees = yzheading * 180/M_PI;
+  // runningaverage(xyheadingDegrees);
+
+
   if(millis()>10000){
     //xydynamic calibration
     if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
@@ -833,15 +854,49 @@ if(xyheadingDegreesdelta>90){
 // Serial.println(" Degrees \t");
 //}
 
+
+int counter;
+void mode(){
+  switch(opmode){
+  case 0: //normal run mode
+    getSerial(), //process serial data
+    getir(), //process ir commands
+    callback(), //generate image
+    compass.read(), //refiresh compass info
+    calibrate(), //recalibrate compass
+  //  getheading(), //calculate 3 axis heading
+    //findplane(), //calculate plane
+    compassread(); //?
+   
+    break;
+  case 1: //menu mode
+    getSerial(),
+    getir(),
+    compass.read(),
+  //  getheading(),
+    menurender(); 
+    break;
+  case 2: //ir setup mode
+  getSerial();
+    irsetup();
+    break;
+  }
+}
 void loop() {
+ 
+  getir();
   getSerial();
   compass.read();
-  calibrate();
-  getheading();
-  getir();
-  findplane();
+  if (counter==255)calibrate(),counter=-255;
+  //getheading();
   compassread();
-  callback();
+  findplane();
+  callback(); //generate image
+   
+ //   if (counter==1) getSerial(); //process serial dat
+ 
+   
+ // mode(); //what are we doing?
 }
 
 
@@ -1547,19 +1602,28 @@ void compassheading(byte idx) {
   for(int i=0; i<numPixels; i++) {
     long color;
     // color = getschemacolor(i%8); 
-      if (i==fxVars[idx][1]){color=getschemacolor(0);}
+    if (i==fxVars[idx][1]){
+      color=getschemacolor(0);
+    }
+    else{
+      if (i==fxVars[idx][2]){
+        color=getschemacolor(1);
+      }
       else{
-      if (i==fxVars[idx][2]){color=getschemacolor(1);}
-      else{
-      if (i==fxVars[idx][3]){color=getschemacolor(2);}
-      else{
-        color=black;}}}
+        if (i==fxVars[idx][3]){
+          color=getschemacolor(2);
+        }
+        else{
+          color=black;
+        }
+      }
+    }
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
   }
-  }
-  
+}
+
 
 /*
 void sineChase(byte idx) {
@@ -2196,12 +2260,21 @@ void Dice(byte idx){
 }
 
 void POV(byte idx) {
-  const String Message[5] = {
+  const String Message[14] = {
     "KolaHoops.com ",
     "MAKE ",
     "HACK ",
     "CREATE ",
-    //  "!$?#@&*",
+    "What?",
+    "Shannon",
+    "Rob",
+    "Pete"
+    "Max"
+    ":) :( (: :(",
+    "////"
+    "01010101"
+    "( . Y . )",
+    "!$?#@&*",
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
@@ -2210,7 +2283,7 @@ void POV(byte idx) {
     fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
     fxVars[idx][4]=0;//# of frames until next change
-    fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][6]=5;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
     fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
     fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
     fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
@@ -2829,9 +2902,7 @@ void MonsterHunter(byte idx) {
               }
             }
             if(fxVars[idx][11]==3){
-
-              color = hsv2rgb(random(1536),
-              255, 128);
+              color = getschemacolor(i);
               *ptr++ = color >> 16;
               *ptr++ = color >> 8;
               *ptr++ = color;
@@ -2968,7 +3039,7 @@ PROGMEM prog_uchar gammaTable[] = {
 // the compiler permits forward references to functions but not data.
 inline byte gamma(byte x) {
   // return pgm_read_byte(&gammaTable[x/brightness]);
-  return (x-1)/2;
+  return x>>(brightness+1);
 }
 
 // Fixed-point colorspace conversion: HSV (hue-saturation-value) to RGB.
@@ -3124,7 +3195,6 @@ void runningaverage(int newval) {
  }
  */
 void getSerial(){
-  byte *ptr = &imgData[0][0];
   int num;
   if( readSerialString() ) {
     if(serialoutput==true){
@@ -3158,31 +3228,35 @@ void getSerial(){
         Serial.print (irc[i]);
         Serial.print(" , " );
         Serial.println (i);
+        
+      }
+      Serial.println();
+      for (int i =0; i<ircsetup; i++){
+        Serial.print (irc2[i]);
+        Serial.print(" , " );
+        Serial.println (i);
       }
     }
-
+//int opmode; //0==normal ,1=menu,2=irsetup
     if( cmd == 'M' ) {
-      //Timer1.detachInterrupt();
       if(serialoutput==true){ 
         Serial.println("Entering Menu");
       }
-      //Timer1.attachInterrupt(menurender, 1000000/framerate);//redirect interrupt to menu
+     opmode = 1;
     }
     if( cmd == 'm' ) {
       //Timer1.detachInterrupt();
       if(serialoutput==true){ 
-        Serial.println("Entering callback");
+        Serial.println("Woah.");
       }
-      //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
+      opmode=0;
     }
     if( cmd == 'I' ) {
       //Timer1.detachInterrupt();
       if(serialoutput==true){ 
         Serial.println("Entering irsetup");
       }
-      //  irrecv.enableIRIn();
-      delay(100);
-      //Timer1.attachInterrupt(irsetup, 1000000);//redirect interrupt to menu
+     opmode=2;
     }
     //  boolean serialoutput=false;// will the serial respond?
     if( cmd == 'S' ) {
@@ -3213,25 +3287,6 @@ void getSerial(){
         Serial.println(colorschemeselector);
       }
     }
-    if( cmd == 'F' ) {
-      framerate*=2;
-      //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
-      if(serialoutput==true){ 
-        Serial.print("Framerate+: ");
-        Serial.println(framerate);
-      }
-    }
-
-    if( cmd == 'f' ) {
-      framerate/=2;
-      //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to callback
-      if(serialoutput==true){  
-        Serial.print("Framerate-: ");
-        Serial.println(framerate);
-      }
-    }
-
-
     serInStr[0] = 0; // say we've used the string
   }
 }
@@ -3338,7 +3393,8 @@ void irsetup() {
       Serial.print("Stored in slot ");
       Serial.println(i); 
     }   
-    i++;   // delay(1500);//needed for frequent button presses
+    i++;   
+    delay(1500);//needed for frequent button presses
 
     irrecv.resume();
     if(serialoutput==true){
@@ -3373,101 +3429,112 @@ void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup();
+/* 
+279939191 , 0
+
+279928991 , 1
+
+279937151 , 2
+
+279933071 , 3
+
+279941231 , 4
+
+279912671 , 5
+
+279949391 , 6
+
+279920831 , 7
+
+279965711 , 8
+
+279904511 , 9
+
+279961631 , 10
+*/
   if (irrecv.decode(&results)) {
-    if(serialoutput==true){
-      if (results.value == irc[0]) {
+      if (results.value == irc[0]||results.value == irc2[0]) {
         if(serialoutput==true){
           Serial.println("recognised 0 on ir");
         }
         button=1;
       }
-      if (results.value == irc[1]) {
+      if (results.value == irc[1]||results.value == irc2[1]) {
         if(serialoutput==true){
           Serial.println("recognised 1 on ir");
         }
         colorschemeselector++;
       }  
-      if (results.value == irc[2]) {
+      if (results.value == irc[2]||results.value == irc2[2]) {
         if(serialoutput==true){
           Serial.println("recognised 2 on ir");
         }
+        colorschemeselector++;
         //do stuff here
       }
-      if (results.value == irc[3]) {
+      if (results.value == irc[3]||results.value == irc2[3]) {
         if(serialoutput==true){
           Serial.println("recognised 3 on ir");
         }
-        //do stuff here
+        //brightness up
+        if( brightness==1){}else{
+        brightness--;
+        }
       }
-      if (results.value == irc[4]) {
+      if (results.value == irc[4]||results.value == irc2[4]) {
         if(serialoutput==true){
           Serial.println("recognised 4 on ir");
         }
-        colorschemeselector;
+        fxVars[0][0]=0;
       }
-      if (results.value == irc[5]) {
+      if (results.value == irc[5]||results.value == irc2[5]) {
         if(serialoutput==true){
           Serial.println("recognised 5 on ir");//serial message here    
         }
+        colorschemeselector--;
         //do stuff here
       }    
-      if (results.value == irc[6]) {
+      if (results.value == irc[6]||results.value == irc2[6]) {
         if(serialoutput==true){
           Serial.println("recognised 6 on ir");//serial message here    
         }
         //do stuff here
+                if(brightness==6){}else{
+            brightness++;
+        }
       }
-      if (results.value == irc[7]) {
+      if (results.value == irc[7]||results.value == irc2[7]) {
         if(serialoutput==true){
           Serial.println("recognised 7 on ir");  //serial message here    
         }
         //do stuff here
       }
-      if (results.value == irc[8]) {
+      if (results.value == irc[8]||results.value == irc2[8]) {
         if(serialoutput==true){
           Serial.println("recognised 8 on ir");  //serial message here    
         }
         //do stuff here
       }
-      if (results.value == irc[9]) {
+      if (results.value == irc[9]||results.value == irc2[9]) {
         if(serialoutput==true){
           Serial.println("recognised 9 on ir");   //serial message here    
         }
         //do stuff here
       }
-      if (results.value == irc[10]) {
+      if (results.value == irc[10]||results.value == irc2[10]) {
         if(serialoutput==true){
-          Serial.println("recognised e1 on ir"); //serial message here    
-        }
-        //do stuff here
-      }
-      if (results.value == irc[11]) {
-        if(serialoutput==true){
-          Serial.println("recognised e2 on ir"); //serial message here    
-        }
-        //do stuff here
-      }
-      if (results.value == irc[12]) {
-        if(serialoutput==true){
-          //serial message here    
+          Serial.println("recognised 10 on ir"); //serial message here    
         }
         //do stuff here
       }
       irrecv.resume();
     }
+     
   }
-}
 
 
 
-void getheading(){
-  lmheading = compass.heading((LSM303::vector){
-    0,-1,0    }
-  );
-  if(serialoutput==true&&compassdebug==true){
-    Serial.println(lmheading);
-  } 
-}
+
 
 
 
