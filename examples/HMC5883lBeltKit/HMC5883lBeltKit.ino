@@ -6,7 +6,7 @@ int qf=0;
 int qz=0;
 int lmheading;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
-boolean serialoutput=false;// will the serial respond?
+boolean serialoutput=true;// will the serial respond?
 uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
@@ -449,7 +449,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x82,0x44,0x28,0x10,0x00,  // >1
   0x40,0x80,0x8a,0x90,0x60,0x00,  // ?2
   0x4c,0x92,0x9e,0x82,0x7c,0x00,  // @3
-  0x7e,0x88,0x88,0x88,0x7e,0x00,	// A4
+  0x7e,0x88,0x88,0x88,0x7e,0x00,  // A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
   0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
   0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
@@ -883,23 +883,17 @@ void mode(){
   }
 }
 void loop() {
- 
-  getir();
+  getir(); //  irsetup(); // either or
   getSerial();
   compass.read();
   if (counter==255)calibrate(),counter=-255;
-  //getheading();
+ // getheading();
   compassread();
   findplane();
   callback(); //generate image
-   
  //   if (counter==1) getSerial(); //process serial dat
- 
-   
  // mode(); //what are we doing?
 }
-
-
 void calibrate(){
   running_min.x = min(running_min.x, compass.m.x);
   running_min.y = min(running_min.y, compass.m.y);
@@ -3456,76 +3450,95 @@ void getir(){
       if (results.value == irc[0]||results.value == irc2[0]) {
         if(serialoutput==true){
           Serial.println("recognised 0 on ir");
-        }
+        }//pattern ++
         button=1;
       }
       if (results.value == irc[1]||results.value == irc2[1]) {
         if(serialoutput==true){
           Serial.println("recognised 1 on ir");
-        }
-        colorschemeselector++;
+        } //pattern -- (NOT IMPLEMENTED yet)
+//colorschemeselector++;
       }  
       if (results.value == irc[2]||results.value == irc2[2]) {
         if(serialoutput==true){
           Serial.println("recognised 2 on ir");
         }
         colorschemeselector++;
-        //do stuff here
+        //color scheme --
       }
       if (results.value == irc[3]||results.value == irc2[3]) {
         if(serialoutput==true){
           Serial.println("recognised 3 on ir");
         }
-        //brightness up
-        if( brightness==1){}else{
-        brightness--;
-        }
+        colorschemeselector--;
       }
       if (results.value == irc[4]||results.value == irc2[4]) {
         if(serialoutput==true){
           Serial.println("recognised 4 on ir");
         }
-        fxVars[0][0]=0;
+               //brightness up
+        if( brightness==1){}else{
+        brightness--;
+        }
       }
       if (results.value == irc[5]||results.value == irc2[5]) {
         if(serialoutput==true){
           Serial.println("recognised 5 on ir");//serial message here    
         }
-        colorschemeselector--;
-        //do stuff here
+                if(brightness==6){}else{
+            brightness++;     //brightness down
+        }
       }    
       if (results.value == irc[6]||results.value == irc2[6]) {
         if(serialoutput==true){
           Serial.println("recognised 6 on ir");//serial message here    
         }
-        //do stuff here
-                if(brightness==6){}else{
-            brightness++;
-        }
+     //set demo mode off
+   demo =0;  
       }
       if (results.value == irc[7]||results.value == irc2[7]) {
         if(serialoutput==true){
           Serial.println("recognised 7 on ir");  //serial message here    
         }
-        //do stuff here
+     //set super fast demo mode
+     demo = 1;
+     patternswitchspeed = 120; //# of frames between pattern switches
+     patternswitchspeedvariance = 15;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+     transitionspeed = 60;// # of frames transition lasts 
+     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
+      
       }
       if (results.value == irc[8]||results.value == irc2[8]) {
         if(serialoutput==true){
           Serial.println("recognised 8 on ir");  //serial message here    
         }
-        //do stuff here
+           //set medium demo mode
+     demo = 1;
+     patternswitchspeed = 300; //# of frames between pattern switches
+     patternswitchspeedvariance = 50;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+     transitionspeed = 120;// # of frames transition lasts 
+     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
+      
       }
       if (results.value == irc[9]||results.value == irc2[9]) {
         if(serialoutput==true){
           Serial.println("recognised 9 on ir");   //serial message here    
         }
-        //do stuff here
+             //set slow demo mode
+     demo = 1;
+     patternswitchspeed = 900; //# of frames between pattern switches
+     patternswitchspeedvariance = 255;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+     transitionspeed = 120;// # of frames transition lasts 
+     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
+      
       }
       if (results.value == irc[10]||results.value == irc2[10]) {
         if(serialoutput==true){
           Serial.println("recognised 10 on ir"); //serial message here    
         }
-        //do stuff here
+        fxVars[0][0]=0;
+        tCounter=-1;
+        //re init
       }
       irrecv.resume();
     }
