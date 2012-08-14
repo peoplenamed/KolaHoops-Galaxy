@@ -7,7 +7,7 @@ int qz=0;
 int lmheading;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
-uint8_t framerate=1; // SIESURE WARNING?
+//uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
 uint16_t patternswitchspeed = 100; //# of seconds between pattern switches
@@ -22,6 +22,7 @@ void (*renderEffect[])(byte) = {
   // thingeyDrift,
   
   compassheading,
+  compassheadingRGBFade,
   Dice,
   schemetest,
   schemetestlong,
@@ -569,10 +570,12 @@ void setup() {
 
 
   //  Serial.println("IR Reciever setup ");
-  patternswitchspeed= patternswitchspeed*framerate;
+  /*patternswitchspeed= patternswitchspeed*framerate;
   patternswitchspeedvariance=patternswitchspeedvariance*framerate;
   transitionspeed=transitionspeed*framerate;
   transitionspeedvariance=transitionspeedvariance*framerate;
+  
+  */
   // for (int thisReading = 0; thisReading < numReadings; thisReading++)
   // readings[thisReading] = 0;
 
@@ -619,7 +622,7 @@ void setup() {
   // Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
   if(serialoutput==true){  
     Serial.print("Timer1 set at ");
-    Serial.print(framerate);
+//    Serial.print(framerate);
     Serial.println(" fps.");
   }
   //   attachInterrupt(0, buttonpress, RISING);
@@ -887,11 +890,11 @@ void loop() {
   getSerial();
   compass.read();
   if (counter==255)calibrate(),counter=-255;
- // getheading();
+  //getheading();
   compassread();
   findplane();
   callback(); //generate image
- //   if (counter==1) getSerial(); //process serial dat
+  // if (counter==1) getSerial(); //process serial dat
  // mode(); //what are we doing?
 }
 void calibrate(){
@@ -1385,8 +1388,11 @@ void callback() {
     fxVars[2][0] = 0; // Transition not yet initialized
   }
   else if(tCounter >= transitionTime) { // End transition
+   
+   
     fxIdx[backImgIdx] = fxIdx[frontImgIdx]; // Move front effect index to back
     backImgIdx = 1 - backImgIdx; // Invert back index
+   
     if(demo==0){ //works?
       tCounter = -1; // hold image on the edge
       button=0;
@@ -1615,6 +1621,24 @@ void compassheading(byte idx) {
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
+  }
+}
+
+void compassheadingRGBFade(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//
+    fxVars[idx][2]=0;//
+    fxVars[idx][3]=0;//
+    fxVars[idx][0]=1;// init
+  }
+  fxVars[idx][1] =map(xyheadingdegrees,0,360,0,255);
+  fxVars[idx][2] =map(xzheadingdegrees,0,360,0,255);
+  fxVars[idx][3] =map(yzheadingdegrees,0,360,0,255);
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) { 
+    *ptr++ = fxVars[idx][1];
+    *ptr++ = fxVars[idx][2];
+    *ptr++ = fxVars[idx][3];
   }
 }
 
@@ -2300,9 +2324,9 @@ void POV(byte idx) {
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
         // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),255, 255);
         color = getschemacolor(fxVars[idx][7]);
-        *ptr++ = color >> 16;
-        *ptr++ = color >> 8;
-        *ptr++ = color;
+        *ptr++ = 255;
+        *ptr++ = 0;
+        *ptr++ = 0;
       }
       else{
         *ptr++ = 0;
@@ -3423,7 +3447,7 @@ void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup();
-/* 
+/*  kenmore remote
 279939191 , 0
 
 279928991 , 1
@@ -3445,6 +3469,33 @@ void getir(){
 279904511 , 9
 
 279961631 , 10
+
+
+Sirius codes
+Read code from eeprom spots 0 to 3 as 2155864095 in irc spot 0
+
+Read code from eeprom spots 1 to 4 as 2155847775 in irc spot 1
+
+Read code from eeprom spots 2 to 5 as 2155815135 in irc spot 2
+
+Read code from eeprom spots 3 to 6 as 2155811055 in irc spot 3
+
+Read code from eeprom spots 4 to 7 as 2155860015 in irc spot 4
+
+Read code from eeprom spots 5 to 8 as 2155851855 in irc spot 5
+
+Read code from eeprom spots 6 to 9 as 2155827375 in irc spot 6
+
+Read code from eeprom spots 7 to 10 as 2155835535 in irc spot 7
+
+Read code from eeprom spots 8 to 11 as 2155868175 in irc spot 8
+
+Read code from eeprom spots 9 to 12 as 2155809015 in irc spot 9
+
+Read code from eeprom spots 10 to 13 as 2155831455 in irc spot 10
+
+
+
 */
   if (irrecv.decode(&results)) {
       if (results.value == irc[0]||results.value == irc2[0]) {
