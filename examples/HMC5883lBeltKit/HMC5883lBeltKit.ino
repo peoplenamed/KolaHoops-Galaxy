@@ -2,7 +2,6 @@ uint8_t brightness = 4; //DO NOT BRING >2
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
-int qf=0;
 int qz=0;
 int lmheading;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
@@ -56,7 +55,7 @@ void (*renderEffect[])(byte) = {
   schemetestrain2at1,    
   //  Dice,
   //  orbit,
-  SnakeChase, //serial monitor does not work with this one, too intesne
+ // SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -167,8 +166,7 @@ unsigned long irc2[ircsetup]= {
 //using the eeprom code modified from
 //http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
 #include <EEPROM.h>
-unsigned long firstTwoBytes;
-unsigned long secondTwoBytes;
+
 
 #include <avr/pgmspace.h>
 #include "SPI.h"
@@ -451,7 +449,7 @@ const char led_chars[97][6] PROGMEM = {
   0x40,0x80,0x8a,0x90,0x60,0x00,  // ?2
   0x4c,0x92,0x9e,0x82,0x7c,0x00,  // @3
   0x7e,0x88,0x88,0x88,0x7e,0x00,  // A4
-  0xfe,0x92,0x92,0x92,0x6c,0x00,	// B5
+  0xfe,0x92,0x92,0x92,0x6c,0x00,  // B5
   0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
   0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
   0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
@@ -528,7 +526,6 @@ fxIdx[3]; // Effect # for back & front images + alpha
 int fxVars[3][50]; // Effect instance variables (explained later)
 // Countdown to next transition
 int transitionTime; // Duration (in frames) of current transition
-float fxFloats[3][4];
 // function prototypes, leave these be :)
 void schemetest(byte idx);
 void schemetestfade(byte idx);
@@ -662,7 +659,7 @@ void findplane(){
     }
 
   }
-  if(qf==1){
+  if(serialoutput==true&&compassdebug==true){
 
     Serial.println();
     Serial.print("plane:");
@@ -862,15 +859,14 @@ int counter;
 void mode(){
   switch(opmode){
   case 0: //normal run mode
-    getSerial(), //process serial data
-    getir(), //process ir commands
-    callback(), //generate image
-    compass.read(), //refiresh compass info
-    calibrate(), //recalibrate compass
-  //  getheading(), //calculate 3 axis heading
-    //findplane(), //calculate plane
-    compassread(); //?
-   
+getir(); //  irsetup(); // either or
+  getSerial();
+  compass.read();
+  if (counter==255)calibrate(),counter=-255;
+  //getheading(); //garbage, from lsm303 exaple
+  compassread();
+ // findplane(); //called in the pattern to stop unnecescary running
+  callback(); //generate image
     break;
   case 1: //menu mode
     getSerial(),
@@ -886,6 +882,7 @@ void mode(){
   }
 }
 void loop() {
+ /*
   getir(); //  irsetup(); // either or
   getSerial();
   compass.read();
@@ -895,7 +892,8 @@ void loop() {
   findplane();
   callback(); //generate image
   // if (counter==1) getSerial(); //process serial dat
- // mode(); //what are we doing?
+ */
+  mode(); //what are we doing?
 }
 void calibrate(){
   running_min.x = min(running_min.x, compass.m.x);
@@ -1329,9 +1327,9 @@ void callback() {
       // setPixelColor parameter list) because of the postincrement pointer
       // operations -- C/C++ leaves parameter evaluation order up to the
       // implementation; left-to-right order isn't guaranteed.
-      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      r = (*frontPtr++ * alpha + *backPtr++ * inv) >> (9+brightness);
+      g = (*frontPtr++ * alpha + *backPtr++ * inv) >> (9+brightness);
+      b = (*frontPtr++ * alpha + *backPtr++ * inv) >> (9+brightness);
       strip.setPixelColor(i, r, g, b);
     }
   }
@@ -1354,9 +1352,9 @@ void callback() {
      */
     for(i=0; i<numPixels;i++) {
       // See note above re: r, g, b vars.
-      r = gamma(*backPtr++);
-      g = gamma(*backPtr++);
-      b = gamma(*backPtr++);
+      r = *backPtr++>>(brightness+1);
+      g = *backPtr++>>(brightness+1);
+      b = *backPtr++>>(brightness+1);
       strip.setPixelColor(i, r, g, b);
     }
   }
@@ -2250,6 +2248,7 @@ void scrolls(byte idx) {
 
 
 void Dice(byte idx){
+  findplane();
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;
     fxVars[idx][2]=1;
@@ -2422,7 +2421,7 @@ void PeteOV(byte idx) {
  }
  */
 //simple dual pixel chasin in opposite directions
-void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
+/*void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
   if(fxVars[idx][0] == 0) { // Initialize effect?
     fxVars[idx][1] = random(1536); // Random hue
     fxFloats[idx][0] = random(100,1000) / 1000.0 ; // random speed 0.0 - 1.0
@@ -2495,6 +2494,7 @@ void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
     fxFloats[idx][3] += numPixels;
   }
 }
+*/
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
@@ -3348,7 +3348,8 @@ uint8_t toHex(char hi, char lo)
 }
 void EEPwrite(int p_address, unsigned long p_value)
 {
-  int i;
+  unsigned long firstTwoBytes;
+  unsigned long secondTwoBytes;
   byte Byte1 = ((p_value >> 0) & 0xFF);
   byte Byte2 = ((p_value >> 8) & 0xFF);
   byte Byte3 = ((p_value >> 16) & 0xFF);
@@ -3373,6 +3374,8 @@ void EEPwrite(int p_address, unsigned long p_value)
 
 void EEPreadirc()
 {
+  unsigned long firstTwoBytes;
+  unsigned long secondTwoBytes;
   int i;
   for(i=0;i<ircsetup;i++){
     byte Byte1 = EEPROM.read(i*4);
