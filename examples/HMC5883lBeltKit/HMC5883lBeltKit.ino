@@ -1,9 +1,8 @@
 uint8_t brightness = 4; //DO NOT BRING >2
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
-boolean spininit=false;
-long spinsteps,spinspeed,spinpos;
 int opmode; //0==normal ,1=menu,2=irsetup
+int qf=0;
 int qz=0;
 int lmheading;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
@@ -57,7 +56,7 @@ void (*renderEffect[])(byte) = {
   schemetestrain2at1,    
   //  Dice,
   //  orbit,
- // SnakeChase, //serial monitor does not work with this one, too intesne
+  SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -168,7 +167,8 @@ unsigned long irc2[ircsetup]= {
 //using the eeprom code modified from
 //http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
 #include <EEPROM.h>
-
+unsigned long firstTwoBytes;
+unsigned long secondTwoBytes;
 
 #include <avr/pgmspace.h>
 #include "SPI.h"
@@ -452,7 +452,7 @@ const char led_chars[97][6] PROGMEM = {
   0x4c,0x92,0x9e,0x82,0x7c,0x00,  // @3
   0x7e,0x88,0x88,0x88,0x7e,0x00,  // A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,  // B5
-  0x7c,0x82,0x82,0x82,0x44,0x00,  // C6
+  0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
   0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
   0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
   0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
@@ -528,6 +528,7 @@ fxIdx[3]; // Effect # for back & front images + alpha
 int fxVars[3][50]; // Effect instance variables (explained later)
 // Countdown to next transition
 int transitionTime; // Duration (in frames) of current transition
+float fxFloats[3][4];
 // function prototypes, leave these be :)
 void schemetest(byte idx);
 void schemetestfade(byte idx);
@@ -661,7 +662,7 @@ void findplane(){
     }
 
   }
-  if(serialoutput==true&&compassdebug==true){
+  if(qf==1){
 
     Serial.println();
     Serial.print("plane:");
@@ -861,14 +862,15 @@ int counter;
 void mode(){
   switch(opmode){
   case 0: //normal run mode
-getir(); //  irsetup(); // either or
-  getSerial();
-  compass.read();
-  if (counter==255)calibrate(),counter=-255;
-  //getheading(); //garbage, from lsm303 exaple
-  compassread();
- // findplane(); //called in the pattern to stop unnecescary running
-  callback(); //generate image
+    getSerial(), //process serial data
+    getir(), //process ir commands
+    callback(), //generate image
+    compass.read(), //refiresh compass info
+    calibrate(), //recalibrate compass
+  //  getheading(), //calculate 3 axis heading
+    //findplane(), //calculate plane
+    compassread(); //?
+   
     break;
   case 1: //menu mode
     getSerial(),
@@ -884,7 +886,6 @@ getir(); //  irsetup(); // either or
   }
 }
 void loop() {
- /*
   getir(); //  irsetup(); // either or
   getSerial();
   compass.read();
@@ -894,8 +895,7 @@ void loop() {
   findplane();
   callback(); //generate image
   // if (counter==1) getSerial(); //process serial dat
- */
-  mode(); //what are we doing?
+ // mode(); //what are we doing?
 }
 void calibrate(){
   running_min.x = min(running_min.x, compass.m.x);
@@ -1232,7 +1232,31 @@ void menu() {
 }// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   strip.show();
- 
+  /*  if(framecounter1==30){
+   if(nextspeed==rotationspeed){
+   }
+   else{
+   if(nextspeed>rotationspeed){
+   rotationspeed++;
+   }
+   if(nextspeed<rotationspeed){
+   rotationspeed--;
+   }
+   framecounter1=0;
+   }
+   }
+   
+   if(framecounter>=rotationspeed){
+   if(rotationspeed>0){
+   upperend++;
+   }
+   else{
+   upperend--;
+   }
+   upperend%=numPixels;
+   framecounter=0;
+   }
+   */
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1248,28 +1272,19 @@ void callback() {
   // rendering and compositing code is not constant-time, and that
   // unevenness would be apparent if show() were called at the end.
 
-      if(spininit == false) {
-    // Number of repetitions (complete loops around color wheel);
-    // any more than 4 per meter just looks too chaotic.
-    // Store as distance around complete belt in one degree units:
-    spinsteps = 16;
-    spinsteps = spinsteps*numPixels;
-    // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring. It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    spinspeed = random(16);
-    // Reverse direction half the time.
-    if(random(2) == 0) spinspeed = -spinspeed;
-    spinpos = 0; // Current position
-    spininit = true; // Effect initialized
-  }
+
+  //  getir();
 
   byte frontImgIdx = 1 - backImgIdx,
   *backPtr = &imgData[backImgIdx][0],
   r, g, b;
   int i;
+
   // Always render back image based on current effect index:
   (*renderEffect[fxIdx[backImgIdx]])(backImgIdx);
+  if(tCounter==0){
+    nextspeed=random(1,9)*2/3;
+  }
   // Front render and composite only happen during transitions...
   if(tCounter > 0) {
     // Transition in progress
@@ -1281,7 +1296,7 @@ void callback() {
     (*renderAlpha[fxIdx[2]])();
 
     // ...then composite front over back:
-    for(i=spinpos/16; i<numPixels; i++) {
+    /*  for(i=upperend; i<numPixels; i++) {
      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
      inv = 257 - alpha; // 1-256 (ditto)
      // r, g, b are placed in variables (rather than directly in the
@@ -1293,7 +1308,7 @@ void callback() {
      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
      strip.setPixelColor(i, r, g, b);
      }
-     for(i=0; i<spinpos/16; i++) {
+     for(i=0; i<upperend; i++) {
      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
      inv = 257 - alpha; // 1-256 (ditto)
      // r, g, b are placed in variables (rather than directly in the
@@ -1305,8 +1320,8 @@ void callback() {
      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
      strip.setPixelColor(i, r, g, b);
      }
-    
-     /*
+     
+     */
     for(i=0; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
@@ -1314,70 +1329,36 @@ void callback() {
       // setPixelColor parameter list) because of the postincrement pointer
       // operations -- C/C++ leaves parameter evaluation order up to the
       // implementation; left-to-right order isn't guaranteed.
-      r = (*frontPtr++ * alpha + *backPtr++ * inv) >> 8;
-      g = (*frontPtr++ * alpha + *backPtr++ * inv) >> 8;
-      b = (*frontPtr++ * alpha + *backPtr++ * inv) >> 8;
+      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
       strip.setPixelColor(i, r, g, b);
     }
-    */
   }
   else {
     // No transition in progress; just show back image
-     for(i=spinpos/16; i<numPixels; i++) {
+    /* for(i=upperend; i<numPixels; i++) {
      // See note above re: r, g, b vars.
-      r = *backPtr++>>(brightness+1);
-      g = *backPtr++>>(brightness+1);
-      b = *backPtr++>>(brightness+1);
+     r = gamma(*backPtr++);
+     g = gamma(*backPtr++);
+     b = gamma(*backPtr++);
      strip.setPixelColor(i, r, g, b);
      }
-     for(i=0; i<spinpos/16; i++) {
+     for(i=0; i<upperend; i++) {
      // See note above re: r, g, b vars.
-      r = *backPtr++>>(brightness+1);
-      g = *backPtr++>>(brightness+1);
-      b = *backPtr++>>(brightness+1);
+     r = gamma(*backPtr++);
+     g = gamma(*backPtr++);
+     b = gamma(*backPtr++);
      strip.setPixelColor(i, r, g, b);
      }
-      spinpos += spinspeed;
-      spinpos %= numPixels;
-     /*
-     #############################################
-     
-  if(spininit == false) {
-    // Number of repetitions (complete loops around color wheel);
-    // any more than 4 per meter just looks too chaotic.
-    // Store as distance around complete belt in one degree units:
-    spinsteps = numPixels*16;
-    // Frame-to-frame increment (speed) -- may be positive or negative,
-    // but magnitude shouldn't be so small as to be boring. It's generally
-    // still less than a full pixel per frame, making motion very smooth.
-    spinspeed = random(fxVars[idx][2]);
-    // Reverse direction half the time.
-    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
-    spinpos = 0; // Current position
-    spininit = true; // Effect initialized
-  }
-  long color, i;
-  for(long i=0; i<numPixels; i++) {
-    foo = fixSin(spinpos + spinsteps * i / numPixels);
-   
-  }
-  spinpos += spinspeed;
-     
-     
-     
      */
- 
-  
-  /*
     for(i=0; i<numPixels;i++) {
       // See note above re: r, g, b vars.
-      r = *backPtr++>>(brightness+1);
-      g = *backPtr++>>(brightness+1);
-      b = *backPtr++>>(brightness+1);
+      r = gamma(*backPtr++);
+      g = gamma(*backPtr++);
+      b = gamma(*backPtr++);
       strip.setPixelColor(i, r, g, b);
     }
-     spinpos += spinspeed;
-     */
   }
 
   // Count up to next transition (or end of current one):
@@ -2269,7 +2250,6 @@ void scrolls(byte idx) {
 
 
 void Dice(byte idx){
-  findplane();
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;
     fxVars[idx][2]=1;
@@ -2442,7 +2422,7 @@ void PeteOV(byte idx) {
  }
  */
 //simple dual pixel chasin in opposite directions
-/*void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
+void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
   if(fxVars[idx][0] == 0) { // Initialize effect?
     fxVars[idx][1] = random(1536); // Random hue
     fxFloats[idx][0] = random(100,1000) / 1000.0 ; // random speed 0.0 - 1.0
@@ -2515,7 +2495,6 @@ void PeteOV(byte idx) {
     fxFloats[idx][3] += numPixels;
   }
 }
-*/
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
@@ -3369,8 +3348,7 @@ uint8_t toHex(char hi, char lo)
 }
 void EEPwrite(int p_address, unsigned long p_value)
 {
-  unsigned long firstTwoBytes;
-  unsigned long secondTwoBytes;
+  int i;
   byte Byte1 = ((p_value >> 0) & 0xFF);
   byte Byte2 = ((p_value >> 8) & 0xFF);
   byte Byte3 = ((p_value >> 16) & 0xFF);
@@ -3395,8 +3373,6 @@ void EEPwrite(int p_address, unsigned long p_value)
 
 void EEPreadirc()
 {
-  unsigned long firstTwoBytes;
-  unsigned long secondTwoBytes;
   int i;
   for(i=0;i<ircsetup;i++){
     byte Byte1 = EEPROM.read(i*4);
@@ -3616,5 +3592,15 @@ Read code from eeprom spots 10 to 13 as 2155831455 in irc spot 10
         //re init
       }
       irrecv.resume();
-    }  
+    }
+     
   }
+
+
+
+
+
+
+
+
+
