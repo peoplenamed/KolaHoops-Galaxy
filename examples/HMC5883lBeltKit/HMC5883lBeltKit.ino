@@ -1,6 +1,8 @@
 uint8_t brightness = 4; //DO NOT BRING >2
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
+boolean spininit=false;
+long spinsteps,spinspeed,spinpos;
 int opmode; //0==normal ,1=menu,2=irsetup
 int qf=0;
 int qz=0;
@@ -452,7 +454,7 @@ const char led_chars[97][6] PROGMEM = {
   0x4c,0x92,0x9e,0x82,0x7c,0x00,  // @3
   0x7e,0x88,0x88,0x88,0x7e,0x00,  // A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,  // B5
-  0x7c,0x82,0x82,0x82,0x44,0x00,	// C6
+  0x7c,0x82,0x82,0x82,0x44,0x00,  // C6
   0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
   0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
   0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
@@ -521,7 +523,7 @@ const char led_chars[97][6] PROGMEM = {
 // combined; it represents the opacity of the front image. When the
 // transition completes, the "front" then becomes the "back," a new front
 // is chosen, and the process repeats.
-byte imgData[2][numPixels * 3], // Data for 2 strips worth of imagery
+byte imgData[3][numPixels * 3], // Data for 2 strips worth of imagery
 alphaMask[numPixels], // Alpha channel for compositing images
 backImgIdx = 0, // Index of 'back' image (always 0 or 1)
 fxIdx[3]; // Effect # for back & front images + alpha
@@ -1265,6 +1267,22 @@ void callback() {
     menuphase3=0;
     menuphase4=0;
   }
+  if(spininit == false) {
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in one degree units:
+    spinsteps = 255*numPixels;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+   // spinspeed = random (4,64);
+   spinspeed=6;
+    // Reverse direction half the time.
+    if(random(2) == 0) spinspeed = -spinspeed;
+    spinpos = 0; // Current position
+    spininit = true; // Effect initialized
+  }
+  
   // Very first thing here is to issue the strip data generated from the
   // *previous* callback. It's done this way on purpose because show() is
   // roughly constant-time, so the refresh will always occur on a uniform
@@ -1273,18 +1291,27 @@ void callback() {
   // unevenness would be apparent if show() were called at the end.
 
 
-  //  getir();
-
+ 
   byte frontImgIdx = 1 - backImgIdx,
   *backPtr = &imgData[backImgIdx][0],
-  r, g, b;
-  int i;
-
-  // Always render back image based on current effect index:
+  *backPtr2 = &imgData[3][0],
+  *backPtr3 = &imgData[3][0],
+  r, g, b,
+  r2,g2,b2;
+ 
+   // Always render back image based on current effect index:
   (*renderEffect[fxIdx[backImgIdx]])(backImgIdx);
-  if(tCounter==0){
-    nextspeed=random(1,9)*2/3;
+
+ 
+int i;
+  for(i=0;i<numPixels;i++){
+       *backPtr2++ = imgData[backImgIdx][((i*3)+3)%numPixels];
+       *backPtr2++ = imgData[backImgIdx][((i*3)+4)%numPixels];
+       *backPtr2++ = imgData[backImgIdx][((i*3)+5)%numPixels];
   }
+ 
+  int phase=(abs(spinpos)+1)%256;
+
   // Front render and composite only happen during transitions...
   if(tCounter > 0) {
     // Transition in progress
@@ -1322,7 +1349,7 @@ void callback() {
      }
      
      */
-    for(i=0; i<numPixels; i++) {
+    for(i=spinpos+1>>8; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
       // r, g, b are placed in variables (rather than directly in the
@@ -1333,6 +1360,27 @@ void callback() {
       g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
       b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
       strip.setPixelColor(i, r, g, b);
+    }
+    for(i=0; i<spinpos+1>>8; i++) {
+      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+      inv = 257 - alpha; // 1-256 (ditto)
+      // r, g, b are placed in variables (rather than directly in the
+      // setPixelColor parameter list) because of the postincrement pointer
+      // operations -- C/C++ leaves parameter evaluation order up to the
+      // implementation; left-to-right order isn't guaranteed.
+      r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
+      strip.setPixelColor(i, r, g, b);
+    }
+    spinpos+=spinspeed;
+    if(spinpos>=spinsteps-spinspeed){
+      spinpos=-spinsteps+spinspeed+1;
+    }
+    else{
+      if (spinpos<=-spinsteps+spinspeed){
+        spinpos=spinsteps-spinspeed-1;
+      }
     }
   }
   else {
@@ -1352,12 +1400,37 @@ void callback() {
      strip.setPixelColor(i, r, g, b);
      }
      */
-    for(i=0; i<numPixels;i++) {
-      // See note above re: r, g, b vars.
-      r = gamma(*backPtr++);
-      g = gamma(*backPtr++);
-      b = gamma(*backPtr++);
-      strip.setPixelColor(i, r, g, b);
+     for(i=spinpos+1>>8; i<numPixels; i++) {
+ // See note above re: r, g, b vars.
+       r = *backPtr++;
+       g = *backPtr++;
+       b = *backPtr++;
+       r2= *backPtr3++;
+       g2= *backPtr3++;
+       b2= *backPtr3++;
+       r=mixColor8(r,r2,phase);
+      g=mixColor8(g,g2,phase);
+      b=mixColor8(b,b2,phase);
+      strip.setPixelColor(i, gamma(r), gamma(g), gamma(b));
+    }
+    for(i=0; i<spinpos+1>>8; i++) {
+ // See note above re: r, g, b vars.
+       r = *backPtr++;
+       g = *backPtr++;
+       b = *backPtr++;
+       r2= *backPtr3++;
+       g2= *backPtr3++;
+       b2= *backPtr3++;
+      r=mixColor8(r,r2,phase);
+      g=mixColor8(g,g2,phase);
+      b=mixColor8(b,b2,phase);
+      strip.setPixelColor(i, gamma(r), gamma(g), gamma(b));    }
+    spinpos += spinspeed;
+    if(spinpos>=spinsteps-spinspeed){
+      spinpos=-spinsteps+spinspeed+1;
+    }
+    if (spinpos<=-spinsteps+spinspeed){
+      spinpos=spinsteps-spinspeed-1;
     }
   }
 
