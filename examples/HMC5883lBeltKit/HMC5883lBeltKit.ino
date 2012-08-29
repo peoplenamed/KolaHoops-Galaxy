@@ -1,16 +1,16 @@
-uint8_t brightness = 4; //DO NOT BRING >2
+uint8_t brightness = 2; //DO NOT BRING >2
 uint8_t demo = 0;
 uint8_t compassdebug = 0;
 boolean spininit=false;
 long spinsteps,spinspeed,spinpos;
 int opmode; //0==normal ,1=menu,2=irsetup
-int qf=0;
 int qz=0;
 int lmheading;
+#define framerate 60
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 //uint8_t framerate=1; // SIESURE WARNING?
-uint8_t colorschemeselector = 16;
+uint8_t colorschemeselector = 0;
 int nextspeed=0;
 uint16_t patternswitchspeed = 100; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
@@ -22,26 +22,26 @@ void (*renderEffect[])(byte) = {
   //############ stable colorscheme
   //blank,
   // thingeyDrift,
-  
+
   compassheading,
   compassheadingRGBFade,
   Dice,
   schemetest,
   schemetestlong,
-//  schemetestfade,
+  //  schemetestfade,
   schemetestlongfade,
   schemefade,
   MonsterHunter,
   //   wavyFlag,// stock
 
   pacman,   //bounces back from end to end and builds every time 
-  
+
   fans,
   POV, //if using uno comment this out. 2k of ram is not enough! or is it?
   //  //###############stable full color
   strobe,
   //  colorDrift,
- // rainbowChase, //stock rainbow chase doesnt work at 240 hz
+  // rainbowChase, //stock rainbow chase doesnt work at 240 hz
   sineChase, //stock sine chase
 
     //##########in development###########
@@ -58,7 +58,7 @@ void (*renderEffect[])(byte) = {
   schemetestrain2at1,    
   //  Dice,
   //  orbit,
-  SnakeChase, //serial monitor does not work with this one, too intesne
+  // SnakeChase, //serial monitor does not work with this one, too intesne
   //needs to store index and message string in progmem
   // 
 
@@ -121,13 +121,10 @@ Smoothing
 // Original code by Adafruit
 // SPI additions by cjbaar
 /*****************************************************************************/
-
-
 // Example to control LPD8806-based RGB LED Modules in a strip; originally
 // intended for the Adafruit Digital Programmable LED Belt Kit.
 // REQUIRES //Timer1 LIBRARY: http://www.arduino.cc/playground/Code///Timer1
 // ALSO REQUIRES LPD8806 LIBRARY, which should be included with this code.
-
 // I'm generally not fond of canned animation patterns. Wanting something
 // more nuanced than the usual 8-bit beep-beep-boop-boop pixelly animation,
 // this program smoothly cycles through a set of procedural animated effects
@@ -135,16 +132,12 @@ Smoothing
 // coding techniques may be a bit obtuse (e.g. function arrays), so novice
 // programmers may have an easier time starting out with the 'strandtest'
 // program also included with the LPD8806 library.
-
 #include "LSM303.h"
 LSM303 compass;
 LSM303::vector running_min = {
   2047, 2047, 2047}
 , running_max = {
   -2048, -2048, -2048};
-
-
-
 //ir remote stuffs
 #include <IRremote.h>
 int irrxpin=19;
@@ -153,25 +146,22 @@ decode_results results;
 #define ircsetup 11
 unsigned long irc[ircsetup];
 unsigned long irc2[ircsetup]= {
-279939191,
-279928991,
-279937151,
-279933071,
-279941231,
-279912671,
-279949391,
-279920831,
-279965711,
-279904511,
-279961631};
+  2155864095,
+  2155847775,
+  2155815135,
+  2155811055,
+  2155860015,
+  2155851855,
+  2155827375,
+  2155835535,
+  2155868175,
+  2155809015,
+  2155831455};
 //boolean irsetupflag = false;
 //eeprom stuffs\
 //using the eeprom code modified from
 //http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
 #include <EEPROM.h>
-unsigned long firstTwoBytes;
-unsigned long secondTwoBytes;
-
 #include <avr/pgmspace.h>
 #include "SPI.h"
 #include "LPD8806.h"
@@ -455,7 +445,7 @@ const char led_chars[97][6] PROGMEM = {
   0x7e,0x88,0x88,0x88,0x7e,0x00,  // A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,  // B5
   0x7c,0x82,0x82,0x82,0x44,0x00,  // C6
-  0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
+  0xfe,0x82,0x82,0x44,0x38,0x00,  // D7
   0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
   0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
   0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
@@ -530,7 +520,6 @@ fxIdx[3]; // Effect # for back & front images + alpha
 int fxVars[3][50]; // Effect instance variables (explained later)
 // Countdown to next transition
 int transitionTime; // Duration (in frames) of current transition
-float fxFloats[3][4];
 // function prototypes, leave these be :)
 void schemetest(byte idx);
 void schemetestfade(byte idx);
@@ -573,11 +562,11 @@ void setup() {
 
   //  Serial.println("IR Reciever setup ");
   /*patternswitchspeed= patternswitchspeed*framerate;
-  patternswitchspeedvariance=patternswitchspeedvariance*framerate;
-  transitionspeed=transitionspeed*framerate;
-  transitionspeedvariance=transitionspeedvariance*framerate;
-  
-  */
+   patternswitchspeedvariance=patternswitchspeedvariance*framerate;
+   transitionspeed=transitionspeed*framerate;
+   transitionspeedvariance=transitionspeedvariance*framerate;
+   
+   */
   // for (int thisReading = 0; thisReading < numReadings; thisReading++)
   // readings[thisReading] = 0;
 
@@ -620,11 +609,12 @@ void setup() {
   // the timer allows smooth transitions between effects (otherwise the
   // effects and transitions would jump around in speed...not attractive).
   irrecv.enableIRIn();
-  // Timer1.initialize();
-  // Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
+  
+  Timer1.initialize();
+  //   Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
   if(serialoutput==true){  
     Serial.print("Timer1 set at ");
-//    Serial.print(framerate);
+    Serial.print(framerate);
     Serial.println(" fps.");
   }
   //   attachInterrupt(0, buttonpress, RISING);
@@ -664,7 +654,7 @@ void findplane(){
     }
 
   }
-  if(qf==1){
+  if(serialoutput==true&&compassdebug==true){
 
     Serial.println();
     Serial.print("plane:");
@@ -864,40 +854,42 @@ int counter;
 void mode(){
   switch(opmode){
   case 0: //normal run mode
-    getSerial(), //process serial data
-    getir(), //process ir commands
-    callback(), //generate image
-    compass.read(), //refiresh compass info
-    calibrate(), //recalibrate compass
-  //  getheading(), //calculate 3 axis heading
-    //findplane(), //calculate plane
-    compassread(); //?
-   
+    getir(); // either or
+    //  irsetup(); // either or
+    getSerial();
+    compass.read();
+    if (counter==255)calibrate(),counter=-255;
+    //getheading(); //garbage, from lsm303 exaple
+    compassread();
+    // findplane(); //called in the pattern to stop unnecescary running
+    callback();
     break;
   case 1: //menu mode
-    getSerial(),
-    getir(),
-    compass.read(),
-  //  getheading(),
+    getSerial();
+    getir();
+    compass.read();
+    //  getheading(),
     menurender(); 
     break;
   case 2: //ir setup mode
-  getSerial();
+    getSerial();
     irsetup();
     break;
   }
 }
 void loop() {
+  /*
   getir(); //  irsetup(); // either or
-  getSerial();
-  compass.read();
-  if (counter==255)calibrate(),counter=-255;
-  //getheading();
-  compassread();
-  findplane();
-  callback(); //generate image
-  // if (counter==1) getSerial(); //process serial dat
- // mode(); //what are we doing?
+   getSerial();
+   compass.read();
+   if (counter==255)calibrate(),counter=-255;
+   //getheading();
+   compassread();
+   findplane();
+   callback(); //generate image
+   // if (counter==1) getSerial(); //process serial dat
+   */
+  mode(); //what are we doing?
 }
 void calibrate(){
   running_min.x = min(running_min.x, compass.m.x);
@@ -1234,31 +1226,7 @@ void menu() {
 }// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   strip.show();
-  /*  if(framecounter1==30){
-   if(nextspeed==rotationspeed){
-   }
-   else{
-   if(nextspeed>rotationspeed){
-   rotationspeed++;
-   }
-   if(nextspeed<rotationspeed){
-   rotationspeed--;
-   }
-   framecounter1=0;
-   }
-   }
-   
-   if(framecounter>=rotationspeed){
-   if(rotationspeed>0){
-   upperend++;
-   }
-   else{
-   upperend--;
-   }
-   upperend%=numPixels;
-   framecounter=0;
-   }
-   */
+
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1267,6 +1235,13 @@ void callback() {
     menuphase3=0;
     menuphase4=0;
   }
+  // Very first thing here is to issue the strip data generated from the
+  // *previous* callback. It's done this way on purpose because show() is
+  // roughly constant-time, so the refresh will always occur on a uniform
+  // beat with respect to the //Timer1 interrupt. The various effects
+  // rendering and compositing code is not constant-time, and that
+  // unevenness would be apparent if show() were called at the end.
+
   if(spininit == false) {
     // Number of repetitions (complete loops around color wheel);
     // any more than 4 per meter just looks too chaotic.
@@ -1282,36 +1257,27 @@ void callback() {
     spinpos = 0; // Current position
     spininit = true; // Effect initialized
   }
-  
-  // Very first thing here is to issue the strip data generated from the
-  // *previous* callback. It's done this way on purpose because show() is
-  // roughly constant-time, so the refresh will always occur on a uniform
-  // beat with respect to the //Timer1 interrupt. The various effects
-  // rendering and compositing code is not constant-time, and that
-  // unevenness would be apparent if show() were called at the end.
-
-
- 
+  // Serial.println(spinpos);
   byte frontImgIdx = 1 - backImgIdx,
-  *backPtr = &imgData[backImgIdx][0],
-  *backPtr2 = &imgData[3][0],
-  *backPtr3 = &imgData[3][0],
-  r, g, b,
-  r2,g2,b2;
- 
-   // Always render back image based on current effect index:
+      *backPtr = &imgData[backImgIdx][0],
+      *backPtr2 = &imgData[3][0],
+      *backPtr3 = &imgData[3][0],
+  r, g, b;
+  // Always render back image based on current effect index:
   (*renderEffect[fxIdx[backImgIdx]])(backImgIdx);
-
- 
-int i;
+  int i;
   for(i=0;i<numPixels;i++){
        *backPtr2++ = imgData[backImgIdx][((i*3)+3)%numPixels];
        *backPtr2++ = imgData[backImgIdx][((i*3)+4)%numPixels];
        *backPtr2++ = imgData[backImgIdx][((i*3)+5)%numPixels];
   }
- 
-  int phase=(abs(spinpos)+1)%256;
 
+  //copy for comparison with offset of 1
+  byte r2,g2,b2;
+  int phase=(abs(spinpos)+1)%256;
+  //    Serial.println(imgData[backImgIdx][(3)+5]);
+
+  //Serial.println(phase);
   // Front render and composite only happen during transitions...
   if(tCounter > 0) {
     // Transition in progress
@@ -1323,32 +1289,6 @@ int i;
     (*renderAlpha[fxIdx[2]])();
 
     // ...then composite front over back:
-    /*  for(i=upperend; i<numPixels; i++) {
-     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-     inv = 257 - alpha; // 1-256 (ditto)
-     // r, g, b are placed in variables (rather than directly in the
-     // setPixelColor parameter list) because of the postincrement pointer
-     // operations -- C/C++ leaves parameter evaluation order up to the
-     // implementation; left-to-right order isn't guaranteed.
-     r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     strip.setPixelColor(i, r, g, b);
-     }
-     for(i=0; i<upperend; i++) {
-     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-     inv = 257 - alpha; // 1-256 (ditto)
-     // r, g, b are placed in variables (rather than directly in the
-     // setPixelColor parameter list) because of the postincrement pointer
-     // operations -- C/C++ leaves parameter evaluation order up to the
-     // implementation; left-to-right order isn't guaranteed.
-     r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     strip.setPixelColor(i, r, g, b);
-     }
-     
-     */
     for(i=spinpos+1>>8; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
@@ -1382,25 +1322,25 @@ int i;
         spinpos=spinsteps-spinspeed-1;
       }
     }
-  }
-  else {
-    // No transition in progress; just show back image
-    /* for(i=upperend; i<numPixels; i++) {
-     // See note above re: r, g, b vars.
-     r = gamma(*backPtr++);
-     g = gamma(*backPtr++);
-     b = gamma(*backPtr++);
-     strip.setPixelColor(i, r, g, b);
-     }
-     for(i=0; i<upperend; i++) {
-     // See note above re: r, g, b vars.
-     r = gamma(*backPtr++);
-     g = gamma(*backPtr++);
-     b = gamma(*backPtr++);
+
+    /*
+    for(i=0; i<numPixels; i++) {
+     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
+     inv = 257 - alpha; // 1-256 (ditto)
+     // r, g, b are placed in variables (rather than directly in the
+     // setPixelColor parameter list) because of the postincrement pointer
+     // operations -- C/C++ leaves parameter evaluation order up to the
+     // implementation; left-to-right order isn't guaranteed.
+     r = (*frontPtr++ * alpha + *backPtr++ * inv) >> 8;
+     g = (*frontPtr++ * alpha + *backPtr++ * inv) >> 8;
+     b = (*frontPtr++ * alpha + *backPtr++ * inv) >> 8;
      strip.setPixelColor(i, r, g, b);
      }
      */
-     for(i=spinpos+1>>8; i<numPixels; i++) {
+  }
+  else {
+    // No transition in progress; just show back image
+    for(i=spinpos+1>>8; i<numPixels; i++) {
  // See note above re: r, g, b vars.
        r = *backPtr++;
        g = *backPtr++;
@@ -1432,6 +1372,46 @@ int i;
     if (spinpos<=-spinsteps+spinspeed){
       spinpos=spinsteps-spinspeed-1;
     }
+//    Serial.println(phase);
+    /*
+     #############################################
+     
+     if(spininit == false) {
+     // Number of repetitions (complete loops around color wheel);
+     // any more than 4 per meter just looks too chaotic.
+     // Store as distance around complete belt in one degree units:
+     spinsteps = numPixels*16;
+     // Frame-to-frame increment (speed) -- may be positive or negative,
+     // but magnitude shouldn't be so small as to be boring. It's generally
+     // still less than a full pixel per frame, making motion very smooth.
+     spinspeed = random(fxVars[idx][2]);
+     // Reverse direction half the time.
+     if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+     spinpos = 0; // Current position
+     spininit = true; // Effect initialized
+     }
+     long color, i;
+     for(long i=0; i<numPixels; i++) {
+     foo = fixSin(spinpos + spinsteps * i / numPixels);
+     
+     }
+     spinpos += spinspeed;
+     
+     
+     
+     */
+
+
+    /*
+    for(i=0; i<numPixels;i++) {
+     // See note above re: r, g, b vars.
+     r = *backPtr++>>(brightness+1);
+     g = *backPtr++>>(brightness+1);
+     b = *backPtr++>>(brightness+1);
+     strip.setPixelColor(i, r, g, b);
+     }
+     spinpos += spinspeed;
+     */
   }
 
   // Count up to next transition (or end of current one):
@@ -1461,12 +1441,12 @@ int i;
     fxVars[2][0] = 0; // Transition not yet initialized
   }
   else if(tCounter >= transitionTime) { // End transition
-   
-   
+
+    spininit=false;
     fxIdx[backImgIdx] = fxIdx[frontImgIdx]; // Move front effect index to back
     backImgIdx = 1 - backImgIdx; // Invert back index
-   
-    if(demo==0){ //works?
+
+      if(demo==0){ //works?
       tCounter = -1; // hold image on the edge
       button=0;
     }
@@ -2323,6 +2303,7 @@ void scrolls(byte idx) {
 
 
 void Dice(byte idx){
+  findplane();
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;
     fxVars[idx][2]=1;
@@ -2360,11 +2341,11 @@ void POV(byte idx) {
     "Shannon",
     "Rob",
     "Pete"
-    "Max"
-    ":) :( (: :(",
+      "Max"
+      ":) :( (: :(",
     "////"
-    "01010101"
-    "( . Y . )",
+      "01010101"
+      "( . Y . )",
     "!$?#@&*",
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
@@ -2495,79 +2476,80 @@ void PeteOV(byte idx) {
  }
  */
 //simple dual pixel chasin in opposite directions
-void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
-  if(fxVars[idx][0] == 0) { // Initialize effect?
-    fxVars[idx][1] = random(1536); // Random hue
-    fxFloats[idx][0] = random(100,1000) / 1000.0 ; // random speed 0.0 - 1.0
-    fxFloats[idx][1] = 1; // Current position
-    fxVars[idx][4] = 4 + random(10); // random spread
-    fxVars[idx][5] = fxVars[idx][4] * -2;
-
-    fxVars[idx][6] = fxVars[idx][1]*(random(2,5))%1536; // Random hue far away from first color
-    fxFloats[idx][2] = random(100,1000) / -1000.0 ; // random speed 0.0 - 1.0
-    fxFloats[idx][3] = (float)numPixels; // Current position
-    fxVars[idx][9] = 4 + random(10); // random spread
-    fxVars[idx][10] = fxVars[idx][9] * -2;
-
-    fxVars[idx][0] = 1; // Effect initialized
-  }
-
-  byte *ptr = &imgData[idx][0], r1, g1, b1, r2, g2, b2, r, g, b;
-  float distance = 0.0, modifier1 = 0.0,modifier2 = 0.0;
-  int hue = 0, saturation = 0;
-  long color1, color2, i;
-
-  for(i=0; i<numPixels; i++) {
-    hue = 255;
-    modifier1 = 0;
-    modifier2 = 0;
-
-    if(i >= numPixels - fxVars[idx][4] && fxFloats[idx][1] <= fxVars[idx][4]) {
-      modifier1 = numPixels;
-    }
-    if(i <= fxVars[idx][4] && fxFloats[idx][1] >= numPixels - fxVars[idx][4]) {
-      modifier1 = -numPixels;
-    }
-
-    if(i >= numPixels - fxVars[idx][9] && fxFloats[idx][3] <= fxVars[idx][9]) {
-      modifier2 = numPixels;
-    }
-    if(i <= fxVars[idx][9] && fxFloats[idx][3] >= numPixels - fxVars[idx][9]) {
-      modifier2 = -numPixels;
-    }
-
-    distance = min(abs(i - fxFloats[idx][1] - modifier1), fxVars[idx][4]) * -2;
-    saturation = map(distance, fxVars[idx][5], 0.0, 0, 255);
-    color1 = hsv2rgb(fxVars[idx][1], hue, saturation);
-
-    distance = min(abs(i - fxFloats[idx][3] - modifier2), fxVars[idx][9]) * -2;
-    saturation = map(distance, fxVars[idx][10], 0.0, 0, 255);
-    color2 = hsv2rgb(fxVars[idx][6], hue, saturation);
-
-
-    r1 = color2 >> 16;
-    g1 = color2 >> 8;
-    b1 = color2;
-    r2 = color1 >> 16;
-    g2 = color1 >> 8;
-    b2 = color1;
-    r = min(r1 + r2, 255);
-    g = min(g1 + g2, 255);
-    b = min(b1 + b2, 255);
-    *ptr++ = r;
-    *ptr++ = g;
-    *ptr++ = b;
-  }
-
-  fxFloats[idx][1] += fxFloats[idx][0];
-  if(fxFloats[idx][1] >= numPixels){
-    fxFloats[idx][1] -= numPixels;
-  }
-  fxFloats[idx][3] += fxFloats[idx][2];
-  if(fxFloats[idx][3] <= 0){
-    fxFloats[idx][3] += numPixels;
-  }
-}
+/*void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
+ if(fxVars[idx][0] == 0) { // Initialize effect?
+ fxVars[idx][1] = random(1536); // Random hue
+ fxFloats[idx][0] = random(100,1000) / 1000.0 ; // random speed 0.0 - 1.0
+ fxFloats[idx][1] = 1; // Current position
+ fxVars[idx][4] = 4 + random(10); // random spread
+ fxVars[idx][5] = fxVars[idx][4] * -2;
+ 
+ fxVars[idx][6] = fxVars[idx][1]*(random(2,5))%1536; // Random hue far away from first color
+ fxFloats[idx][2] = random(100,1000) / -1000.0 ; // random speed 0.0 - 1.0
+ fxFloats[idx][3] = (float)numPixels; // Current position
+ fxVars[idx][9] = 4 + random(10); // random spread
+ fxVars[idx][10] = fxVars[idx][9] * -2;
+ 
+ fxVars[idx][0] = 1; // Effect initialized
+ }
+ 
+ byte *ptr = &imgData[idx][0], r1, g1, b1, r2, g2, b2, r, g, b;
+ float distance = 0.0, modifier1 = 0.0,modifier2 = 0.0;
+ int hue = 0, saturation = 0;
+ long color1, color2, i;
+ 
+ for(i=0; i<numPixels; i++) {
+ hue = 255;
+ modifier1 = 0;
+ modifier2 = 0;
+ 
+ if(i >= numPixels - fxVars[idx][4] && fxFloats[idx][1] <= fxVars[idx][4]) {
+ modifier1 = numPixels;
+ }
+ if(i <= fxVars[idx][4] && fxFloats[idx][1] >= numPixels - fxVars[idx][4]) {
+ modifier1 = -numPixels;
+ }
+ 
+ if(i >= numPixels - fxVars[idx][9] && fxFloats[idx][3] <= fxVars[idx][9]) {
+ modifier2 = numPixels;
+ }
+ if(i <= fxVars[idx][9] && fxFloats[idx][3] >= numPixels - fxVars[idx][9]) {
+ modifier2 = -numPixels;
+ }
+ 
+ distance = min(abs(i - fxFloats[idx][1] - modifier1), fxVars[idx][4]) * -2;
+ saturation = map(distance, fxVars[idx][5], 0.0, 0, 255);
+ color1 = hsv2rgb(fxVars[idx][1], hue, saturation);
+ 
+ distance = min(abs(i - fxFloats[idx][3] - modifier2), fxVars[idx][9]) * -2;
+ saturation = map(distance, fxVars[idx][10], 0.0, 0, 255);
+ color2 = hsv2rgb(fxVars[idx][6], hue, saturation);
+ 
+ 
+ r1 = color2 >> 16;
+ g1 = color2 >> 8;
+ b1 = color2;
+ r2 = color1 >> 16;
+ g2 = color1 >> 8;
+ b2 = color1;
+ r = min(r1 + r2, 255);
+ g = min(g1 + g2, 255);
+ b = min(b1 + b2, 255);
+ *ptr++ = r;
+ *ptr++ = g;
+ *ptr++ = b;
+ }
+ 
+ fxFloats[idx][1] += fxFloats[idx][0];
+ if(fxFloats[idx][1] >= numPixels){
+ fxFloats[idx][1] -= numPixels;
+ }
+ fxFloats[idx][3] += fxFloats[idx][2];
+ if(fxFloats[idx][3] <= 0){
+ fxFloats[idx][3] += numPixels;
+ }
+ }
+ */
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
@@ -3319,21 +3301,21 @@ void getSerial(){
         Serial.print (irc[i]);
         Serial.print(" , " );
         Serial.println (i);
-        
+
       }
-      Serial.println();
+      //      Serial.println();
       for (int i =0; i<ircsetup; i++){
         Serial.print (irc2[i]);
         Serial.print(" , " );
         Serial.println (i);
       }
     }
-//int opmode; //0==normal ,1=menu,2=irsetup
+    //int opmode; //0==normal ,1=menu,2=irsetup
     if( cmd == 'M' ) {
       if(serialoutput==true){ 
         Serial.println("Entering Menu");
       }
-     opmode = 1;
+      opmode = 1;
     }
     if( cmd == 'm' ) {
       //Timer1.detachInterrupt();
@@ -3347,7 +3329,7 @@ void getSerial(){
       if(serialoutput==true){ 
         Serial.println("Entering irsetup");
       }
-     opmode=2;
+      opmode=2;
     }
     //  boolean serialoutput=false;// will the serial respond?
     if( cmd == 'S' ) {
@@ -3421,7 +3403,8 @@ uint8_t toHex(char hi, char lo)
 }
 void EEPwrite(int p_address, unsigned long p_value)
 {
-  int i;
+  unsigned long firstTwoBytes;
+  unsigned long secondTwoBytes;
   byte Byte1 = ((p_value >> 0) & 0xFF);
   byte Byte2 = ((p_value >> 8) & 0xFF);
   byte Byte3 = ((p_value >> 16) & 0xFF);
@@ -3446,6 +3429,8 @@ void EEPwrite(int p_address, unsigned long p_value)
 
 void EEPreadirc()
 {
+  unsigned long firstTwoBytes;
+  unsigned long secondTwoBytes;
   int i;
   for(i=0;i<ircsetup;i++){
     byte Byte1 = EEPROM.read(i*4);
@@ -3520,160 +3505,147 @@ void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup();
-/*  kenmore remote
-279939191 , 0
-
-279928991 , 1
-
-279937151 , 2
-
-279933071 , 3
-
-279941231 , 4
-
-279912671 , 5
-
-279949391 , 6
-
-279920831 , 7
-
-279965711 , 8
-
-279904511 , 9
-
-279961631 , 10
-
-
-Sirius codes
-Read code from eeprom spots 0 to 3 as 2155864095 in irc spot 0
-
-Read code from eeprom spots 1 to 4 as 2155847775 in irc spot 1
-
-Read code from eeprom spots 2 to 5 as 2155815135 in irc spot 2
-
-Read code from eeprom spots 3 to 6 as 2155811055 in irc spot 3
-
-Read code from eeprom spots 4 to 7 as 2155860015 in irc spot 4
-
-Read code from eeprom spots 5 to 8 as 2155851855 in irc spot 5
-
-Read code from eeprom spots 6 to 9 as 2155827375 in irc spot 6
-
-Read code from eeprom spots 7 to 10 as 2155835535 in irc spot 7
-
-Read code from eeprom spots 8 to 11 as 2155868175 in irc spot 8
-
-Read code from eeprom spots 9 to 12 as 2155809015 in irc spot 9
-
-Read code from eeprom spots 10 to 13 as 2155831455 in irc spot 10
-
-
-
-*/
+  /*  kenmore remote
+   279939191 , 0
+   
+   279928991 , 1
+   
+   279937151 , 2
+   
+   279933071 , 3
+   
+   279941231 , 4
+   
+   279912671 , 5
+   
+   279949391 , 6
+   
+   279920831 , 7
+   
+   279965711 , 8
+   
+   279904511 , 9
+   
+   279961631 , 10
+   
+   
+   Sirius codes
+   2155864095,
+   2155847775,
+   2155815135,
+   2155811055,
+   2155860015,
+   2155851855,
+   2155827375,
+   2155835535,
+   2155868175,
+   2155809015,
+   2155831455
+   
+   
+   
+   */
   if (irrecv.decode(&results)) {
-      if (results.value == irc[0]||results.value == irc2[0]) {
-        if(serialoutput==true){
-          Serial.println("recognised 0 on ir");
-        }//pattern ++
-        button=1;
-      }
-      if (results.value == irc[1]||results.value == irc2[1]) {
-        if(serialoutput==true){
-          Serial.println("recognised 1 on ir");
-        } //pattern -- (NOT IMPLEMENTED yet)
-//colorschemeselector++;
-      }  
-      if (results.value == irc[2]||results.value == irc2[2]) {
-        if(serialoutput==true){
-          Serial.println("recognised 2 on ir");
-        }
-        colorschemeselector++;
-        //color scheme --
-      }
-      if (results.value == irc[3]||results.value == irc2[3]) {
-        if(serialoutput==true){
-          Serial.println("recognised 3 on ir");
-        }
-        colorschemeselector--;
-      }
-      if (results.value == irc[4]||results.value == irc2[4]) {
-        if(serialoutput==true){
-          Serial.println("recognised 4 on ir");
-        }
-               //brightness up
-        if( brightness==1){}else{
-        brightness--;
-        }
-      }
-      if (results.value == irc[5]||results.value == irc2[5]) {
-        if(serialoutput==true){
-          Serial.println("recognised 5 on ir");//serial message here    
-        }
-                if(brightness==6){}else{
-            brightness++;     //brightness down
-        }
-      }    
-      if (results.value == irc[6]||results.value == irc2[6]) {
-        if(serialoutput==true){
-          Serial.println("recognised 6 on ir");//serial message here    
-        }
-     //set demo mode off
-   demo =0;  
-      }
-      if (results.value == irc[7]||results.value == irc2[7]) {
-        if(serialoutput==true){
-          Serial.println("recognised 7 on ir");  //serial message here    
-        }
-     //set super fast demo mode
-     demo = 1;
-     patternswitchspeed = 120; //# of frames between pattern switches
-     patternswitchspeedvariance = 15;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
-     transitionspeed = 60;// # of frames transition lasts 
-     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-      
-      }
-      if (results.value == irc[8]||results.value == irc2[8]) {
-        if(serialoutput==true){
-          Serial.println("recognised 8 on ir");  //serial message here    
-        }
-           //set medium demo mode
-     demo = 1;
-     patternswitchspeed = 300; //# of frames between pattern switches
-     patternswitchspeedvariance = 50;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
-     transitionspeed = 120;// # of frames transition lasts 
-     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-      
-      }
-      if (results.value == irc[9]||results.value == irc2[9]) {
-        if(serialoutput==true){
-          Serial.println("recognised 9 on ir");   //serial message here    
-        }
-             //set slow demo mode
-     demo = 1;
-     patternswitchspeed = 900; //# of frames between pattern switches
-     patternswitchspeedvariance = 255;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
-     transitionspeed = 120;// # of frames transition lasts 
-     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-      
-      }
-      if (results.value == irc[10]||results.value == irc2[10]) {
-        if(serialoutput==true){
-          Serial.println("recognised 10 on ir"); //serial message here    
-        }
-        fxVars[0][0]=0;
-        tCounter=-1;
-        //re init
-      }
-      irrecv.resume();
+    if (results.value == irc[0]||results.value == irc2[0]) {
+      if(serialoutput==true){
+        Serial.println("recognised 0 on ir");
+      }//pattern ++
+      button=1;
     }
-     
-  }
+    if (results.value == irc[1]||results.value == irc2[1]) {
+      if(serialoutput==true){
+        Serial.println("recognised 1 on ir");
+      } //pattern -- (NOT IMPLEMENTED yet)
+      //colorschemeselector++;
+    }  
+    if (results.value == irc[2]||results.value == irc2[2]) {
+      if(serialoutput==true){
+        Serial.println("recognised 2 on ir");
+      }
+      colorschemeselector++;
+      //color scheme --
+    }
+    if (results.value == irc[3]||results.value == irc2[3]) {
+      if(serialoutput==true){
+        Serial.println("recognised 3 on ir");
+      }
+      colorschemeselector--;
+    }
+    if (results.value == irc[4]||results.value == irc2[4]) {
+      if(serialoutput==true){
+        Serial.println("recognised 4 on ir");
+      }
+      //brightness up
+      if( brightness==1){
+      }
+      else{
+        brightness--;
+      }
+    }
+    if (results.value == irc[5]||results.value == irc2[5]) {
+      if(serialoutput==true){
+        Serial.println("recognised 5 on ir");//serial message here    
+      }
+      if(brightness==6){
+      }
+      else{
+        brightness++;     //brightness down
+      }
+    }    
+    if (results.value == irc[6]||results.value == irc2[6]) {
+      if(serialoutput==true){
+        Serial.println("recognised 6 on ir");//serial message here    
+      }
+      //set demo mode off
+      demo =0;  
+    }
+    if (results.value == irc[7]||results.value == irc2[7]) {
+      if(serialoutput==true){
+        Serial.println("recognised 7 on ir");  //serial message here    
+      }
+      //set super fast demo mode
+      demo = 1;
+      patternswitchspeed = 120; //# of frames between pattern switches
+      patternswitchspeedvariance = 15;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+      transitionspeed = 60;// # of frames transition lasts 
+      transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
+    }
+    if (results.value == irc[8]||results.value == irc2[8]) {
+      if(serialoutput==true){
+        Serial.println("recognised 8 on ir");  //serial message here    
+      }
+      //set medium demo mode
+      demo = 1;
+      patternswitchspeed = 300; //# of frames between pattern switches
+      patternswitchspeedvariance = 50;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+      transitionspeed = 120;// # of frames transition lasts 
+      transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
+    }
+    if (results.value == irc[9]||results.value == irc2[9]) {
+      if(serialoutput==true){
+        Serial.println("recognised 9 on ir");   //serial message here    
+      }
+      //set slow demo mode
+      demo = 1;
+      patternswitchspeed = 900; //# of frames between pattern switches
+      patternswitchspeedvariance = 255;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+      transitionspeed = 120;// # of frames transition lasts 
+      transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
-
-
-
-
-
-
+    }
+    if (results.value == irc[10]||results.value == irc2[10]) {
+      if(serialoutput==true){
+        Serial.println("recognised 10 on ir"); //serial message here    
+      }
+      fxVars[0][0]=0;
+      tCounter=-1;
+      //re init
+    }
+      if(serialoutput==true){
+      Serial.print("Got ir code :"),Serial.println(results.value,HEX);
+    }
+    irrecv.resume();
+  }  
+}
