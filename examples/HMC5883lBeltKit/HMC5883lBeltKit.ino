@@ -1637,6 +1637,37 @@ void compassheading(byte idx) {
   }
 }
 
+void rotate(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1] =0;//
+    fxVars[idx][2] =-255;
+       fxVars[idx][0]=1;// init
+  }
+  byte *ptr = &imgData[idx][0],r,g,b,r2,g2,b2;
+    long color1 = getschemacolor(1);
+    long color2 = getschemacolor(2);
+    r=color1>>16;
+    g=color1>>8;
+    b=color1;
+    r2=color2>>16;
+    g2=color2>>8;
+    b2=color2;
+  for(int i=0; i<numPixels; i++) {
+    r =mixColor8(r,r2,abs(fxVars[idx][2])*i/numPixels);
+    g =mixColor8(g,g2,abs(fxVars[idx][2])*i/numPixels);
+    b =mixColor8(b,b2,abs(fxVars[idx][2])*i/numPixels);
+    // color = getschemacolor(i%8); 
+    *ptr++ = r;
+    *ptr++ = g;
+    *ptr++ = b;
+  }
+  fxVars[idx][2]++;
+  if (fxVars[idx][2]==255){
+   fxVars[idx][2]= -255; 
+  }
+}
+
+
 void compassheadingRGBFade(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//
