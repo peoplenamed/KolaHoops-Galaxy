@@ -2,8 +2,8 @@ uint8_t brightness = 2; //DO NOT BRING >2
 uint8_t demo = 1;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
-int qf=0;
-int qz=0;
+int planeoutput=0;
+int compassoutput=0;
 int lmheading;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
@@ -18,35 +18,32 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-  //############ stable colorscheme
-  //blank,
-  // thingeyDrift,
- rainbowChase,
   compassheading,
   compassheadingRGBFade,
   Dice,
   schemetest,
   schemetestlong,
-//  schemetestfade,
+  schemetestfade,
   schemetestlongfade,
   schemefade,
   MonsterHunter,
-  //   wavyFlag,// stock
- rotate,
-simpleOrbit,
-  pacman,   //bounces back from end to end and builds every time 
-  
-  fans,
-  POV, //if using uno comment this out. 2k of ram is not enough! or is it?
-  //  //###############stable full color
+  rotate,//untested
+  simpleOrbit,//untested
+  pacman,   //mr pac man bounces back from end to end and builds 
   strobe,
-  //  colorDrift,
-//  rainbowChase, //stock rainbow chase doesnt work at 240 hz
-  sineChase, //stock sine chase
+  fans,
+  POV, 
+  //  //###############full color
+
+  colorDrift,
+  rainbowChase, //stock
+  sineChase, //stock
+  wavyFlag,// stock
 
     //##########in development###########
   // somekindaChase,
-
+  //blank,
+  // thingeyDrift,
   // sineCompass, //need to get it built before we can learn the compass
   //  sparkle, //need to make this look better, probably looks sweet when moving fas
   //  raindance,
@@ -56,9 +53,8 @@ simpleOrbit,
   MonsterStrobe2at1,
   //  schemetestlongrain2at1,
   schemetestrain2at1,    
-  //  Dice,
   //  orbit,
-  SnakeChase, //serial monitor does not work with this one, too intesne
+
   //needs to store index and message string in progmem
   // 
 
@@ -73,20 +69,6 @@ simpleOrbit,
 
 //########################################################################################################################
 /*
-mmmaxwwwell
- 7/16/12
- added singularity node's modified code for getting serial input
- https://github.com/analognode/LPD8806/blob/master/LDP8806old/examples/interactive_strand/interactive_strand.pde
- 6/30/2012
- added:
- -a button on external interrupt 0 with software debounce
- -demo mode to go with above
- -some fun patterns
- -a running average that could be an array(hint hint), eventually for compass
- -a hmc5883l magnometer and heading math? in the main loop. not the best way to do it but it works. should be on an interrupt
- so nothing is in loop
- ladyada awesome job with the entire thing and thanks for the light rope!
- */
 /*
 Smoothing
  Reads repeatedly from an analog input, calculating a running average
@@ -432,7 +414,7 @@ long eightcolorschema[][8] PROGMEM={
 // led character definitions modified from http://www.edaboard.com/thread45151.html
 // 5 data columns + 1 space
 // for each character
-
+//   why are we storing blank spaces?
 
 
 const char led_chars[97][6] PROGMEM = {
@@ -547,7 +529,6 @@ fxIdx[3]; // Effect # for back & front images + alpha
 int fxVars[3][50]; // Effect instance variables (explained later)
 // Countdown to next transition
 int transitionTime; // Duration (in frames) of current transition
-float fxFloats[3][4];
 // function prototypes, leave these be :)
 void schemetest(byte idx);
 void schemetestfade(byte idx);
@@ -685,7 +666,7 @@ void findplane(){
     }
 
   }
-  if(qf==1){
+  if(planeoutput==1){
 
     Serial.println();
     Serial.print("plane:");
@@ -789,7 +770,7 @@ void compassread()
   }
 
 
-  if (qz==1){
+  if (compassoutput==1){
 
     Serial.print("xy");
     Serial.println(xyheadingdegrees);
@@ -915,7 +896,6 @@ void loop() {
   if (counter==255)calibrate(),counter=-255;
   //getheading();
   compassread();
-  findplane();
   callback(); //generate image
   // if (counter==1) getSerial(); //process serial dat
  // mode(); //what are we doing?
@@ -1977,25 +1957,17 @@ void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=random(0,1536); //color were gonna write initally
     fxVars[idx][0] = 1; // Effect initialized
-    fxVars[idx][2] =random(1,4); //increments of color drift per frame
+    fxVars[idx][2] =random(1,16); //increments of color drift per frame
     // fxVars[idx][2] =1; //increments of color drift per frame
   }
   byte *ptr = &imgData[idx][0];
-  if(fxVars[idx][1]>1536-fxVars[idx][2]){
-    fxVars[idx][1]=fxVars[idx][1]%1536;
-  }
   fxVars[idx][1]+=fxVars[idx][2];
-  // Serial.println(fxVars[idx][1]);
-  //Serial.println(fxVars[idx][1]);
+  long color = hsv2rgb(fxVars[idx][1]%1536, 255, 255);
   for(int i=0; i<numPixels; i++) {
-    long color;
-    color = hsv2rgb(fxVars[idx][1],
-    255, 255);
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
   }
-  // Serial.println(fxVars[idx][1]);
 }
 void sparkle(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -2355,6 +2327,7 @@ void scrolls(byte idx) {
 
 
 void Dice(byte idx){
+    findplane();
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;
     fxVars[idx][2]=1;
@@ -2523,80 +2496,6 @@ void PeteOV(byte idx) {
  }
  }
  */
-//simple dual pixel chasin in opposite directions
-void SnakeChase(byte idx) { //brassman79 on github wrote this one!!!
-  if(fxVars[idx][0] == 0) { // Initialize effect?
-    fxVars[idx][1] = random(1536); // Random hue
-    fxFloats[idx][0] = random(100,1000) / 1000.0 ; // random speed 0.0 - 1.0
-    fxFloats[idx][1] = 1; // Current position
-    fxVars[idx][4] = 4 + random(10); // random spread
-    fxVars[idx][5] = fxVars[idx][4] * -2;
-
-    fxVars[idx][6] = fxVars[idx][1]*(random(2,5))%1536; // Random hue far away from first color
-    fxFloats[idx][2] = random(100,1000) / -1000.0 ; // random speed 0.0 - 1.0
-    fxFloats[idx][3] = (float)numPixels; // Current position
-    fxVars[idx][9] = 4 + random(10); // random spread
-    fxVars[idx][10] = fxVars[idx][9] * -2;
-
-    fxVars[idx][0] = 1; // Effect initialized
-  }
-
-  byte *ptr = &imgData[idx][0], r1, g1, b1, r2, g2, b2, r, g, b;
-  float distance = 0.0, modifier1 = 0.0,modifier2 = 0.0;
-  int hue = 0, saturation = 0;
-  long color1, color2, i;
-
-  for(i=0; i<numPixels; i++) {
-    hue = 255;
-    modifier1 = 0;
-    modifier2 = 0;
-
-    if(i >= numPixels - fxVars[idx][4] && fxFloats[idx][1] <= fxVars[idx][4]) {
-      modifier1 = numPixels;
-    }
-    if(i <= fxVars[idx][4] && fxFloats[idx][1] >= numPixels - fxVars[idx][4]) {
-      modifier1 = -numPixels;
-    }
-
-    if(i >= numPixels - fxVars[idx][9] && fxFloats[idx][3] <= fxVars[idx][9]) {
-      modifier2 = numPixels;
-    }
-    if(i <= fxVars[idx][9] && fxFloats[idx][3] >= numPixels - fxVars[idx][9]) {
-      modifier2 = -numPixels;
-    }
-
-    distance = min(abs(i - fxFloats[idx][1] - modifier1), fxVars[idx][4]) * -2;
-    saturation = map(distance, fxVars[idx][5], 0.0, 0, 255);
-    color1 = hsv2rgb(fxVars[idx][1], hue, saturation);
-
-    distance = min(abs(i - fxFloats[idx][3] - modifier2), fxVars[idx][9]) * -2;
-    saturation = map(distance, fxVars[idx][10], 0.0, 0, 255);
-    color2 = hsv2rgb(fxVars[idx][6], hue, saturation);
-
-
-    r1 = color2 >> 16;
-    g1 = color2 >> 8;
-    b1 = color2;
-    r2 = color1 >> 16;
-    g2 = color1 >> 8;
-    b2 = color1;
-    r = min(r1 + r2, 255);
-    g = min(g1 + g2, 255);
-    b = min(b1 + b2, 255);
-    *ptr++ = r;
-    *ptr++ = g;
-    *ptr++ = b;
-  }
-
-  fxFloats[idx][1] += fxFloats[idx][0];
-  if(fxFloats[idx][1] >= numPixels){
-    fxFloats[idx][1] -= numPixels;
-  }
-  fxFloats[idx][3] += fxFloats[idx][2];
-  if(fxFloats[idx][3] <= 0){
-    fxFloats[idx][3] += numPixels;
-  }
-}
 
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
