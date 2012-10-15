@@ -32,7 +32,7 @@ void (*renderEffect[])(byte) = {
   MonsterHunter,
   //   wavyFlag,// stock
  rotate,
-
+simpleOrbit,
   pacman,   //bounces back from end to end and builds every time 
   
   fans,
