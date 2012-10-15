@@ -29,9 +29,11 @@ void (*renderEffect[])(byte) = {
   MonsterHunter,
   rotate,//untested
   simpleOrbit,//untested
+  sineCompass, //untested
+  sparkle, //untested
   pacman,   //mr pac man bounces back from end to end and builds 
-  strobe,
-  fans,
+  strobe, //strobes to color schemes
+  fans, 
   POV, 
   //  //###############full color
 
@@ -40,12 +42,10 @@ void (*renderEffect[])(byte) = {
   sineChase, //stock
   wavyFlag,// stock
 
-    //##########in development###########
+  //##########in development###########
   // somekindaChase,
   //blank,
   // thingeyDrift,
-  // sineCompass, //need to get it built before we can learn the compass
-  //  sparkle, //need to make this look better, probably looks sweet when moving fas
   //  raindance,
   //  rainStrobe2at1,
   //strobefans2at1,
@@ -70,7 +70,7 @@ void (*renderEffect[])(byte) = {
 //########################################################################################################################
 /*
 /*
-Smoothing
+ Smoothing
  Reads repeatedly from an analog input, calculating a running average
  and printing it to the computer. Keeps ten readings in an array and
  continually averages them.
@@ -146,19 +146,19 @@ unsigned long irc2[ircsetup]= {
   2155868175,
   2155809015,
   2155831455};
-  /*
+/*
 279939191,
-279928991,
-279937151,
-279933071,
-279941231,
-279912671,
-279949391,
-279920831,
-279965711,
-279904511,
-279961631}; //kenmore ac remote
-*/
+ 279928991,
+ 279937151,
+ 279933071,
+ 279941231,
+ 279912671,
+ 279949391,
+ 279920831,
+ 279965711,
+ 279904511,
+ 279961631}; //kenmore ac remote
+ */
 //boolean irsetupflag = false;
 //eeprom stuffs\
 //using the eeprom code modified from
@@ -575,88 +575,80 @@ void setup() {
   //if the user turns the hoop on and off 3 times in a row before the rgb
   //fade finishes it puts the hoop into bluetooth discoverable or
   //ir learn mode depending on model.
-  
-  for(int i=0;i<255;i++){ //fade in red
-   for(int q=0;q<numPixels;q++){
-     strip.setPixelColor(q, i, 0, 0);
-   }
-  }
-    for(int i=0;i<255;i++){ //fade out red
-   for(int q=0;q<numPixels;q++){
-     strip.setPixelColor(q, abs(i-255), 0, 0);
-   }
-  }
-    for(int i=0;i<255;i++){ //fade in green
-   for(int q=0;q<numPixels;q++){
-     strip.setPixelColor(q, 0, i, 0);
-   }
-  }
-    for(int i=0;i<255;i++){ //fade out green
-   for(int q=0;q<numPixels;q++){
-     strip.setPixelColor(q, 0,abs(i-255), 0);
-   }
-  }
-      for(int i=0;i<255;i++){ //fade in blue
-   for(int q=0;q<numPixels;q++){
-     strip.setPixelColor(q, 0, 0, i);
-   }
-  }
-    for(int i=0;i<255;i++){ //fade out blue
-   for(int q=0;q<numPixels;q++){
-     strip.setPixelColor(q, 0, 0, abs(i-255));
-   }
-  }
-if(EEPROM.read(255)>=3){//if  our pair flag is more than 3 then
-//bluetooth setup here
-}else{
- EEPROM.write(0,255); //otherwise we want to write eeprom spot 255 to 0  
-}
 
+  for(int i=0;i<255;i++){ //fade in red
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, i, 0, 0);
+    }
+  }
+  for(int i=0;i<255;i++){ //fade out red
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, abs(i-255), 0, 0);
+    }
+  }
+  for(int i=0;i<255;i++){ //fade in green
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, 0, i, 0);
+    }
+  }
+  for(int i=0;i<255;i++){ //fade out green
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, 0,abs(i-255), 0);
+    }
+  }
+  for(int i=0;i<255;i++){ //fade in blue
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, 0, 0, i);
+    }
+  }
+  for(int i=0;i<255;i++){ //fade out blue
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, 0, 0, abs(i-255));
+    }
+  }
+  if(EEPROM.read(255)>=3){//if  our pair flag is more than 3 then
+    //bluetooth setup here
+  }
+  else{
+    EEPROM.write(0,255); //otherwise we want to write eeprom spot 255 to 0  
+  }
   int i;
   pinMode(irrxpin, INPUT);
   EEPreadirc();
   Serial.begin(115200);
   Uart.begin(38400);
- /*
+  /*
  if(serialoutput==true){
-    Serial.println();
-    Serial.println("Send a");
-    Serial.println("+ to press button");
-    //Serial.println("B to increase brightness, ");
-    //Serial.println("b to decrease brightness, ");
-    Serial.println("D to enable compass debug,");
-    Serial.println("d to disable compass debug");
-    Serial.println("C to + color scheme");
-    Serial.println("c to - color scheme");
-    Serial.println("M to enter menu");
-    Serial.println("m to go back to run");
-    Serial.println("Starting the I2C interface.");
-  }
-  */
+   Serial.println();
+   Serial.println("Send a");
+   Serial.println("+ to press button");
+   //Serial.println("B to increase brightness, ");
+   //Serial.println("b to decrease brightness, ");
+   Serial.println("D to enable compass debug,");
+   Serial.println("d to disable compass debug");
+   Serial.println("C to + color scheme");
+   Serial.println("c to - color scheme");
+   Serial.println("M to enter menu");
+   Serial.println("m to go back to run");
+   Serial.println("Starting the I2C interface.");
+   }
+   */
   Wire.begin(); // Start the I2C interface.
-
   compass.init();
   compass.enableDefault();
- 
   // Initialize random number generator from a floating analog input.
   randomSeed(analogRead(0));
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
-
-  // //Timer1 is used so the strip will update at a known fixed frame rate.
-  // Each effect rendering function varies in processing complexity, so
-  // the timer allows smooth transitions between effects (otherwise the
-  // effects and transitions would jump around in speed...not attractive).
   irrecv.enableIRIn();
-  // Timer1.initialize();
-  // Timer1.attachInterrupt(callback, 1000000 / framerate); // x frames/second
   if(serialoutput==true){  
-    Serial.print("Timer1 set at ");
-//    Serial.print(framerate);
-    Serial.println(" fps.");
+    //    Serial.print("Timer1 set at ");
+    //    Serial.print(framerate);
+    //    Serial.println(" fps.");
   }
   //   attachInterrupt(0, buttonpress, RISING);
-
+  Timer1.initialize();
+  Timer1.attachInterrupt(others, 1000000 / 10); //10 times/second
 }
 
 void findplane(){
@@ -892,39 +884,36 @@ int counter;
 void mode(){
   switch(opmode){
   case 0: //normal run mode
-    getSerial(), //process serial data
-    getir(), //process ir commands
-    callback(), //generate image
-    compass.read(), //refiresh compass info
-    calibrate(), //recalibrate compass
-  //  getheading(), //calculate 3 axis heading
-    //findplane(), //calculate plane
-    compassread(); //?
-   
+    callback();
     break;
+  
   case 1: //menu mode
-    getSerial(),
-    getir(),
-    compass.read(),
-  //  getheading(),
-    menurender(); 
-    break;
-  case 2: //ir setup mode
-  getSerial();
-    irsetup();
-    break;
+  menurender();
+  break;
+  
+  case 2://ir learn mode
+  irsetup();
+  break;
   }
 }
 void loop() {
-  getir(); //  irsetup(); // either or
+  //callback(); //generate image
+mode();
+}
+void others(){
+  if(opmode==0||opmode==1){
+   getir(); 
+   }else{
+    if(opmode==3){
+     irsetup(); 
+    }  
+   }
   getSerial();
   compass.read();
-  if (counter==255)calibrate(),counter=-255;
-  //getheading();
-  compassread();
-  callback(); //generate image
- // mode(); //what are we doing?
+  //  if (counter==255)calibrate(),counter=-255;
+  compassread(); 
 }
+
 void calibrate(){
   running_min.x = min(running_min.x, compass.m.x);
   running_min.y = min(running_min.y, compass.m.y);
@@ -1416,12 +1405,12 @@ void callback() {
     fxVars[2][0] = 0; // Transition not yet initialized
   }
   else if(tCounter >= transitionTime) { // End transition
-   
-   
+
+
     fxIdx[backImgIdx] = fxIdx[frontImgIdx]; // Move front effect index to back
     backImgIdx = 1 - backImgIdx; // Invert back index
-   
-    if(demo==0){ //works?
+
+      if(demo==0){ //works?
       tCounter = -1; // hold image on the edge
       button=0;
     }
@@ -1587,42 +1576,43 @@ void schemetestlong(byte idx) {
 void simpleOrbit(byte idx) {
   if(fxVars[idx][0] == 0) {
     for(int i=1;i<10;i++){
-    fxVars[idx][i] =0;//spots 1-10 position
+      fxVars[idx][i] =0;//spots 1-10 position
     }
-   fxVars[idx][11] =1;//spots 1-10 speed
-   fxVars[idx][12] =2;//speed of 10 is 1 pixel/frame
-   fxVars[idx][13] =3;
-   fxVars[idx][14] =4;
-   fxVars[idx][15] =5;
-   fxVars[idx][16] =6;
-   fxVars[idx][17] =7;
-   fxVars[idx][18] =8;
-   fxVars[idx][19] =9;
-   fxVars[idx][20] =10;
-   fxVars[idx][21] = -255;//background brightness
-   fxVars[idx][22] = 0;//background hue
+    fxVars[idx][11] =1;//spots 1-10 speed
+    fxVars[idx][12] =2;//speed of 10 is 1 pixel/frame
+    fxVars[idx][13] =3;
+    fxVars[idx][14] =4;
+    fxVars[idx][15] =5;
+    fxVars[idx][16] =6;
+    fxVars[idx][17] =7;
+    fxVars[idx][18] =8;
+    fxVars[idx][19] =9;
+    fxVars[idx][20] =10;
+    fxVars[idx][21] = -255;//background brightness
+    fxVars[idx][22] = 0;//background hue
     // Number of repetitions (complete loops around color wheel);
     // any more than 4 per meter just looks too chaotic.
     // Store as distance around complete belt in tenth-degree units:
-   fxVars[idx][0] =360*10;// init
+    fxVars[idx][0] =360*10;// init
   }
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels; i++) {
     for(int q=1; q<10; q++) {
-     if(i==fxVars[idx][q]%numPixels){
-     color= getschemacolor(q);
-     }else{
-      color = hsv2rgb(fxVars[idx][22],255,abs(fxVars[idx][21]));
-     }
+      if(i==fxVars[idx][q]%numPixels){
+        color= getschemacolor(q);
+      }
+      else{
+        color = hsv2rgb(fxVars[idx][22],255,abs(fxVars[idx][21]));
+      }
     }
-    
+
     // color = getschemacolor(i%8);
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
   }
-  
+
   for(int i=1; i<10; i++){
     fxVars[idx][i] += fxVars[idx][i+10];//position += speed
   }
@@ -1707,17 +1697,17 @@ void rotate(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1] =0;//
     fxVars[idx][2] =-255;
-       fxVars[idx][0]=1;// init
+    fxVars[idx][0]=1;// init
   }
   byte *ptr = &imgData[idx][0],r,g,b,r2,g2,b2;
-    long color1 = getschemacolor(1);
-    long color2 = getschemacolor(2);
-    r=color1>>16;
-    g=color1>>8;
-    b=color1;
-    r2=color2>>16;
-    g2=color2>>8;
-    b2=color2;
+  long color1 = getschemacolor(1);
+  long color2 = getschemacolor(2);
+  r=color1>>16;
+  g=color1>>8;
+  b=color1;
+  r2=color2>>16;
+  g2=color2>>8;
+  b2=color2;
   for(int i=0; i<numPixels; i++) {
     r =mixColor8(r,r2,abs(fxVars[idx][2])*i/numPixels);
     g =mixColor8(g,g2,abs(fxVars[idx][2])*i/numPixels);
@@ -1729,7 +1719,7 @@ void rotate(byte idx) {
   }
   fxVars[idx][2]++;
   if (fxVars[idx][2]==255){
-   fxVars[idx][2]= -255; 
+    fxVars[idx][2]= -255; 
   }
 }
 
@@ -1996,15 +1986,13 @@ void colorDrift(byte idx) {
 }
 void sparkle(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1] = 0; // color scheme selector
     fxVars[idx][0]=1;
   }
-  long color;
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
-    *ptr++ = color >> 16;
-    *ptr++ = color >> 8;
-    *ptr++ = color;
+    *ptr++ = random(255);
+    *ptr++ = random(255);
+    *ptr++ = random(255);
   }
 }
 void strobe(byte idx) {
@@ -2352,7 +2340,7 @@ void scrolls(byte idx) {
 
 
 void Dice(byte idx){
-    findplane();
+  findplane();
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;
     fxVars[idx][2]=1;
@@ -2390,8 +2378,8 @@ void POV(byte idx) {
     "Shannon",
     ":) :( (: :(",
     "////"
-    "01010101"
-    "( . Y . )",
+      "01010101"
+      "( . Y . )",
     "!$?#@&*",
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
@@ -2817,18 +2805,18 @@ void wavyFlag(byte idx) {
 
 
 
-/*
+
 void sineCompass(byte idx) {
  // Only needs to be rendered once, when effect is initialized:
  if(fxVars[idx][0] == 0) {
- Serial.println("effect=04");
+// Serial.println("effect=04");
  // fxVars[idx][1] = random(1536); // Random hue
  fxVars[idx][1] = 1; // Random hue
  // Number of repetitions (complete loops around color wheel);
  // any more than 4 per meter just looks too chaotic.
  // Store as distance around complete belt in half-degree units:
  // fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
- fxVars[idx][2] = 720; //we will vary this by xy heading change speed, xyspeed will be between 0 and 4
+ fxVars[idx][2] = 720; 
  // Frame-to-frame increment (speed) -- may be positive or negative,
  // but magnitude shouldn't be so small as to be boring. It's generally
  // still less than a full pixel per frame, making motion very smooth.
@@ -2839,14 +2827,12 @@ void sineCompass(byte idx) {
  fxVars[idx][4] = 0; // Current position
  fxVars[idx][0] = 1; // Effect initialized
  }
- fxVars[idx][4] = map(average,0,360,0,720*4); // Current position
+ //fxVars[idx][4] = map(compass.m.x,0,360,0,720); // Current position
  byte *ptr = &imgData[idx][0];
  int foo;
  long color, i;
  for(long i=0; i<numPixels; i++) {
- foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
- // Peaks of sine wave are white, troughs are black, mid-range
- // values are pure hue (100% saturated).
+ foo = fixSin((compass.m.x*2) + fxVars[idx][2] * i / numPixels);
  color = (foo >= 0) ? //black?
  hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
  hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
@@ -2856,7 +2842,8 @@ void sineCompass(byte idx) {
  }
  // fxVars[idx][4] += fxVars[idx][3];
  }
- */
+
+
 void MonsterHunter(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=random(1536);
@@ -2950,10 +2937,6 @@ void MonsterHunter(byte idx) {
               *ptr++ = color >> 16;
               *ptr++ = color >> 8;
               *ptr++ = color;
-
-
-
-
             }
           }
         }
@@ -3272,7 +3255,7 @@ void getSerial(){
         Serial.print (irc[i]);
         Serial.print(" , " );
         Serial.println (i);
-        
+
       }
       Serial.println();
       for (int i =0; i<ircsetup; i++){
@@ -3281,12 +3264,12 @@ void getSerial(){
         Serial.println (i);
       }
     }
-//int opmode; //0==normal ,1=menu,2=irsetup
+    //int opmode; //0==normal ,1=menu,2=irsetup
     if( cmd == 'M' ) {
       if(serialoutput==true){ 
         Serial.println("Entering Menu");
       }
-     opmode = 1;
+      opmode = 1;
     }
     if( cmd == 'm' ) {
       //Timer1.detachInterrupt();
@@ -3300,7 +3283,7 @@ void getSerial(){
       if(serialoutput==true){ 
         Serial.println("Entering irsetup");
       }
-     opmode=2;
+      opmode=2;
     }
     //  boolean serialoutput=false;// will the serial respond?
     if( cmd == 'S' ) {
@@ -3371,7 +3354,7 @@ void getUart(){
         Uart.print (irc[i]);
         Uart.print(" , " );
         Uart.println (i);
-        
+
       }
       Uart.println();
       for (int i =0; i<ircsetup; i++){
@@ -3380,12 +3363,12 @@ void getUart(){
         Uart.println (i);
       }
     }
-//int opmode; //0==normal ,1=menu,2=irsetup
+    //int opmode; //0==normal ,1=menu,2=irsetup
     if( ucmd == 'M' ) {
       if(uartoutput==true){ 
         Uart.println("Entering Menu");
       }
-     opmode = 1;
+      opmode = 1;
     }
     if( ucmd == 'm' ) {
       //Timer1.detachInterrupt();
@@ -3399,7 +3382,7 @@ void getUart(){
       if(uartoutput==true){ 
         Uart.println("Entering irsetup");
       }
-     opmode=2;
+      opmode=2;
     }
     //  boolean serialoutput=false;// will the serial respond?
     if( ucmd == 'S' ) {
@@ -3573,153 +3556,158 @@ void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup();
-/*  kenmore remote
-279939191 , 0
-
-279928991 , 1
-
-279937151 , 2
-
-279933071 , 3
-
-279941231 , 4
-
-279912671 , 5
-
-279949391 , 6
-
-279920831 , 7
-
-279965711 , 8
-
-279904511 , 9
-
-279961631 , 10
-
-
-Sirius codes
-Read code from eeprom spots 0 to 3 as 2155864095 in irc spot 0
-
-Read code from eeprom spots 1 to 4 as 2155847775 in irc spot 1
-
-Read code from eeprom spots 2 to 5 as 2155815135 in irc spot 2
-
-Read code from eeprom spots 3 to 6 as 2155811055 in irc spot 3
-
-Read code from eeprom spots 4 to 7 as 2155860015 in irc spot 4
-
-Read code from eeprom spots 5 to 8 as 2155851855 in irc spot 5
-
-Read code from eeprom spots 6 to 9 as 2155827375 in irc spot 6
-
-Read code from eeprom spots 7 to 10 as 2155835535 in irc spot 7
-
-Read code from eeprom spots 8 to 11 as 2155868175 in irc spot 8
-
-Read code from eeprom spots 9 to 12 as 2155809015 in irc spot 9
-
-Read code from eeprom spots 10 to 13 as 2155831455 in irc spot 10
-
-
-
-*/
+  /*  kenmore remote
+   279939191 , 0
+   
+   279928991 , 1
+   
+   279937151 , 2
+   
+   279933071 , 3
+   
+   279941231 , 4
+   
+   279912671 , 5
+   
+   279949391 , 6
+   
+   279920831 , 7
+   
+   279965711 , 8
+   
+   279904511 , 9
+   
+   279961631 , 10
+   
+   
+   Sirius codes
+   Read code from eeprom spots 0 to 3 as 2155864095 in irc spot 0
+   
+   Read code from eeprom spots 1 to 4 as 2155847775 in irc spot 1
+   
+   Read code from eeprom spots 2 to 5 as 2155815135 in irc spot 2
+   
+   Read code from eeprom spots 3 to 6 as 2155811055 in irc spot 3
+   
+   Read code from eeprom spots 4 to 7 as 2155860015 in irc spot 4
+   
+   Read code from eeprom spots 5 to 8 as 2155851855 in irc spot 5
+   
+   Read code from eeprom spots 6 to 9 as 2155827375 in irc spot 6
+   
+   Read code from eeprom spots 7 to 10 as 2155835535 in irc spot 7
+   
+   Read code from eeprom spots 8 to 11 as 2155868175 in irc spot 8
+   
+   Read code from eeprom spots 9 to 12 as 2155809015 in irc spot 9
+   
+   Read code from eeprom spots 10 to 13 as 2155831455 in irc spot 10
+   
+   
+   
+   */
   if (irrecv.decode(&results)) {
-      if (results.value == irc2[0]) {
-        if(serialoutput==true){
-          Serial.println("recognised 0 on ir");
-        }//pattern ++
-        button=1;
-      }
-      if (results.value == irc2[1]) {
-        if(serialoutput==true){
-          Serial.println("recognised 1 on ir");
-        } //pattern -- (NOT IMPLEMENTED yet)
-//colorschemeselector++;
-      }  
-      if (results.value == irc2[2]) {
-        if(serialoutput==true){
-          Serial.println("recognised 2 on ir");
-        }
-        colorschemeselector++;
-        //color scheme --
-      }
-      if (results.value == irc2[3]) {
-        if(serialoutput==true){
-          Serial.println("recognised 3 on ir");
-        }
-        colorschemeselector--;
-      }
-      if (results.value == irc2[4]) {
-        if(serialoutput==true){
-          Serial.println("recognised 4 on ir");
-        }
-               //brightness up
-        if( brightness==1){}else{
-        brightness--;
-        }
-      }
-      if (results.value == irc2[5]) {
-        if(serialoutput==true){
-          Serial.println("recognised 5 on ir");//serial message here    
-        }
-                if(brightness==6){}else{
-            brightness++;     //brightness down
-        }
-      }    
-      if (results.value == irc2[6]) {
-        if(serialoutput==true){
-          Serial.println("recognised 6 on ir");//serial message here    
-        
-      }
-        
-     //set demo mode off
-   demo =0;  
-      }
-      if (results.value == irc2[7]) {
-        if(serialoutput==true){
-          Serial.println("recognised 7 on ir");  //serial message here    
-        }
-     //set super fast demo mode
-     demo = 1;
-     patternswitchspeed = 200; //# of frames between pattern switches
-     patternswitchspeedvariance = 15;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
-     transitionspeed = 60;// # of frames transition lasts 
-     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-      
-      }
-      if (results.value == irc2[8]) {
-        if(serialoutput==true){
-          Serial.println("recognised 8 on ir");  //serial message here    
-        }
-           //set medium demo mode
-     demo = 1;
-     patternswitchspeed = 800; //# of frames between pattern switches
-     patternswitchspeedvariance = 50;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
-     transitionspeed = 120;// # of frames transition lasts 
-     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-      
-      }
-      if (results.value == irc2[9]) {
-        if(serialoutput==true){
-          Serial.println("recognised 9 on ir");   //serial message here    
-        }
-             //set slow demo mode
-     demo = 1;
-     patternswitchspeed = 3000; //# of frames between pattern switches
-     patternswitchspeedvariance = 255;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
-     transitionspeed = 120;// # of frames transition lasts 
-     transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-      
-      }
-      if (results.value == irc2[10]) {
-        if(serialoutput==true){
-          Serial.println("recognised 10 on ir"); //serial message here    
-        }
-        fxVars[0][0]=0;
-      //  tCounter=-1;
-        //re init
-      }
-      irrecv.resume();
+    if (results.value == irc2[0]) {
+      if(serialoutput==true){
+        Serial.println("recognised 0 on ir");
+      }//pattern ++
+      button=1;
     }
-     
+    if (results.value == irc2[1]) {
+      if(serialoutput==true){
+        Serial.println("recognised 1 on ir");
+      } //pattern -- (NOT IMPLEMENTED yet)
+      //colorschemeselector++;
+    }  
+    if (results.value == irc2[2]) {
+      if(serialoutput==true){
+        Serial.println("recognised 2 on ir");
+      }
+      colorschemeselector++;
+      //color scheme --
+    }
+    if (results.value == irc2[3]) {
+      if(serialoutput==true){
+        Serial.println("recognised 3 on ir");
+      }
+      colorschemeselector--;
+    }
+    if (results.value == irc2[4]) {
+      if(serialoutput==true){
+        Serial.println("recognised 4 on ir");
+      }
+      //brightness up
+      if( brightness==1){
+      }
+      else{
+        brightness--;
+      }
+    }
+    if (results.value == irc2[5]) {
+      if(serialoutput==true){
+        Serial.println("recognised 5 on ir");//serial message here    
+      }
+      if(brightness==6){
+      }
+      else{
+        brightness++;     //brightness down
+      }
+    }    
+    if (results.value == irc2[6]) {
+      if(serialoutput==true){
+        Serial.println("recognised 6 on ir");//serial message here    
+
+      }
+
+      //set demo mode off
+      demo =0;  
+    }
+    if (results.value == irc2[7]) {
+      if(serialoutput==true){
+        Serial.println("recognised 7 on ir");  //serial message here    
+      }
+      //set super fast demo mode
+      demo = 1;
+      patternswitchspeed = 200; //# of frames between pattern switches
+      patternswitchspeedvariance = 15;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+      transitionspeed = 60;// # of frames transition lasts 
+      transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
+
+    }
+    if (results.value == irc2[8]) {
+      if(serialoutput==true){
+        Serial.println("recognised 8 on ir");  //serial message here    
+      }
+      //set medium demo mode
+      demo = 1;
+      patternswitchspeed = 800; //# of frames between pattern switches
+      patternswitchspeedvariance = 50;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+      transitionspeed = 120;// # of frames transition lasts 
+      transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
+
+    }
+    if (results.value == irc2[9]) {
+      if(serialoutput==true){
+        Serial.println("recognised 9 on ir");   //serial message here    
+      }
+      //set slow demo mode
+      demo = 1;
+      patternswitchspeed = 3000; //# of frames between pattern switches
+      patternswitchspeedvariance = 255;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
+      transitionspeed = 120;// # of frames transition lasts 
+      transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
+
+    }
+    if (results.value == irc2[10]) {
+      if(serialoutput==true){
+        Serial.println("recognised 10 on ir"); //serial message here    
+      }
+      fxVars[0][0]=0;
+      //  tCounter=-1;
+      //re init
+    }
+    irrecv.resume();
   }
+
+}
+
