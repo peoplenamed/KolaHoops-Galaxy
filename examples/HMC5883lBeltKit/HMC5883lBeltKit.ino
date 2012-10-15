@@ -39,6 +39,7 @@ void (*renderEffect[])(byte) = {
 
   colorDrift,
   rainbowChase, //stock
+  raindance,//untested
   sineChase, //stock
   wavyFlag,// stock
 
@@ -46,7 +47,7 @@ void (*renderEffect[])(byte) = {
   // somekindaChase,
   //blank,
   // thingeyDrift,
-  //  raindance,
+
   //  rainStrobe2at1,
   //strobefans2at1,
   schemetest2at1,
@@ -564,6 +565,8 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
+  Serial.begin(115200);
+  Uart.begin(38400);
   strip.begin();//start lpd8806 strip
   if(serialoutput==true){ //do we print info?
     Serial.println("LED Strip Online.");
@@ -611,12 +614,10 @@ void setup() {
   }
   else{
     EEPROM.write(0,255); //otherwise we want to write eeprom spot 255 to 0  
-  }
+  }                      //to reset discoverable / learn counter
   int i;
   pinMode(irrxpin, INPUT);
   EEPreadirc();
-  Serial.begin(115200);
-  Uart.begin(38400);
   /*
  if(serialoutput==true){
    Serial.println();
@@ -641,11 +642,6 @@ void setup() {
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
-  if(serialoutput==true){  
-    //    Serial.print("Timer1 set at ");
-    //    Serial.print(framerate);
-    //    Serial.println(" fps.");
-  }
   //   attachInterrupt(0, buttonpress, RISING);
   Timer1.initialize();
   Timer1.attachInterrupt(others, 1000000 / 10); //10 times/second
@@ -878,36 +874,35 @@ if(xyheadingDegreesdelta>90){
 // Serial.print(headingDegrees);
 // Serial.println(" Degrees \t");
 //}
-
-
 int counter;
 void mode(){
   switch(opmode){
   case 0: //normal run mode
     callback();
     break;
-  
+
   case 1: //menu mode
-  menurender();
-  break;
-  
+    menurender();
+    break;
+
   case 2://ir learn mode
-  irsetup();
-  break;
+    irsetup();
+    break;
   }
 }
 void loop() {
   //callback(); //generate image
-mode();
+  mode();
 }
 void others(){
   if(opmode==0||opmode==1){
-   getir(); 
-   }else{
+    getir(); 
+  }
+  else{
     if(opmode==3){
-     irsetup(); 
+      irsetup(); 
     }  
-   }
+  }
   getSerial();
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
@@ -2125,10 +2120,58 @@ void rainStrobe2at1(byte idx){
 }
 
 void raindance(byte idx){
-  if(random(0,20)==1){
-    fxVars[0][0]=0;
+  if(fxVars[idx][0] == 0) {
+    // Number of repetitions (complete loops around color wheel); any
+    // more than 4 per meter just looks too chaotic and un-rainbow-like.
+    // Store as hue 'distance' around complete belt:
+    fxVars[idx][1] = (1 + random(4 * ((numPixels + 31) / 32))) * 1536;
+    // Frame-to-frame hue increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][2] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse speed and hue shift direction half the time.
+    if(random(2) == 0) fxVars[idx][1] = -fxVars[idx][1];
+    if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
+    fxVars[idx][3] = 0; //position
+    fxVars[idx][4] = 4 + random(fxVars[idx][1]) / numPixels;//next speed
+    fxVars[idx][5] = random(600); // countdown to next change after speed match
+    fxVars[idx][0] = 1; // Effect initialized
   }
-  rainbowChase(idx);
+  if(fxVars[idx][0] == -1) {
+    fxVars[idx][4] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse speed and hue shift direction half the time.
+    if(random(2) == 0) fxVars[idx][1] = -fxVars[idx][1];
+    //   if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
+    fxVars[idx][5] = random(600); // countdown to next change after speed match
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+  
+  if(fxVars[idx][4]==fxVars[idx][2]){
+    fxVars[idx][5]--;
+    if(fxVars[idx][5]==0){
+      fxVars[idx][0]=-1;//new speed and counter
+    }
+  }
+  else{
+    if(fxVars[idx][4]>fxVars[idx][2]){
+      fxVars[idx][2]++;    
+    }
+    else{
+      if(fxVars[idx][4]<fxVars[idx][2]){
+        fxVars[idx][2]--;    
+      }     
+    }
+  }
+  byte *ptr = &imgData[idx][0];
+  long color, i;
+  for(i=0; i<numPixels; i++) {
+    color = hsv2rgb(fxVars[idx][3] + fxVars[idx][1] * i / numPixels,
+    255, 255);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][3] += fxVars[idx][2];
 }
 void schemetestlongrain2at1(byte idx){
   crazycounter++;
@@ -2807,41 +2850,41 @@ void wavyFlag(byte idx) {
 
 
 void sineCompass(byte idx) {
- // Only needs to be rendered once, when effect is initialized:
- if(fxVars[idx][0] == 0) {
-// Serial.println("effect=04");
- // fxVars[idx][1] = random(1536); // Random hue
- fxVars[idx][1] = 1; // Random hue
- // Number of repetitions (complete loops around color wheel);
- // any more than 4 per meter just looks too chaotic.
- // Store as distance around complete belt in half-degree units:
- // fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
- fxVars[idx][2] = 720; 
- // Frame-to-frame increment (speed) -- may be positive or negative,
- // but magnitude shouldn't be so small as to be boring. It's generally
- // still less than a full pixel per frame, making motion very smooth.
- //fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels; //original
- fxVars[idx][3] = 0; //no rotation
- // Reverse direction half the time.
- if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
- fxVars[idx][4] = 0; // Current position
- fxVars[idx][0] = 1; // Effect initialized
- }
- //fxVars[idx][4] = map(compass.m.x,0,360,0,720); // Current position
- byte *ptr = &imgData[idx][0];
- int foo;
- long color, i;
- for(long i=0; i<numPixels; i++) {
- foo = fixSin((compass.m.x*2) + fxVars[idx][2] * i / numPixels);
- color = (foo >= 0) ? //black?
- hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
- hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
- *ptr++ = color >> 16;
- *ptr++ = color >> 8;
- *ptr++ = color;
- }
- // fxVars[idx][4] += fxVars[idx][3];
- }
+  // Only needs to be rendered once, when effect is initialized:
+  if(fxVars[idx][0] == 0) {
+    // Serial.println("effect=04");
+    // fxVars[idx][1] = random(1536); // Random hue
+    fxVars[idx][1] = 1; // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    // fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720; //original
+    fxVars[idx][2] = 720; 
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    //fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels; //original
+    fxVars[idx][3] = 0; //no rotation
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+  //fxVars[idx][4] = map(compass.m.x,0,360,0,720); // Current position
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin((compass.m.x*2) + fxVars[idx][2] * i / numPixels);
+    color = (foo >= 0) ? //black?
+    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) : //white!
+    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2); //color
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  // fxVars[idx][4] += fxVars[idx][3];
+}
 
 
 void MonsterHunter(byte idx) {
@@ -3710,4 +3753,6 @@ void getir(){
   }
 
 }
+
+
 
