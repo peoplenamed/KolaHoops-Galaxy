@@ -1569,6 +1569,57 @@ void schemetestlong(byte idx) {
     }
   }
 }
+
+void simpleOrbit(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    for(int i=1;i<10;i++){
+    fxVars[idx][i] =0;//spots 1-10 position
+    }
+   fxVars[idx][11] =1;//spots 1-10 speed
+   fxVars[idx][12] =2;//speed of 10 is 1 pixel/frame
+   fxVars[idx][13] =3;
+   fxVars[idx][14] =4;
+   fxVars[idx][15] =5;
+   fxVars[idx][16] =6;
+   fxVars[idx][17] =7;
+   fxVars[idx][18] =8;
+   fxVars[idx][19] =9;
+   fxVars[idx][20] =10;
+   fxVars[idx][21] = -255;//background brightness
+   fxVars[idx][22] = 0;//background hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in tenth-degree units:
+   fxVars[idx][0] =360*10;// init
+  }
+  byte *ptr = &imgData[idx][0];
+  long color;
+  for(int i=0; i<numPixels; i++) {
+    for(int q=1; q<10; q++) {
+     if(i==fxVars[idx][q]%numPixels){
+     color= getschemacolor(q);
+     }else{
+      color = hsv2rgb(fxVars[idx][22],255,abs(fxVars[idx][21]));
+     }
+    }
+    
+    // color = getschemacolor(i%8);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  
+  for(int i=1; i<10; i++){
+    fxVars[idx][i] += fxVars[idx][i+10];//position += speed
+  }
+  fxVars[idx][21]++;
+  fxVars[idx][22]++;
+  if(fxVars[idx][22]==255){
+    fxVars[idx][22]=-255;
+  }
+}
+
+
 void blank(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1] =0;//
