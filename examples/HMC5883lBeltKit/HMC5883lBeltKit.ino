@@ -564,54 +564,80 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
+  strip.begin();//start lpd8806 strip
+  if(serialoutput==true){ //do we print info?
+    Serial.println("LED Strip Online.");
+  }
+  //check for pair flag on eeprom spot 255
   uint8_t offcounter = EEPROM.read(255);
   EEPROM.write(offcounter+1, 255);
-    
+  //add one to what you find in pair flag slot
+  //if the user turns the hoop on and off 3 times in a row before the rgb
+  //fade finishes it puts the hoop into bluetooth discoverable or
+  //ir learn mode depending on model.
+  
+  for(int i=0;i<255;i++){ //fade in red
+   for(int q=0;q<numPixels;q++){
+     strip.setPixelColor(q, i, 0, 0);
+   }
+  }
+    for(int i=0;i<255;i++){ //fade out red
+   for(int q=0;q<numPixels;q++){
+     strip.setPixelColor(q, abs(i-255), 0, 0);
+   }
+  }
+    for(int i=0;i<255;i++){ //fade in green
+   for(int q=0;q<numPixels;q++){
+     strip.setPixelColor(q, 0, i, 0);
+   }
+  }
+    for(int i=0;i<255;i++){ //fade out green
+   for(int q=0;q<numPixels;q++){
+     strip.setPixelColor(q, 0,abs(i-255), 0);
+   }
+  }
+      for(int i=0;i<255;i++){ //fade in blue
+   for(int q=0;q<numPixels;q++){
+     strip.setPixelColor(q, 0, 0, i);
+   }
+  }
+    for(int i=0;i<255;i++){ //fade out blue
+   for(int q=0;q<numPixels;q++){
+     strip.setPixelColor(q, 0, 0, abs(i-255));
+   }
+  }
+if(EEPROM.read(255)>=3){//if  our pair flag is more than 3 then
+//bluetooth setup here
+}else{
+ EEPROM.write(0,255); //otherwise we want to write eeprom spot 255 to 0  
+}
+
   int i;
   pinMode(irrxpin, INPUT);
   EEPreadirc();
-
-
-  //  Serial.println("IR Reciever setup ");
-  /*patternswitchspeed= patternswitchspeed*framerate;
-  patternswitchspeedvariance=patternswitchspeedvariance*framerate;
-  transitionspeed=transitionspeed*framerate;
-  transitionspeedvariance=transitionspeedvariance*framerate;
-  
-  */
-  // for (int thisReading = 0; thisReading < numReadings; thisReading++)
-  // readings[thisReading] = 0;
-
-  // Start up the LED strip. Note that strip.show() is NOT called here --
-  // the callback function will be invoked immediately when attached, and
-  // the first thing the calback does is update the strip.
-
-  // Initialize the serial port.
   Serial.begin(115200);
   Uart.begin(38400);
-  if(serialoutput==true){
+ /*
+ if(serialoutput==true){
     Serial.println();
     Serial.println("Send a");
     Serial.println("+ to press button");
-    //  Serial.println("B to increase brightness, ");
-    //  Serial.println("b to decrease brightness, ");
+    //Serial.println("B to increase brightness, ");
+    //Serial.println("b to decrease brightness, ");
     Serial.println("D to enable compass debug,");
     Serial.println("d to disable compass debug");
     Serial.println("C to + color scheme");
     Serial.println("c to - color scheme");
     Serial.println("M to enter menu");
     Serial.println("m to go back to run");
-
     Serial.println("Starting the I2C interface.");
   }
+  */
   Wire.begin(); // Start the I2C interface.
 
   compass.init();
   compass.enableDefault();
-  strip.begin();
-  if(serialoutput==true){
-    Serial.println("LED Strip Online.");
-  }
+ 
   // Initialize random number generator from a floating analog input.
   randomSeed(analogRead(0));
   memset(imgData, 0, sizeof(imgData)); // Clear image data
@@ -897,7 +923,6 @@ void loop() {
   //getheading();
   compassread();
   callback(); //generate image
-  // if (counter==1) getSerial(); //process serial dat
  // mode(); //what are we doing?
 }
 void calibrate(){
