@@ -7,6 +7,7 @@ int qz=0;
 int lmheading;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
+boolean uartoutput=false;// will the uart respond?
 //uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
@@ -227,6 +228,9 @@ float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglas
 //int index = 0; // the index of the current reading
 //int total = 0; // the running total
 //int average = 0;
+//##############bluetooth serial port
+HardwareSerial Uart = HardwareSerial();
+
 //#############compass stuff
 uint8_t error = 0;
 
@@ -237,6 +241,7 @@ uint8_t button = 0;
 uint8_t longbutton = 0;
 uint8_t lastbuttonstate = 0;
 char serInStr[30]; // array that will hold the serial input string
+char urtInStr[30]; // array that will hold the serial input string
 
 
 #define maroon 0x800000
@@ -467,7 +472,7 @@ const char led_chars[97][6] PROGMEM = {
   0x7e,0x88,0x88,0x88,0x7e,0x00,  // A4
   0xfe,0x92,0x92,0x92,0x6c,0x00,  // B5
   0x7c,0x82,0x82,0x82,0x44,0x00,  // C6
-  0xfe,0x82,0x82,0x44,0x38,0x00,	// D7
+  0xfe,0x82,0x82,0x44,0x38,0x00,  // D7
   0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
   0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
   0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
@@ -578,6 +583,9 @@ char fixCos(int angle);
 // ---------------------------------------------------------------------------
 
 void setup() {
+  uint8_t offcounter = EEPROM.read(255);
+  EEPROM.write(offcounter+1, 255);
+    
   int i;
   pinMode(irrxpin, INPUT);
   EEPreadirc();
@@ -599,6 +607,7 @@ void setup() {
 
   // Initialize the serial port.
   Serial.begin(115200);
+  Uart.begin(38400);
   if(serialoutput==true){
     Serial.println();
     Serial.println("Send a");
@@ -3401,6 +3410,106 @@ void getSerial(){
     serInStr[0] = 0; // say we've used the string
   }
 }
+
+
+
+void getUart(){
+  int num;
+  if(Uart.available() > 0) {
+    if(uartoutput==true){
+      Uart.println(urtInStr);
+    }
+    char ucmd = serInStr[0]; // first char is command
+    char* urt = urtInStr;
+    while( *++urt == ' ' ); // got past any intervening whitespace
+    num = atoi(urt); // the rest is arguments (maybe)
+    if( ucmd == '+' ) {
+      if(uartoutput==true){ 
+        Uart.println("Button recieved");
+      }
+      button=1;
+    }
+    if( ucmd == 'd' ) {
+      compassdebug=0;
+      if(uartoutput==true){  
+        Uart.println("disable compass serial output");
+      }
+    }
+    if( ucmd == 'D' ) {
+      compassdebug=1;
+      if(uartoutput==true){
+        Uart.println("enable compass serial output");
+      }
+    }
+    if( ucmd == 'Q' ) {
+
+      for (int i =0; i<ircsetup; i++){
+        Uart.print (irc[i]);
+        Uart.print(" , " );
+        Uart.println (i);
+        
+      }
+      Uart.println();
+      for (int i =0; i<ircsetup; i++){
+        Uart.print (irc2[i]);
+        Uart.print(" , " );
+        Uart.println (i);
+      }
+    }
+//int opmode; //0==normal ,1=menu,2=irsetup
+    if( ucmd == 'M' ) {
+      if(uartoutput==true){ 
+        Uart.println("Entering Menu");
+      }
+     opmode = 1;
+    }
+    if( ucmd == 'm' ) {
+      //Timer1.detachInterrupt();
+      if(uartoutput==true){ 
+        Uart.println("Woah.");
+      }
+      opmode=0;
+    }
+    if( ucmd == 'I' ) {
+      //Timer1.detachInterrupt();
+      if(uartoutput==true){ 
+        Uart.println("Entering irsetup");
+      }
+     opmode=2;
+    }
+    //  boolean serialoutput=false;// will the serial respond?
+    if( ucmd == 'S' ) {
+      uartoutput=true;
+      if(uartoutput==true){  
+        Uart.print("Serial output enabled");
+      }
+    }
+    if( ucmd == 's' ) {
+
+      if(uartoutput==true){  
+        Uart.print("Serial output disabled");
+        uartoutput=false;
+      }
+    }
+
+    if( ucmd == 'C' ) {
+      colorschemeselector++;
+      if(uartoutput==true){  
+        Uart.print("Color Scheme ");
+        Uart.println(colorschemeselector);
+      }
+    }
+    if( ucmd == 'c' ) {
+      colorschemeselector--;
+      if(uartoutput==true){  
+        Uart.print("Color Scheme ");
+        Uart.println(colorschemeselector);
+      }
+    }
+    urtInStr[0] = 0; // say we've used the string
+  }
+}
+
 //read a string from the serial and store it in an array
 //you must supply the array variable
 uint8_t readSerialString()
