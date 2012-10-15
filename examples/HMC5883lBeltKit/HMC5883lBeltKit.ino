@@ -31,6 +31,7 @@ void (*renderEffect[])(byte) = {
   schemefade,
   MonsterHunter,
   //   wavyFlag,// stock
+ rotate,
 
   pacman,   //bounces back from end to end and builds every time 
   
