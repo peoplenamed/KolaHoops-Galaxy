@@ -11,26 +11,30 @@ boolean uartoutput=false;// will the uart respond?
 //uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
-uint16_t patternswitchspeed = 300; //# of seconds between pattern switches
+uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  rainbowChase, //stock
+  raindance,
+  colorDrift,
+  sineChase, //stock
   compassheading,
   compassheadingRGBFade,
   Dice,
-  schemetest,
-  schemetestlong,
+  //schemetest,
+  //schemetestlong,
   schemetestfade,
   schemetestlongfade,
   schemefade,
   MonsterHunter,
-  rotate,//untested
-  simpleOrbit,//untested
-  sineCompass, //untested
-  sparkle, //untested
+//  rotate,//untested
+//  simpleOrbit,//untested
+//  sineCompass, //untested
+//  sparkle, //untested
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
@@ -456,7 +460,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x92,0x92,0x92,0x6c,0x00,  // B5
   0x7c,0x82,0x82,0x82,0x44,0x00,  // C6
   0xfe,0x82,0x82,0x44,0x38,0x00,  // D7
-  0xfe,0x92,0x92,0x92,0x82,0x00,	// E8
+  0xfe,0x92,0x92,0x92,0x82,0x00,  // E8
   0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
   0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
   0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
@@ -578,37 +582,43 @@ void setup() {
   //if the user turns the hoop on and off 3 times in a row before the rgb
   //fade finishes it puts the hoop into bluetooth discoverable or
   //ir learn mode depending on model.
-
-  for(int i=0;i<255;i++){ //fade in red
+  for(int i=0;i<127;i++){ //fade in red
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, i, 0, 0);
     }
+      strip.show();
   }
-  for(int i=0;i<255;i++){ //fade out red
+  for(int i=127;i>0;i--){ //fade out red
     for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, abs(i-255), 0, 0);
+      strip.setPixelColor(q, i, 0, 0);
     }
+      strip.show();
   }
-  for(int i=0;i<255;i++){ //fade in green
+  for(int i=0;i<127;i++){ //fade in green
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, i, 0);
     }
+      strip.show();
   }
-  for(int i=0;i<255;i++){ //fade out green
+  for(int i=0;i<127;i++){ //fade out green
     for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0,abs(i-255), 0);
+      strip.setPixelColor(q, 0,abs(i-127), 0);
     }
+      strip.show();
   }
-  for(int i=0;i<255;i++){ //fade in blue
+  for(int i=0;i<127;i++){ //fade in blue
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, i);
     }
+      strip.show();
   }
-  for(int i=0;i<255;i++){ //fade out blue
+  for(int i=0;i<127;i++){ //fade out blue
     for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0, 0, abs(i-255));
+      strip.setPixelColor(q, 0, 0, abs(i-127));
     }
+      strip.show();
   }
+  //delay(100000);
   if(EEPROM.read(255)>=3){//if  our pair flag is more than 3 then
     //bluetooth setup here
   }
@@ -643,8 +653,8 @@ void setup() {
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
   //   attachInterrupt(0, buttonpress, RISING);
-  Timer1.initialize();
-  Timer1.attachInterrupt(others, 1000000 / 10); //10 times/second
+  //Timer1.initialize();
+  //Timer1.attachInterrupt(others, 1000000 / 10); //10 times/second
 }
 
 void findplane(){
@@ -891,8 +901,13 @@ void mode(){
   }
 }
 void loop() {
-  //callback(); //generate image
-  mode();
+  others();
+  callback(); //generate image
+  callback(); //generate image
+  callback(); //generate image
+  callback(); //generate image
+  callback(); //generate image
+ // mode();
 }
 void others(){
   if(opmode==0||opmode==1){
@@ -2128,21 +2143,21 @@ void raindance(byte idx){
     // Frame-to-frame hue increment (speed) -- may be positive or negative,
     // but magnitude shouldn't be so small as to be boring. It's generally
     // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][2] = 4 + random(fxVars[idx][1]) / numPixels;
+    fxVars[idx][2] = 0;
     // Reverse speed and hue shift direction half the time.
     if(random(2) == 0) fxVars[idx][1] = -fxVars[idx][1];
     if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
     fxVars[idx][3] = 0; //position
-    fxVars[idx][4] = 4 + random(fxVars[idx][1]) / numPixels;//next speed
-    fxVars[idx][5] = random(600); // countdown to next change after speed match
+    fxVars[idx][4] = 4 + random(fxVars[idx][1]*100) / numPixels;//next speed
+    fxVars[idx][5] = random(300); // countdown to next change after speed match
     fxVars[idx][0] = 1; // Effect initialized
   }
   if(fxVars[idx][0] == -1) {
     fxVars[idx][4] = 4 + random(fxVars[idx][1]) / numPixels;
     // Reverse speed and hue shift direction half the time.
-    if(random(2) == 0) fxVars[idx][1] = -fxVars[idx][1];
+    if(random(2) == 0) fxVars[idx][4] = -fxVars[idx][4];
     //   if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
-    fxVars[idx][5] = random(600); // countdown to next change after speed match
+    fxVars[idx][5] = random(60); // countdown to next change after speed match
     fxVars[idx][0] = 1; // Effect initialized
   }
   
