@@ -5,6 +5,7 @@ int opmode; //0==normal ,1=menu,2=irsetup
 int planeoutput=0;
 int compassoutput=0;
 int lmheading;
+boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
@@ -31,10 +32,10 @@ void (*renderEffect[])(byte) = {
   schemetestlongfade,
   schemefade,
   MonsterHunter,
-//  rotate,//untested
-//  simpleOrbit,//untested
-//  sineCompass, //untested
-//  sparkle, //untested
+  //  rotate,//untested
+  //  simpleOrbit,//untested
+  //  sineCompass, //untested
+  //  sparkle, //untested
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
@@ -461,7 +462,7 @@ const char led_chars[97][6] PROGMEM = {
   0x7c,0x82,0x82,0x82,0x44,0x00,  // C6
   0xfe,0x82,0x82,0x44,0x38,0x00,  // D7
   0xfe,0x92,0x92,0x92,0x82,0x00,  // E8
-  0xfe,0x90,0x90,0x90,0x80,0x00,	// F9
+  0xfe,0x90,0x90,0x90,0x80,0x00,  // F9
   0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
   0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
   0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
@@ -568,62 +569,83 @@ char fixCos(int angle);
 
 // ---------------------------------------------------------------------------
 
+void bluetoothsetup(){ //for linvorV1.5 firmware, baud for arduino has already
+  // been set in setup(), we are NOT supposed to send newline
+  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400
+  delay(1000);
+  Uart.print("AT+NAMEMaxs Galaxy"); //sets name seen by android to "Maxs Galaxy"
+  delay(1000);
+  Uart.print("AT+PIN0000");
+  delay(1000);
+} 
+
 void setup() {
-  Serial.begin(115200);
-  Uart.begin(38400);
+  Serial.begin(115200);//start serial connection through usb 
+  if(serialoutput==true){ //do we print info?
+    Serial.println("Serial monitor Online.");
+  }
+  Uart.begin(38400); //start serial connection to bluetooth module
+    if(serialoutput==true){ //do we print info?
+    Serial.println("Uart port Online");
+  }
   strip.begin();//start lpd8806 strip
   if(serialoutput==true){ //do we print info?
     Serial.println("LED Strip Online.");
   }
   //check for pair flag on eeprom spot 255
   uint8_t offcounter = EEPROM.read(255);
-  EEPROM.write(offcounter+1, 255);
+  EEPROM.write(255, offcounter+1);
   //add one to what you find in pair flag slot
   //if the user turns the hoop on and off 3 times in a row before the rgb
-  //fade finishes it puts the hoop into bluetooth discoverable or
-  //ir learn mode depending on model.
+  //fade finishes it puts the hoop into IR learn mode
   for(int i=0;i<127;i++){ //fade in red
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, i, 0, 0);
     }
-      strip.show();
+    strip.show();
   }
   for(int i=127;i>0;i--){ //fade out red
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, i, 0, 0);
     }
-      strip.show();
+    strip.show();
   }
   for(int i=0;i<127;i++){ //fade in green
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, i, 0);
     }
-      strip.show();
+    strip.show();
   }
   for(int i=0;i<127;i++){ //fade out green
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0,abs(i-127), 0);
     }
-      strip.show();
+    strip.show();
   }
   for(int i=0;i<127;i++){ //fade in blue
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, i);
     }
-      strip.show();
+    strip.show();
   }
   for(int i=0;i<127;i++){ //fade out blue
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, abs(i-127));
     }
-      strip.show();
+    strip.show();
   }
   //delay(100000);
-  if(EEPROM.read(255)>=3){//if  our pair flag is more than 3 then
-    //bluetooth setup here
+  uint8_t irsetupflag = EEPROM.read(255);
+  Serial.print(irsetupflag);
+  Serial.println(" read from EEPROM spot 255");
+  if(irsetupflag==3){//if our pair flag is 2 then
+    opmode=3;
+    for(int q=0;q<ircsetup;q++){
+     strip.setPixelColor(q,64,0,0); 
+    }
   }
   else{
-    EEPROM.write(0,255); //otherwise we want to write eeprom spot 255 to 0  
+    EEPROM.write(255,0); //otherwise we want to write eeprom spot 255 to 0  
   }                      //to reset discoverable / learn counter
   int i;
   pinMode(irrxpin, INPUT);
@@ -896,18 +918,20 @@ void mode(){
     break;
 
   case 2://ir learn mode
-    irsetup();
+    irsetup(true);
     break;
   }
 }
 void loop() {
   others();
+  if(opmode==0){
   callback(); //generate image
   callback(); //generate image
   callback(); //generate image
   callback(); //generate image
   callback(); //generate image
- // mode();
+  }
+
 }
 void others(){
   if(opmode==0||opmode==1){
@@ -915,7 +939,7 @@ void others(){
   }
   else{
     if(opmode==3){
-      irsetup(); 
+      irsetup(true); 
     }  
   }
   getSerial();
@@ -2160,7 +2184,7 @@ void raindance(byte idx){
     fxVars[idx][5] = random(60); // countdown to next change after speed match
     fxVars[idx][0] = 1; // Effect initialized
   }
-  
+
   if(fxVars[idx][4]==fxVars[idx][2]){
     fxVars[idx][5]--;
     if(fxVars[idx][5]==0){
@@ -3372,6 +3396,15 @@ void getSerial(){
         Serial.println(colorschemeselector);
       }
     }
+    if( cmd == 'Z' ) { //send bluetooth config command
+      //not needed for normal operation, this will be preconfigured.
+      //left for learning
+      if(serialoutput==true){  
+        Serial.println("Sending bluetooth config commands");
+        Serial.println("This will take about 3 secconds");
+      }
+      bluetoothsetup(); 
+    }
     serInStr[0] = 0; // say we've used the string
   }
 }
@@ -3566,8 +3599,13 @@ void EEPreadirc()
   }
 }
 int i;
-void irsetup() {
+
+
+void irsetup(boolean feedback) {
   // irsetupflag=1;
+  for(int q=0;q<ircsetup;q++){
+    strip.setPixelColor(q, 32,0,0);
+  }
   if (irrecv.decode(&results)) {
     if(serialoutput==true){
       Serial.print("got code ");
@@ -3577,7 +3615,17 @@ void irsetup() {
       Serial.println(results.value, DEC);
       Serial.print("Stored in slot ");
       Serial.println(i); 
-    }   
+    }
+    for(int q=0;q<ircsetup;q++){
+      if(i<q){
+        strip.setPixelColor(q, 0, 64, 0);
+      }else{
+       if(i<q){
+        strip.setPixelColor(q, 0, 0, 64);
+      } 
+      }
+    }
+ strip.show();   
     i++;   
     delay(1500);//needed for frequent button presses
 
@@ -3603,6 +3651,7 @@ void irsetup() {
       if(serialoutput==true){  
         Serial.println("Ready.");
       }
+      opmode=0;
       return;
     }
   }
@@ -3613,7 +3662,7 @@ void irsetup() {
 void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
-  //irsetup();
+  //irsetup(true);
   /*  kenmore remote
    279939191 , 0
    
@@ -3754,7 +3803,6 @@ void getir(){
       patternswitchspeedvariance = 255;//# of frames the pattern switch speed can vary+ and _ so total variance could be 2x 
       transitionspeed = 120;// # of frames transition lasts 
       transitionspeedvariance = 15;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
-
     }
     if (results.value == irc2[10]) {
       if(serialoutput==true){
@@ -3766,8 +3814,5 @@ void getir(){
     }
     irrecv.resume();
   }
-
 }
-
-
 
