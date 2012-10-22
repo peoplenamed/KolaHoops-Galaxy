@@ -26,7 +26,14 @@ void (*renderEffect[])(byte) = {
   compassheading,
   compassheadingRGBFade,
   Dice,
-  onespin,
+  onespin,//untested
+  onespinfade,//untested
+  who,//untested
+  // what,
+  // when,
+  // where,
+  // why,
+  // how,
   //schemetest,
   //schemetestlong,
   schemetestfade,
@@ -377,7 +384,7 @@ char urtInStr[30]; // array that will hold the serial input string
 // we are using roygbiv plus teal = roygtbiv, 2 steps between each primary except g&b
 // each primary color and there are 8 colors which goes into 256 evenly; 256%8=0
 long eightcolorschema[][8] PROGMEM={
-  
+
   //0-7 single color roygtbiv
   red,red,red,red,red,red,red,red,
   orange,orange,orange,orange,orange,orange,orange,orange,
@@ -387,7 +394,7 @@ long eightcolorschema[][8] PROGMEM={
   blue,blue,blue,blue,blue,blue,blue,blue,
   indigo,indigo,indigo,indigo,indigo,indigo,indigo,indigo,
   violet,violet,violet,violet,violet,violet,violet,violet,
-  
+
   //2 of 32
   //8-15 2 color roygtbiv and black
   red,0,red,0,red,0,red,0,
@@ -398,7 +405,7 @@ long eightcolorschema[][8] PROGMEM={
   blue,0,blue,0,blue,0,blue,0,
   indigo,0,indigo,0,indigo,0,indigo,0,
   violet,0,violet,0,violet,0,violet,0,
-  
+
   //3 of 32
   //16-23 2 color roygtbiv and white
   red,white,red,white,red,white,red,white,
@@ -409,7 +416,7 @@ long eightcolorschema[][8] PROGMEM={
   blue,white,blue,white,blue,white,blue,white,
   indigo,white,indigo,white,indigo,white,indigo,white,
   violet,white,violet,white,violet,white,violet,white,
-  
+
   //4 of 32 //0x80 is 50%, 0x40 is 25%, 0xc0 is 75%, 0x00 is 0% and ff is 100%, format 0xRRGGBB in hex 0-f
   //24-31 stretch between 2 primary colors 3 steps between and back
   //1st is primary1,
@@ -429,91 +436,91 @@ long eightcolorschema[][8] PROGMEM={
   0x0000ff,0x800080,0xff0000,0x808000,0x00ff00,0x808000,0xff0000,0x800080, //blue to green 1/2 increments
   red,orange,yellow,green,teal,blue,indigo,violet, //rainbow!
   violet,indigo,blue,teal,green,yellow,orange,red, //backwards rainbow!
-  
+
   //5 of 32
   //32-39
-  
+
   //6 of 32
   //40-47
-  
+
   //7 of 32
   //48-55
-  
+
   //8 of 32
   //56-63
-  
+
   //9 of 32
   //64-71
-  
+
   //10 of 32
   //72-79
-  
+
   //11 of 32
   //80-87
-  
+
   //12 of 32
   //88-95
-  
+
   //13 of 32
   //96-103
-  
+
   //14 of 32
   //104-111
-  
+
   //15 of 32
   //112-119
-  
+
   //16 of 32
   //120-127
-  
+
   //17 of 32
   //128-135
-  
+
   //18 of 32
   //136-143
-  
+
   //19 of 32
   //144-151
-  
+
   //20 of 32
   //152-159
-  
+
   //21 of 32
   //160-167
-  
+
   //22 of 32
   //168-175
-  
+
   //23 of 32
   //176-183
-  
+
   //24 of 32
   //184-191
-  
+
   //25 of 32
   //192-199
-  
+
   //26 of 32
   //200-207
-  
+
   //27 of 32
   //208-215
-  
+
   //28 of 32
   //216-223
-  
+
   //29 of 32
   //224-231
-  
+
   //30 of 32
   //232-239
-  
+
   //31 of 32
   //240-247
-  
+
   //32 of 32
   //248-255
-  
+
   //2 color shift alternating every other base
   red,purple,blue,purple,red,purple,blue,purple,
   red,yellow,green,yellow,red,yellow,green,yellow,
@@ -522,7 +529,7 @@ long eightcolorschema[][8] PROGMEM={
 
 
   azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //0
- 
+
   red,green,blue,magenta,teal,yellow,white,black,//1
   grey,orange,seashell,peru,red,azure,black,silver,//2
   purple,black,green,black,purple,black,green,black,//3
@@ -655,6 +662,7 @@ const char led_chars[97][6] PROGMEM = {
 // transition completes, the "front" then becomes the "back," a new front
 // is chosen, and the process repeats.
 byte imgData[2][numPixels * 3], // Data for 2 strips worth of imagery
+tempimgData[numPixels*3], // this is our temp strip for storing the last image
 alphaMask[numPixels], // Alpha channel for compositing images
 backImgIdx = 0, // Index of 'back' image (always 0 or 1)
 fxIdx[3]; // Effect # for back & front images + alpha
@@ -711,7 +719,7 @@ void setup() {
     Serial.println("Serial monitor Online.");
   }
   Uart.begin(38400); //start serial connection to bluetooth module
-    if(serialoutput==true){ //do we print info?
+  if(serialoutput==true){ //do we print info?
     Serial.println("Uart port Online");
   }
   strip.begin();//start lpd8806 strip
@@ -767,7 +775,7 @@ void setup() {
   if(irsetupflag==3){//if our pair flag is 2 then
     opmode=3;
     for(int q=0;q<ircsetup;q++){
-     strip.setPixelColor(q,64,0,0); 
+      strip.setPixelColor(q,64,0,0); 
     }
   }
   else{
@@ -1051,11 +1059,11 @@ void mode(){
 void loop() {
   others();
   if(opmode==0){
-  callback(); //generate image
-  callback(); //generate image
-  callback(); //generate image
-  callback(); //generate image
-  callback(); //generate image
+    callback(); //generate image
+    callback(); //generate image
+    callback(); //generate image
+    callback(); //generate image
+    callback(); //generate image
   }
 
 }
@@ -1791,26 +1799,144 @@ void onespin(byte idx) {
     fxVars[idx][0]=1;// init
 
   }
-    long color;
-    color = getschemacolor(0); //first color in color scheme
+  long color;
+  color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0];
   for(int i=0; i<numPixels; i++) {
     if(i==fxVars[idx][1]){
-    *ptr++ = color >> 16;
-    *ptr++ = color >> 8;
-    *ptr++ = color;
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
+      *ptr++ = color;
     }
   }
   fxVars[idx][3]--;
   if(fxVars[idx][3]<=0){
-  fxVars[idx][1]++;
-  if(fxVars[idx][1]>numPixels){
-   fxVars[idx][1]=0; 
-  }
-   fxVars[idx][3]=fxVars[idx][2];
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
   }
 }
 
+void onespinfade(byte idx) {
+  //starts with a pixelchase but instead of updating imgdata
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
+
+  }
+  long color;
+  color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *ptr2 = &tempimgData[0], *ptr3 = &imgData[idx][0], *ptr4 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(i==fxVars[idx][1]){
+      *ptr2++ = color >> 16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+      *ptr3++;
+      *ptr3++;
+      *ptr3++;
+    }
+    else{
+      *ptr2++ = ((*ptr3++)-fxVars[idx][4]);
+      *ptr2++ = ((*ptr3++)-fxVars[idx][4]);
+      *ptr2++ = ((*ptr3++)-fxVars[idx][4]);
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *ptr4++;
+    *ptr++ = *ptr4++;
+    *ptr++ = *ptr4++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+
+void who(byte idx) { //spining fade taking up 7 pixels using 2 colors
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][0]=1;// init
+
+  }
+  long color,color1;
+  color = getschemacolor(0); //first color in color scheme
+  color1 = getschemacolor(1); //first color in color scheme
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    if(i==fxVars[idx][1]){
+      *ptr++ = color >> 16;
+      *ptr++ = color >> 8;
+      *ptr++ = color;
+    }
+    else{
+      if(i==fxVars[idx][1]-1){
+        *ptr++ = mixColor8(color>>16,color1>>16,64);
+        *ptr++ = mixColor8(color>>8,color1>>8,64);
+        *ptr++ = mixColor8(color,color1,64);
+      }
+      else{
+        if(i==fxVars[idx][1]+1){
+          *ptr++ = mixColor8(color1>>16,color>>16,64);
+          *ptr++ = mixColor8(color1>>8,color>>8,64);
+          *ptr++ = mixColor8(color1,color,64);
+        }
+        else{
+          if(i==fxVars[idx][1]-2){
+            *ptr++ = mixColor8(color>>16,color1>>16,128);
+            *ptr++ = mixColor8(color>>8,color1>>8,128);
+            *ptr++ = mixColor8(color,color1,128);
+          }
+          else{
+            if(i==fxVars[idx][1]+2){
+              *ptr++ = mixColor8(color1>>16,color>>16,128);
+              *ptr++ = mixColor8(color1>>8,color>>8,128);
+              *ptr++ = mixColor8(color1,color,128);
+            }
+            else{
+              if(i==fxVars[idx][1]-3){
+                *ptr++ = mixColor8(color>>16,color1>>16,192);
+                *ptr++ = mixColor8(color>>8,color1>>8,192);
+                *ptr++ = mixColor8(color,color1,192);
+              }
+              else{
+                if(i==fxVars[idx][1]+3){
+                  *ptr++ = mixColor8(color1>>16,color>>16,192);
+                  *ptr++ = mixColor8(color1>>8,color>>8,192);
+                  *ptr++ = mixColor8(color1,color,192);
+                }
+                else
+                  *ptr++ = color1 >> 16;
+                *ptr++ = color1 >> 8;
+                *ptr++ = color1;
+              }
+            }
+          }
+        }
+      } 
+    }
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
 
 void blank(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -1944,7 +2070,7 @@ void sendOnedowntheline(byte idx) {
     *ptr++ = fxVars[idx][2];
     *ptr++ = fxVars[idx][3];
   }
- }
+}
 
 /*
 void sineChase(byte idx) {
@@ -3825,13 +3951,14 @@ void irsetup(boolean feedback) {
     for(int q=0;q<ircsetup;q++){
       if(i<q){
         strip.setPixelColor(q, 0, 64, 0);
-      }else{
-       if(i<q){
-        strip.setPixelColor(q, 0, 0, 64);
-      } 
+      }
+      else{
+        if(i<q){
+          strip.setPixelColor(q, 0, 0, 64);
+        } 
       }
     }
- strip.show();   
+    strip.show();   
     i++;   
     delay(1500);//needed for frequent button presses
 
@@ -4021,4 +4148,6 @@ void getir(){
     irrecv.resume();
   }
 }
+
+
 
