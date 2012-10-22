@@ -409,10 +409,23 @@ long eightcolorschema[][8] PROGMEM={
   indigo,white,indigo,white,indigo,white,indigo,white,
   violet,white,violet,white,violet,white,violet,white,
   
-  //4 of 32
-  //24-31 
-  red,0,red,0,red,0,red,0,
-  orange,0,orange,0,orange,0,orange,0,
+  //4 of 32 //80 is halfway 00 is 0% and ff is 100%, format 0xRRGGBB in hex 0-f
+  //24-31 stretch between 2 primary colors 3 steps between and back
+  //1st is primary1,
+  //2nd  is 3/4 p1 and 1/4 p2.
+  //3rd is a 5050 mix between the 2 primaries,
+  //4th is 3/4 p2 and 1/4 p1, 
+  //5th is second primary, 
+  //6th is 3/4 p2 and 1/4 p1, 
+  //7th is 50%p1 and 50%p2,
+  //8th is 3/4p1 and 1/4p2 , 
+  //and 1th (9th %8 in getschemacolor) is first primary
+  0xff0000,0xc04000,0x808000,0x40c000,0x00ff00,0x40c000,0x808000,0xc04000,//red p1 to green p2  1/4 increments
+  0x00ff00,0x00c040,0x008080,0x0040c0,0x0000ff,0x0040c0,0x008080,0x00c040,//green p1 to blue p2 1/4 increments
+  0x0000ff,0x4000c0,0x800080,0xc00040,0xff0000,0xc00040,0x800080,0x4000c0,//blue p1 to red p2 1/4 increments
+  0xff0000,0x808000,0x00ff00,0x008080,0x0000ff,0x008080,0x00ff00,0x808000,//red to blue 1/2 increments
+  0x00ff00,0x008080,0x0000ff,0x800080,0xff0000,0x800080,0x0000ff,0x008080,//green to red  1/2 increments
+  0x0000ff,0x800080,0xff0000,0x808000,0x00ff00,0x808000,0xff0000,0x800080, //blue to green 1/2 increments
   yellow,0,yellow,0,yellow,0,yellow,0,
   green,0,green,0,green,0,green,0,
   teal,0,teal,0,teal,0,teal,0,
