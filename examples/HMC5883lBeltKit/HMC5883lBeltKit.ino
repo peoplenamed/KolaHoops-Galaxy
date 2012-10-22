@@ -1963,6 +1963,47 @@ void who(byte idx) { //spining fade taking up 7 pixels using 2 colors
   }
 }
 
+void what(byte idx) {
+ if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//
+    fxVars[idx][2]=0;//
+    fxVars[idx][3]=0;//
+    fxVars[idx][4]=0;//
+    fxVars[idx][5]=0;//
+    fxVars[idx][6]=0;//
+    fxVars[idx][7]=0;//
+    fxVars[idx][8]=0;//
+    fxVars[idx][9]=0;//
+    fxVars[idx][10]=0;//
+    fxVars[idx][0]=1;// init
+  }
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    long color;
+    // color = getschemacolor(i%8); 
+    if (i==fxVars[idx][1]){
+      color=getschemacolor(0);
+    }
+    else{
+      if (i==fxVars[idx][2]){
+        color=getschemacolor(1);
+      }
+      else{
+        if (i==fxVars[idx][3]){
+          color=getschemacolor(2);
+        }
+        else{
+          color=black;
+        }
+      }
+    }
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+}
+
+
 void blank(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1] =0;//
@@ -2262,20 +2303,13 @@ void orbit(byte idx) {
   fxVars[idx][14] += fxVars[idx][13];
 }    
 byte mixColor8(byte color1, byte color2, uint8_t alpha){
-  byte inv = 257 - (alpha+1);  
-  return (color1*(alpha+1)+color2*inv)>>8;
+  alpha++;
+  byte inv = 257 - (alpha);  
+  return (color1*(alpha)+color2*inv)>>8;
 }
 
 long mixColor24(long color1, long color2, byte alpha){
-  byte inv = 257 - alpha;
-  byte r1,g1,b1,r2,g2,b2; 
-  r1=color1>>16;
-  r2=color2>>16;
-  g1=color1>>8;
-  g2=color2>>8;
-  b1=color1;
-  b2=color2;
-  return (r1*alpha+r2*inv)>>8,(g1*alpha+g2*inv)>>8,(b1*alpha+b2*inv)>>8;
+  return mixColor8(color1>>16,color2>>16,alpha),mixColor8(color1>>8,color2>>8,alpha),mixColor8(color1,color1,alpha);
 }
 
 /*
