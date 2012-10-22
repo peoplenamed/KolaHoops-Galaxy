@@ -9,7 +9,6 @@ boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
-//uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
 uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
@@ -439,6 +438,30 @@ long eightcolorschema[][8] PROGMEM={
 
   //5 of 32
   //32-39
+  //splitting a color wheel up into 3 sections 1 for each 
+  //primary color, and then splitting each section in half 2 more times
+  //gives us 12 different steps which is the same number of steps in halftones
+  //between octaves. Major, minor, etc use 8 of the 12 spots. we have eight
+  //colors per scheme. this set uses red as the root note
+  //http://www.bandnotes.info/tidbits/scales/half-whl.htm
+  //
+  //  Major Scale: R, W, W, H, W, W, W, H
+  //  Natural Minor Scale: R, W, H, W, W, H, W, W
+  //  Harmonic Minor Scale: R, W, H, W, W, H, 1 1/2, H   (notice the step and a half)
+  //  Melodic Minor Scale: going up is: R, W, H, W, W, W, W, H
+  //  going down is: R, W, W, H, W, W, H, W
+  //  Dorian Mode is: R, W, H, W, W, W, H, W
+  //  Mixolydian Mode is: R, W, W, H, W, W, H, W
+  //  Ahava Raba Mode is: R, H, 1 1/2, H, W, H, W, W
+  //  A minor pentatonic blues scale (no sharped 5) is: R, 1 1/2, W, W, 1 1/2, W
+
+  // major
+  0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0xc00040,0xff0000,
+  
+  //natural minor
+  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0x800080,0xff0000,
+  
+  //harmonic minor
 
   //6 of 32
   //40-47
