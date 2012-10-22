@@ -54,6 +54,8 @@ void (*renderEffect[])(byte) = {
   raindance,//untested
   sineChase, //stock
   sineDance, //not set up to dance yet just a placeholder
+  rainbowsineChase,
+  colorDriftsineChase,
   wavyFlag,// stock
 
   //##########in development###########
@@ -3063,7 +3065,41 @@ void sineChase(byte idx) {
   }
   fxVars[idx][4] += fxVars[idx][3];
 }
+void colorDriftsineChase(byte idx) {
 
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(foo*12, 254 - (foo * 2), 255) :
+    hsv2rgb(foo*12, 255, 254 + foo * 2);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+}
 void sineDance(byte idx) {
 
   if(fxVars[idx][0] == 0) {
@@ -3093,6 +3129,42 @@ void sineDance(byte idx) {
     color = (foo >= 0) ?
     hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
     hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+}
+
+void rainbowsineChase(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(fxVars[idx][1] * i / numPixels, 254 - (foo * 2), 255) :
+    hsv2rgb(fxVars[idx][1] * i / numPixels, 255, 254 + foo * 2);
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
     *ptr++ = color;
