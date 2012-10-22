@@ -9,7 +9,6 @@ boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
-//uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
 uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
