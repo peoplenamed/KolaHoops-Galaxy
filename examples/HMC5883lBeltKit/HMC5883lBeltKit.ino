@@ -46,6 +46,7 @@ void (*renderEffect[])(byte) = {
   rainbowChase, //stock
   raindance,//untested
   sineChase, //stock
+  sineDance, //not set up to dance yet just a placeholder
   wavyFlag,// stock
 
   //##########in development###########
@@ -371,23 +372,53 @@ char urtInStr[30]; // array that will hold the serial input string
 #define gainsboro 0xDCDCDC
 #define whitesmoke 0xF5F5F5
 #define white 0xFFFFFF
-
+// 256/8=32
+// we are using roygbiv plus teal = roygtbiv because thats 2 steps inbetween 
+// each primary color and there are 8 colors which goes into 256 evenly.
 long eightcolorschema[][8] PROGMEM={
-  //1 color alternating black every other /6colorwheel
+  //1 of 32
+  //0-7 single color roygtbiv
+  red,red,red,red,red,red,red,red,
+  orange,orange,orange,orange,orange,orange,orange,orange,
+  yellow,yellow,yellow,yellow,yellow,yellow,yellow,yellow,
+  green,green,green,green,green,green,green,green,
+  teal,teal,teal,teal,teal,teal,teal,teal,
+  blue,blue,blue,blue,blue,blue,blue,blue,
+  indigo,indigo,indigo,indigo,indigo,indigo,indigo,indigo,
+  violet,violet,violet,violet,violet,violet,violet,violet,
+  
+  //2 of 32
+  //8-15 2 color roygtbiv and black
   red,0,red,0,red,0,red,0,
-  green,0,green,0,green,0,green,0,
-  blue,0,blue,0,blue,0,blue,0,
-  purple,0,purple,0,purple,0,purple,0,
+  orange,0,orange,0,orange,0,orange,0,
   yellow,0,yellow,0,yellow,0,yellow,0,
-  cyan,0,cyan,0,cyan,0,cyan,0,
-
-  //2 color alternating white every other /6colorwheel
+  green,0,green,0,green,0,green,0,
+  teal,0,teal,0,teal,0,teal,0,
+  blue,0,blue,0,blue,0,blue,0,
+  indigo,0,indigo,0,indigo,0,indigo,0,
+  violet,0,violet,0,violet,0,violet,0,
+  
+  //3 of 32
+  //16-23 2 color roygtbiv and white
   red,white,red,white,red,white,red,white,
-  green,white,green,white,green,white,green,white,
-  blue,white,blue,white,blue,white,blue,white,
-  purple,white,purple,white,purple,white,purple,white,
+  orange,white,orange,white,orange,white,orange,white,
   yellow,white,yellow,white,yellow,white,yellow,white,
-  cyan,white,cyan,white,cyan,white,cyan,white,
+  green,white,green,white,green,white,green,white,
+  teal,white,teal,white,teal,white,teal,white,
+  blue,white,blue,white,blue,white,blue,white,
+  indigo,white,indigo,white,indigo,white,indigo,white,
+  violet,white,violet,white,violet,white,violet,white,
+  
+  //4 of 32
+  //24-31 
+  red,0,red,0,red,0,red,0,
+  orange,0,orange,0,orange,0,orange,0,
+  yellow,0,yellow,0,yellow,0,yellow,0,
+  green,0,green,0,green,0,green,0,
+  teal,0,teal,0,teal,0,teal,0,
+  blue,0,blue,0,blue,0,blue,0,
+  indigo,0,indigo,0,indigo,0,indigo,0,
+  violet,0,violet,0,violet,0,violet,0,
 
   //2 color shift alternating every other base
   red,purple,blue,purple,red,purple,blue,purple,
@@ -463,7 +494,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x82,0x82,0x44,0x38,0x00,  // D7
   0xfe,0x92,0x92,0x92,0x82,0x00,  // E8
   0xfe,0x90,0x90,0x90,0x80,0x00,  // F9
-  0x7c,0x82,0x92,0x92,0x5e,0x00,	// G0
+  0x7c,0x82,0x92,0x92,0x5e,0x00,  // G0
   0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
   0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
   0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
@@ -1776,6 +1807,21 @@ void compassheadingRGBFade(byte idx) {
   }
 }
 
+void sendOnedowntheline(byte idx) {
+  int i;
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//
+    fxVars[idx][2]=0;//
+    fxVars[idx][3]=0;//
+    fxVars[idx][0]=1;// init
+  }
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) { 
+    *ptr++ = fxVars[idx][1];
+    *ptr++ = fxVars[idx][2];
+    *ptr++ = fxVars[idx][3];
+  }
+ }
 
 /*
 void sineChase(byte idx) {
@@ -2711,6 +2757,42 @@ void rainbowChase(byte idx) {
 
 
 void sineChase(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+}
+
+void sineDance(byte idx) {
 
   if(fxVars[idx][0] == 0) {
 
