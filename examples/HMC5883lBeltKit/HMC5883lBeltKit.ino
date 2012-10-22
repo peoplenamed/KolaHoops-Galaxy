@@ -373,10 +373,10 @@ char urtInStr[30]; // array that will hold the serial input string
 #define whitesmoke 0xF5F5F5
 #define white 0xFFFFFF
 // 256/8=32
-// we are using roygbiv plus teal = roygtbiv because thats 2 steps inbetween 
-// each primary color and there are 8 colors which goes into 256 evenly.
+// we are using roygbiv plus teal = roygtbiv, 2 steps between each primary except g&b
+// each primary color and there are 8 colors which goes into 256 evenly; 256%8=0
 long eightcolorschema[][8] PROGMEM={
-  //1 of 32
+  
   //0-7 single color roygtbiv
   red,red,red,red,red,red,red,red,
   orange,orange,orange,orange,orange,orange,orange,orange,
@@ -409,7 +409,7 @@ long eightcolorschema[][8] PROGMEM={
   indigo,white,indigo,white,indigo,white,indigo,white,
   violet,white,violet,white,violet,white,violet,white,
   
-  //4 of 32 //80 is halfway 00 is 0% and ff is 100%, format 0xRRGGBB in hex 0-f
+  //4 of 32 //0x80 is 50%, 0x40 is 25%, 0xc0 is 75%, 0x00 is 0% and ff is 100%, format 0xRRGGBB in hex 0-f
   //24-31 stretch between 2 primary colors 3 steps between and back
   //1st is primary1,
   //2nd  is 3/4 p1 and 1/4 p2.
@@ -426,13 +426,93 @@ long eightcolorschema[][8] PROGMEM={
   0xff0000,0x808000,0x00ff00,0x008080,0x0000ff,0x008080,0x00ff00,0x808000,//red to blue 1/2 increments
   0x00ff00,0x008080,0x0000ff,0x800080,0xff0000,0x800080,0x0000ff,0x008080,//green to red  1/2 increments
   0x0000ff,0x800080,0xff0000,0x808000,0x00ff00,0x808000,0xff0000,0x800080, //blue to green 1/2 increments
-  yellow,0,yellow,0,yellow,0,yellow,0,
-  green,0,green,0,green,0,green,0,
-  teal,0,teal,0,teal,0,teal,0,
-  blue,0,blue,0,blue,0,blue,0,
-  indigo,0,indigo,0,indigo,0,indigo,0,
-  violet,0,violet,0,violet,0,violet,0,
-
+  red,orange,yellow,green,teal,blue,indigo,violet //rainbow!
+  violet,indigo,blue,teal,green,yellow,orange,red //backwards rainbow!
+  
+  //5 of 32
+  //32-39
+  
+  //6 of 32
+  //40-47
+  
+  //7 of 32
+  //48-55
+  
+  //8 of 32
+  //56-63
+  
+  //9 of 32
+  //64-71
+  
+  //10 of 32
+  //72-79
+  
+  //11 of 32
+  //80-87
+  
+  //12 of 32
+  //88-95
+  
+  //13 of 32
+  //96-103
+  
+  //14 of 32
+  //104-111
+  
+  //15 of 32
+  //112-119
+  
+  //16 of 32
+  //120-127
+  
+  //17 of 32
+  //128-135
+  
+  //18 of 32
+  //136-143
+  
+  //19 of 32
+  //144-151
+  
+  //20 of 32
+  //152-159
+  
+  //21 of 32
+  //160-167
+  
+  //22 of 32
+  //168-175
+  
+  //23 of 32
+  //176-183
+  
+  //24 of 32
+  //184-191
+  
+  //25 of 32
+  //192-199
+  
+  //26 of 32
+  //200-207
+  
+  //27 of 32
+  //208-215
+  
+  //28 of 32
+  //216-223
+  
+  //29 of 32
+  //224-231
+  
+  //30 of 32
+  //232-239
+  
+  //31 of 32
+  //240-247
+  
+  //32 of 32
+  //248-255
+  
   //2 color shift alternating every other base
   red,purple,blue,purple,red,purple,blue,purple,
   red,yellow,green,yellow,red,yellow,green,yellow,
@@ -441,13 +521,14 @@ long eightcolorschema[][8] PROGMEM={
 
 
   azure,snow,lavender,aliceblue,honeydew,seashell,lightslategray,lavenderblush, //0
-  //  yellow,orange,white,cornflowerblue,mistyrose,gainsboro,whitesmoke,aliceblue,//7
+ 
   red,green,blue,magenta,teal,yellow,white,black,//1
   grey,orange,seashell,peru,red,azure,black,silver,//2
   purple,black,green,black,purple,black,green,black,//3
   purple,white,green,white,purple,white,green,white,//4
   red,purple,blue,purple,red,purple,blue,purple,//5
   green,teal,blue,teal,green,teal,blue,teal,//6
+  yellow,orange,white,cornflowerblue,mistyrose,gainsboro,whitesmoke,aliceblue,//7
 
 };
 
@@ -2840,6 +2921,7 @@ void sineDance(byte idx) {
   }
   fxVars[idx][4] += fxVars[idx][3];
 }
+
 void somekindaChase(byte idx) {
 
   if(fxVars[idx][0] == 0) {
