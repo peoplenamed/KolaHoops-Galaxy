@@ -176,13 +176,15 @@ unsigned long irc2[ircsetup]= {
  279961631}; //kenmore ac remote
  */
 //boolean irsetupflag = false;
-//eeprom stuffs\
+
+
+//##########eeprom stuffs
 //using the eeprom code modified from
 //http://www.openobject.org/opensourceurbanism/Storing_Data#Writing_to_the_EEPROM
 #include <EEPROM.h>
 unsigned long firstTwoBytes;
 unsigned long secondTwoBytes;
-
+//###########adafruit lpd8806 stuffs
 #include <avr/pgmspace.h>
 #include "SPI.h"
 #include "LPD8806.h"
@@ -445,18 +447,17 @@ long eightcolorschema[][8] PROGMEM={
   //gives us 12 different steps which is the same number of steps in halftones
   //between octaves. Major, minor, etc use 8 of the 12 spots. we have eight
   //colors per scheme. this set uses red as the root note
+  //this is not exactly as i had imagined it because the first and last
+  //are always red.
   //http://www.bandnotes.info/tidbits/scales/half-whl.htm
   //
   //  Major Scale: R, W, W, H, W, W, W, H
   //  Natural Minor Scale: R, W, H, W, W, H, W, W
   //  Harmonic Minor Scale: R, W, H, W, W, H, 1 1/2, H   (notice the step and a half)
-  //  Melodic Minor Scale: going up is: R, W, H, W, W, W, W, H
-  //  going down is: R, W, W, H, W, W, H, W
   //  Dorian Mode is: R, W, H, W, W, W, H, W
   //  Mixolydian Mode is: R, W, W, H, W, W, H, W
-  //  Ahava Raba Mode is: R, H, 1 1/2, H, W, H, W, W
-  //  A minor pentatonic blues scale (no sharped 5) is: R, 1 1/2, W, W, 1 1/2, W
-
+  
+  
   // major
   0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0xc00040,0xff0000,
   
@@ -464,7 +465,14 @@ long eightcolorschema[][8] PROGMEM={
   0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0x800080,0xff0000,
   
   //harmonic minor
+  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0xc00040,0xff0000,
+  
+  //dorian mode
+  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
 
+  //Mixolydian Mode
+  0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
+  
   //6 of 32
   //40-47
 
