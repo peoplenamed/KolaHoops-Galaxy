@@ -33,6 +33,7 @@ void (*renderEffect[])(byte) = {
   // where,
   // why,
   // how,
+  schemestretch,//untested
   //schemetest,
   //schemetestlong,
   schemetestfade,
@@ -51,7 +52,7 @@ void (*renderEffect[])(byte) = {
 
   colorDrift,
   rainbowChase, //stock
-  raindance,//untested
+  raindance,//great!
   sineChase, //stock
   sineDance, //not set up to dance yet just a placeholder
   rainbowsineChase,
@@ -65,10 +66,10 @@ void (*renderEffect[])(byte) = {
 
   //  rainStrobe2at1,
   //strobefans2at1,
-  schemetest2at1,
-  MonsterStrobe2at1,
+ // schemetest2at1,
+//  MonsterStrobe2at1,
   //  schemetestlongrain2at1,
-  schemetestrain2at1,    
+ // schemetestrain2at1,    
   //  orbit,
 
   //needs to store index and message string in progmem
@@ -456,23 +457,23 @@ long eightcolorschema[][8] PROGMEM={
   //  Harmonic Minor Scale: R, W, H, W, W, H, 1 1/2, H   (notice the step and a half)
   //  Dorian Mode is: R, W, H, W, W, W, H, W
   //  Mixolydian Mode is: R, W, W, H, W, W, H, W
-  
-  
+
+
   // major
   0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0xc00040,0xff0000,
-  
+
   //natural minor
   0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0x800080,0xff0000,
-  
+
   //harmonic minor
   0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0xc00040,0xff0000,
-  
+
   //dorian mode
   0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
 
   //Mixolydian Mode
   0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
-  
+
   //6 of 32
   //40-47
 
@@ -1972,7 +1973,7 @@ void who(byte idx) { //spining fade taking up 7 pixels using 2 colors
 }
 
 void what(byte idx) {
- if(fxVars[idx][0] == 0) {
+  if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//
     fxVars[idx][2]=0;//
     fxVars[idx][3]=0;//
@@ -3348,7 +3349,44 @@ void wavyFlag(byte idx) {
   if(fxVars[idx][4] >= 720) fxVars[idx][4] -= 720;
 }
 
+void schemestretch(byte idx) {
+//  only run once to remove motion
+  if(fxVars[idx][0] == 0) { // Initialize effect?
+  long i, sum, s, x;
+  int idx1, idx2, a, b;
+    fxVars[idx][1] = 720 + random(720); // Wavyness
+    fxVars[idx][2] = 4 + random(10); // Wave speed
+    fxVars[idx][3] = 200 + random(200); // Wave 'puckeryness'
+    fxVars[idx][4] = 0; // Current position
+  //fxVars[idx][0] = 1; // Effect initialized
+  
+  for(sum=0, i=0; i<numPixels-1; i++) {
+    sum += fxVars[idx][3] + fixCos(fxVars[idx][4] + fxVars[idx][1] *
+      i / numPixels);
+  }
 
+  byte *ptr = &imgData[idx][0];
+  for(s=0, i=0; i<numPixels; i++) {
+    //x = 256L * ((sizeof(flagTable) / 3) - 1) * s / sum; //original
+      x = 256L * ((8 / 3) - 1) * s / sum;
+    //x = 256L * ((7 / 3) - 1) * s / sum; //and where do we start counting?
+    idx1 = (x >> 8) * 3;
+    idx2 = ((x >> 8) + 1) * 3;
+    b = (x & 255) + 1;
+    a = 257 - b;
+    *ptr++ = (((getschemacolor(idx1)>>16) * a) + ((getschemacolor(idx2)>>16) * b)) >> 8;
+    *ptr++ = (((getschemacolor(idx1)>>8) * a) + ((getschemacolor(idx1)>>8) * b)) >> 8;
+    *ptr++ = ((getschemacolor(idx1) * a) + ((getschemacolor(idx1) * b))) >> 8;
+    s += fxVars[idx][3] + fixCos(fxVars[idx][4] + fxVars[idx][1] *
+      i / numPixels);
+  }
+
+  fxVars[idx][4] += fxVars[idx][2];
+  if(fxVars[idx][4] >= 720) fxVars[idx][4] -= 720;
+fxVars[idx][0] = 1; // Effect initialized
+}
+
+}
 
 
 
@@ -4285,6 +4323,7 @@ void getir(){
     irrecv.resume();
   }
 }
+
 
 
 
