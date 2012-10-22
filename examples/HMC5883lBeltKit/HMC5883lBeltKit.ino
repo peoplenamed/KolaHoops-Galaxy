@@ -9,6 +9,7 @@ boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
+//uint8_t framerate=1; // SIESURE WARNING?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
 uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
@@ -25,6 +26,7 @@ void (*renderEffect[])(byte) = {
   compassheading,
   compassheadingRGBFade,
   Dice,
+  onespin,
   //schemetest,
   //schemetestlong,
   schemetestfade,
@@ -425,8 +427,8 @@ long eightcolorschema[][8] PROGMEM={
   0xff0000,0x808000,0x00ff00,0x008080,0x0000ff,0x008080,0x00ff00,0x808000,//red to blue 1/2 increments
   0x00ff00,0x008080,0x0000ff,0x800080,0xff0000,0x800080,0x0000ff,0x008080,//green to red  1/2 increments
   0x0000ff,0x800080,0xff0000,0x808000,0x00ff00,0x808000,0xff0000,0x800080, //blue to green 1/2 increments
-  red,orange,yellow,green,teal,blue,indigo,violet //rainbow!
-  violet,indigo,blue,teal,green,yellow,orange,red //backwards rainbow!
+  red,orange,yellow,green,teal,blue,indigo,violet, //rainbow!
+  violet,indigo,blue,teal,green,yellow,orange,red, //backwards rainbow!
   
   //5 of 32
   //32-39
@@ -1778,6 +1780,34 @@ void simpleOrbit(byte idx) {
   fxVars[idx][22]++;
   if(fxVars[idx][22]==255){
     fxVars[idx][22]=-255;
+  }
+}
+
+void onespin(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][0]=1;// init
+
+  }
+    long color;
+    color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0];
+  for(int i=0; i<numPixels; i++) {
+    if(i==fxVars[idx][1]){
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+    }
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+  fxVars[idx][1]++;
+  if(fxVars[idx][1]>numPixels){
+   fxVars[idx][1]=0; 
+  }
+   fxVars[idx][3]=fxVars[idx][2];
   }
 }
 
