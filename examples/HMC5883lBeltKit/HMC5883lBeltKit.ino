@@ -1,5 +1,5 @@
 uint8_t brightness = 2; //DO NOT BRING >2
-uint8_t demo = 1;
+uint8_t demo = 0;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
 int planeoutput=0;
@@ -11,13 +11,20 @@ boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
-uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
+uint16_t patternswitchspeed = 300; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  POV,
+  onespin,//really broken 
+  onespinfade,//kind of broken
+  who,//untested
+  
+ 
+  simpleOrbit,
   rainbowChase, //stock
   raindance,
   colorDrift,
@@ -25,9 +32,6 @@ void (*renderEffect[])(byte) = {
   compassheading,
   compassheadingRGBFade,
   Dice,
-  onespin,//untested
-  onespinfade,//untested
-  who,//untested
   // what,
   // when,
   // where,
@@ -40,13 +44,14 @@ void (*renderEffect[])(byte) = {
   schemetestlongfade,
   schemefade,
   MonsterHunter,
-  //  rotate,//untested
-  //  simpleOrbit,//untested
-  //  sineCompass, //untested
-  //  sparkle, //untested
+    rotate,//untested
+    simpleOrbit,//untested
+    sineCompass, //untested
+    sparkle, //untested
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
+ // scrolls//untested
   POV, 
   //  //###############full color
 
@@ -429,7 +434,7 @@ long eightcolorschema[][8] PROGMEM={
   //4th is 3/4 p2 and 1/4 p1, 
   //5th is second primary, 
   //6th is 3/4 p2 and 1/4 p1, 
-  //7th is 50%p1 and 50%p2,
+  //7th is 50%p1 and 50%p2,  
   //8th is 3/4p1 and 1/4p2 , 
   //and 1th (9th %8 in getschemacolor) is first primary
   0xff0000,0xc04000,0x808000,0x40c000,0x00ff00,0x40c000,0x808000,0xc04000,//red p1 to green p2  1/4 increments
@@ -631,7 +636,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x92,0x92,0x92,0x82,0x00,  // E8
   0xfe,0x90,0x90,0x90,0x80,0x00,  // F9
   0x7c,0x82,0x92,0x92,0x5e,0x00,  // G0
-  0xfe,0x10,0x10,0x10,0xfe,0x00,	// H1
+  0xfe,0x10,0x10,0x10,0xfe,0x00,  // H1
   0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
   0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
   0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
@@ -743,7 +748,7 @@ void bluetoothsetup(){ //for linvorV1.5 firmware, baud for arduino has already
   delay(1000);
   Uart.print("AT+NAMEMaxs Galaxy"); //sets name seen by android to "Maxs Galaxy"
   delay(1000);
-  Uart.print("AT+PIN0000");
+  Uart.print("AT+PIN0000");//sets pin to 0000
   delay(1000);
 } 
 
@@ -1849,8 +1854,9 @@ void onespin(byte idx) {
     if(fxVars[idx][1]>numPixels){
       fxVars[idx][1]=0; 
     }
-    fxVars[idx][3]=fxVars[idx][2];
+  //  fxVars[idx][3]+=fxVars[idx][2];
   }
+  fxVars[idx][3]+=fxVars[idx][2];
 }
 
 void onespinfade(byte idx) {
@@ -1860,7 +1866,7 @@ void onespinfade(byte idx) {
     fxVars[idx][1]=0;//position
     fxVars[idx][2]=1;//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
-    fxVars[idx][4]=1;//how much to drop each pixel by if not updated
+    fxVars[idx][4]=6;//how much to drop each pixel by if not updated
     fxVars[idx][0]=1;// init
 
   }
@@ -1900,7 +1906,7 @@ void onespinfade(byte idx) {
 void who(byte idx) { //spining fade taking up 7 pixels using 2 colors
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
-    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][2]=16;//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
     fxVars[idx][0]=1;// init
 
@@ -2822,9 +2828,9 @@ void POV(byte idx) {
     "Did you see that?",
     "Shannon",
     ":) :( (: :(",
-    "////"
-      "01010101"
-      "( . Y . )",
+    "////",
+    "01010101",
+    "what?",
     "!$?#@&*",
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
@@ -2837,26 +2843,25 @@ void POV(byte idx) {
     fxVars[idx][6]=5;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
     fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
     fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
-    fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
-    //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
+    fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+  //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
-    fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
+  //fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][10]=8;// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+ // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
   }
-  if(fxVars[idx][0] == -1) { //re init
-  }
+ // if(fxVars[idx][0] == -1) { //re init
+ // }
   fxVars[idx][3]++;
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+    byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]); //
     for(int i=0; i<fxVars[idx][2]; i++) {
-      byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]); //
-      // if(data>>i==1){
       if((data>>i)&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
-        // color = hsv2rgb(fxVars[idx][1]+((1536/fxVars[idx][8])*fxVars[idx][7]),255, 255);
-        color = getschemacolor(fxVars[idx][7]);
+   //     color = getschemacolor(fxVars[idx][7]);
         *ptr++ = 255;
         *ptr++ = 0;
         *ptr++ = 0;
@@ -2869,7 +2874,7 @@ void POV(byte idx) {
     }
     fxVars[idx][7]++;
   }
-  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
+  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {//this is for the remainder
     *ptr++ = 0;
     *ptr++ = 0;
     *ptr++ = 0;
@@ -3911,6 +3916,7 @@ void getSerial(){
         Serial.println("This will take about 3 secconds");
       }
       bluetoothsetup(); 
+      Serial.println("Sent.");
     }
     serInStr[0] = 0; // say we've used the string
   }
