@@ -12,7 +12,7 @@ boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
 //paramaters
 int nextspeed=0;
-uint8_t colorschemeselector = 24;
+uint8_t colorschemeselector = 34;
 uint8_t brightness = 2; //DO NOT BRING >1
 uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
@@ -244,9 +244,9 @@ float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglas
 
 
 //############### stuff for the averages for the accell
-const int numReadingsx = 12;
-const int numReadingsy = 12;
-const int numReadingsz = 12;
+const int numReadingsx = 6;
+const int numReadingsy = 6;
+const int numReadingsz = 6;
 int readingsx[numReadingsx],readingsy[numReadingsy],readingsz[numReadingsz]; // the readings from the analog input
 int indexx,indexy,indexz; // the index of the current reading
 int totalx,totaly,totalz; // the running total
@@ -917,23 +917,23 @@ void accelread(){
   accelx= compass.a.x;//get new
   accely= compass.a.y;//values
   accelz= compass.a.z;
- // fxVars[idx][4]+fxVars[idx][5]+fxVars[idx][6];//sum of all axises
- // fxVars[idx][17]=fxVars[idx][14]+fxVars[idx][15]+fxVars[idx][16];//sum of all axises old
- // fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
-  
+  // fxVars[idx][4]+fxVars[idx][5]+fxVars[idx][6];//sum of all axises
+  // fxVars[idx][17]=fxVars[idx][14]+fxVars[idx][15]+fxVars[idx][16];//sum of all axises old
+  // fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
+
   runningaveragex(abs(accelx-accelxlast));//we are doing a running average 
   runningaveragey(abs(accely-accelylast));//on the difference between polls
   runningaveragex(abs(accely-accelylast));//to make the data more useable
   if(acceloutput==true){
-   Serial.print("Acc:X");
-   Serial.print(averagex);
-   Serial.print(",Y");
-   Serial.print(averagey);
-   Serial.print(",Z");
-   Serial.println(averagez);
+    Serial.print("Acc:X");
+    Serial.print(averagex);
+    Serial.print(",Y");
+    Serial.print(averagey);
+    Serial.print(",Z");
+    Serial.println(averagez);
   }
 
- 
+
 }
 void compassread()
 { 
@@ -1160,7 +1160,7 @@ void others(){
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
   compassread(); 
-accelread();
+  accelread();
 }
 
 void calibrate(){
@@ -2092,20 +2092,20 @@ void accellschemesparklefade(byte idx) {
     fxVars[idx][1]=0;//position
     fxVars[idx][2]=1;//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
-    fxVars[idx][4]=49;//top number
-    fxVars[idx][5]=50; //bottom number
+    fxVars[idx][4]=17;//top number
+    fxVars[idx][5]=18; //bottom number
     fxVars[idx][0]=1;// init
     //read accell
 
   }
 
- Serial.println((averagex+averagey+averagez)/150);
+  Serial.println((averagex+averagey+averagez)/150);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(random(averagex+averagey+averagez)/150>7){
-      color = getschemacolor(random(8));
+    if(random(averagex+averagey+averagez)/150>12){
+      color = getschemacolor(0);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
       *tptr++ = color;
@@ -2114,9 +2114,64 @@ void accellschemesparklefade(byte idx) {
       *ptr2++ = color;
     }
     else{
-      *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
-      *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
-      *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+      if(random(averagex+averagey+averagez)/150>9){
+        color = getschemacolor(1);
+        *tptr++ = (color >> 16)>>1;
+        *tptr++ = (color >> 8)>>1;
+        *tptr++ = (color)>>1;
+        *ptr2++ = (color >>16)>>1;
+        *ptr2++ = (color >> 8)>>1;
+        *ptr2++ = (color)>>1;
+      }
+      else{
+        if(random(averagex+averagey+averagez)/150>6){
+          color = getschemacolor(2);
+          *tptr++ = (color >> 16)>>2;
+          *tptr++ = (color >> 8)>>2;
+          *tptr++ = (color)>>2;
+          *ptr2++ = (color >>16)>>2;
+          *ptr2++ = (color >> 8)>>2;
+          *ptr2++ = (color)>>2;
+        }
+        else{
+          if(random(averagex+averagey+averagez)/150>4){
+            color = getschemacolor(3);
+            *tptr++ = (color >> 16)>>3;
+            *tptr++ = (color >> 8)>>3;
+            *tptr++ = (color)>>3;
+            *ptr2++ = (color >>16)>>3;
+            *ptr2++ = (color >> 8)>>3;
+            *ptr2++ = (color)>>3;
+          }
+          else{
+            if(random(averagex+averagey+averagez)/150>2||random(1000)==50){
+              color = getschemacolor(4);
+              *tptr++ = (color >> 16)>>4;
+              *tptr++ = (color >> 8)>>4;
+              *tptr++ = (color)>>4;
+              *ptr2++ = (color >>16)>>4;
+              *ptr2++ = (color >> 8)>>4;
+              *ptr2++ = (color)>>4;
+            }
+            else{
+              if(random(averagex+averagey+averagez)/150>0){
+                color = getschemacolor(5);
+                *tptr++ = (color >> 16)>>5;
+                *tptr++ = (color >> 8)>>5;
+                *tptr++ = (color)>>5;
+                *ptr2++ = (color >>16)>>5;
+                *ptr2++ = (color >> 8)>>5;
+                *ptr2++ = (color)>>5;
+              }
+              else{
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+              }
+            }
+          }
+        }
+      }
     }
   }
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
@@ -4557,13 +4612,13 @@ void getSerial(){
       if(serialoutput==true){  
         Serial.println("Enable accel output");
       }
-     acceloutput=true;
+      acceloutput=true;
     }
-        if( cmd == 'a' ) { //disable accel output
+    if( cmd == 'a' ) { //disable accel output
       if(serialoutput==true){  
         Serial.println("Disable accel output");
       }
-     acceloutput=false;
+      acceloutput=false;
     }
     serInStr[0] = 0; // say we've used the string
   }
@@ -4976,6 +5031,11 @@ void getir(){
     irrecv.resume();
   }
 }
+
+
+
+
+
 
 
 
