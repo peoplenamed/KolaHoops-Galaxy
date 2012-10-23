@@ -1,7 +1,8 @@
 //flags
-boolean demo = true;
+boolean demo = false;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
+boolean acceloutput=false;
 int opmode; //0==normal ,1=menu,2=irsetup
 boolean planeoutput=0;
 boolean compassoutput=0;
@@ -11,30 +12,30 @@ boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
 //paramaters
 int nextspeed=0;
-uint8_t colorschemeselector = 34;
-uint8_t brightness = 1; //DO NOT BRING >1
-uint16_t patternswitchspeed = 300; //# of seconds between pattern switches
+uint8_t colorschemeselector = 24;
+uint8_t brightness = 2; //DO NOT BRING >1
+uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-
-//  eightfade,//eight going around leaving a train(broken)
- // blankfade,
+  accellschemesparklefade,//sparkles when you shake it
+  //  eightfade,//eight going around leaving a train(broken)
+  // blankfade,
   onefade,//one going around leaving a trail
-  longsinechasecolordrift,
+
   sparklefade,
   schemesparklefade,
   schemetestfade,//needs to "dance"
   schemetestlongfade,//needs to "dance"
   simpleOrbit,//not sure whats going on here...
   sineCompass, //needs smoothing
-//  sparkle, //too slow and looks meh
+  //  sparkle, //too slow and looks meh
   mixColor8Chase,//almost sinechase but with my mixcolor8
-                 //is 4 byte * >> faster?
+  //is 4 byte * >> faster?
   POV,//new and improved
- 
+
   who,//untested
   rainbowChase, //stock
   raindance,//smoothly picks a new speed every so often
@@ -48,12 +49,12 @@ void (*renderEffect[])(byte) = {
   // where,
   // why,
   // how,
-//  schemestretch,//
+  //  schemestretch,//
   schemetest,//non moving
   schemetestlong,//non moving
 
 
-  schemefade,
+    schemefade,
   MonsterHunter,
 
   pacman,   //mr pac man bounces back from end to end and builds 
@@ -86,7 +87,7 @@ void (*renderEffect[])(byte) = {
   // schemetestrain2at1,    
   //  orbit,
   // onespin,//not up to par
- // onespinfade,//interesting but not what i was going for
+  // onespinfade,//interesting but not what i was going for
   //needs to store index and message string in progmem
   // 
 
@@ -230,21 +231,26 @@ int tCounter = 0;
 int crazycounter;
 //#####################menu stuffs
 uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 0,menuphase4 = 0,menuphase5 = 0,menuphase6 = 0,menuphase7 = 0;
-//##############compass maths
+//##############compass stuffs
+
 int lmheading;
-int plane;
+int plane,accelx,accely,accelz,accelxlast,accelylast,accelzlast;
 boolean compassreadphase = 0;
 uint16_t yzheadingdegrees,xzheadingdegrees,xyheadingdegrees,xyheadingdegreescalibrated,xyheadingdegreesmin,xyheadingdegreesmax,
 xzheadingdegreescalibrated,xzheadingdegreesmin,xzheadingdegreesmax,
 yzheadingdegreescalibrated,yzheadingdegreesmin,yzheadingdegreesmax,xyheadingdegreeslast,xzheadingdegreeslast,yzheadingdegreeslast;
 float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglast, xytravel,xztravel,yztravel;
 
-//############### stuff for the averages for the compass
-//const int numReadings = 100;
-//int readings[numReadings]; // the readings from the analog input
-//int index = 0; // the index of the current reading
-//int total = 0; // the running total
-//int average = 0;
+
+
+//############### stuff for the averages for the accell
+const int numReadingsx = 25;
+const int numReadingsy = 25;
+const int numReadingsz = 25;
+int readingsx[numReadingsx],readingsy[numReadingsy],readingsz[numReadingsz]; // the readings from the analog input
+int indexx,indexy,indexz; // the index of the current reading
+int totalx,totaly,totalz; // the running total
+int averagex,averagey,averagez;
 //##############bluetooth serial port
 HardwareSerial Uart = HardwareSerial();
 
@@ -651,7 +657,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x82,0xfe,0x82,0x00,0x00,   // I2
   0x04,0x02,0x82,0xfc,0x80,0x00,  // J3
   0xfe,0x10,0x28,0x44,0x82,0x00,  // K4
-  0xfe,0x02,0x02,0x02,0x02,0x00,  // L5
+  0xfe,0x02,0x02,0x02,0x02,0x00, // L5
   0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
   0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
@@ -904,7 +910,31 @@ void findplane(){
 
   }
 }
+void accelread(){
+  accelxlast=accelx;//copy old values
+  accelylast=accely;//to new slot
+  accelzlast=accelz;//before poll
+  accelx= compass.a.x;//get new
+  accely= compass.a.y;//values
+  accelz= compass.a.z;
+ // fxVars[idx][4]+fxVars[idx][5]+fxVars[idx][6];//sum of all axises
+ // fxVars[idx][17]=fxVars[idx][14]+fxVars[idx][15]+fxVars[idx][16];//sum of all axises old
+ // fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
+  
+  runningaveragex(abs(accelx-accelxlast));//we are doing a running average 
+  runningaveragey(abs(accelx-accelxlast));//on the difference between polls
+  runningaveragex(abs(accelx-accelxlast));//to make the data more useable
+  if(acceloutput==true){
+   Serial.print("Acc:X");
+   Serial.print(averagex);
+   Serial.print(",Y");
+   Serial.print(averagey);
+   Serial.print(",Z");
+   Serial.println(averagez);
+  }
 
+ 
+}
 void compassread()
 { 
   xyheadinglast = xyheading;
@@ -1715,11 +1745,17 @@ void schemetestlongfade(byte idx) {
   long color1,color2;
   byte r1,g1,b1,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1] = 0;//spin counter
+    fxVars[idx][1] = 0;//spin opeartor
+    fxVars[idx][2] = 0;//spin frame wait operator
+    fxVars[idx][3] = random(-8,8);//spin frame wait holder
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
-    fxVars[idx][0]=1; //init    
+    fxVars[idx][0]=random(60,180); //init    
   }
+  if(fxVars[idx][0] == 1) {
+    fxVars[idx][0]=random(60,180); //init   
+  }
+  // fxVars[idx][0]--;
   byte *ptr = &imgData[idx][0];
   for(int i=fxVars[idx][1]; i<numPixels; i++) {
     color1 = getschemacolor((i+fxVars[idx][4])/8);
@@ -1753,9 +1789,14 @@ void schemetestlongfade(byte idx) {
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
   }
-  fxVars[idx][1]++;
-  if(fxVars[idx][1]>=numPixels){
-    fxVars[idx][1]=0;
+  fxVars[idx][2]--;
+  if(fxVars[idx][2]<=0){
+    fxVars[idx][2]=random(-8,8);
+
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>=numPixels){
+      fxVars[idx][1]=0;
+    }
   }
   fxVars[idx][8]++;
   if(fxVars[idx][8]==255){
@@ -1767,14 +1808,14 @@ void schemetestfade(byte idx) {
   long color1,color2;
   byte r1,g1,b1,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1]=0;
+    fxVars[idx][1]=random(-16,16);
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
     fxVars[idx][10]=random(2,6)/2;
     fxVars[idx][0]=1; //init    
   }
   byte *ptr = &imgData[idx][0];
-  for(int i=fxVars[idx][1]; i<numPixels; i++) {
+  for(int i=abs(fxVars[idx][1]); i<numPixels; i++) {
     color1 = getschemacolor((i+fxVars[idx][4])%8);
     r1=color1 >> 16;//to r
     g1=color1 >> 8;//to g
@@ -1790,7 +1831,7 @@ void schemetestfade(byte idx) {
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
   }
-  for(int i=0; i<fxVars[idx][1]; i++) {
+  for(int i=0; i<abs(fxVars[idx][1]); i++) {
     color1 = getschemacolor((i+fxVars[idx][4])%8);
     r1=color1 >> 16;//to r
     g1=color1 >> 8;//to g
@@ -2044,6 +2085,67 @@ void schemesparklefade(byte idx) {
   }
 }
 
+void accellschemesparklefade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
+    //read accell
+
+  }
+  accelread();
+
+/*  fxVars[idx][14]=fxVars[idx][4];//copy old values
+  fxVars[idx][15]=fxVars[idx][5];//to new slot
+  fxVars[idx][16]=fxVars[idx][6];//before poll
+
+  fxVars[idx][4]=accelx;//read accell
+  fxVars[idx][5]=accely;
+  fxVars[idx][6]=accelz;
+
+  fxVars[idx][7]=fxVars[idx][4]+fxVars[idx][5]+fxVars[idx][6];//sum of all axises
+  fxVars[idx][17]=fxVars[idx][14]+fxVars[idx][15]+fxVars[idx][16];//sum of all axises old
+  fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
+  Serial.println(fxVars[idx][8]);
+ */
+ 
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(random(fxVars[idx][7])>30){
+      color = getschemacolor(random(8));
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+
 void onefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
@@ -2112,12 +2214,12 @@ void eightfade(byte idx) {
     fxVars[idx][0]=2;// init and timer to reinit
 
   }
-//  if(fxVars[idx][0] == 1) {//reinit
-//   for(i=31;i<38;i++){
-//      fxVars[idx][i]=random(16); //intended frame skip operator
-//    }   
-//    fxVars[idx][0]=2;// reinit
-//  }
+  //  if(fxVars[idx][0] == 1) {//reinit
+  //   for(i=31;i<38;i++){
+  //      fxVars[idx][i]=random(16); //intended frame skip operator
+  //    }   
+  //    fxVars[idx][0]=2;// reinit
+  //  }
 
   long color=0;
   //color = getschemacolor(0); //first color in color scheme
@@ -2148,7 +2250,7 @@ void eightfade(byte idx) {
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
   }
-//  fxVars[idx][0]--;//reinit countdown
+  //  fxVars[idx][0]--;//reinit countdown
   //1-8 position
   //11-18 frame skip holder
   //21-28 frame skip operator
@@ -2170,12 +2272,13 @@ void eightfade(byte idx) {
     else{
       if(fxVars[idx][q+30]<fxVars[idx][q+10]){//if intended frame skip holder is < frame skip holder
         fxVars[idx][q+10]--;//take one off
-      } else{
-       if(fxVars[idx][q+30]==fxVars[idx][q+10]){//reinit that one
-         fxVars[idx][q+10]=random(32)*3; //intended frame skip operator
-       } 
-        
-        
+      } 
+      else{
+        if(fxVars[idx][q+30]==fxVars[idx][q+10]){//reinit that one
+          fxVars[idx][q+10]=random(32)*3; //intended frame skip operator
+        } 
+
+
       }
 
     }
@@ -3424,37 +3527,37 @@ void pacmanfade(byte idx) { //hsv color chase for now
       if(i<=fxVars[idx][4]||i>=fxVars[idx][5]){
         // color = hsv2rgb(fxVars[idx][1], 255, 255);
         color = getschemacolor(fxVars[idx][1]+1);
-      *tptr++ = color >> 16;
-      *tptr++ = color >> 8;
-      *tptr++ = color;
-      *ptr2++ = color >> 16;
-      *ptr2++ = color >> 8;
-      *ptr2++ = color ;
+        *tptr++ = color >> 16;
+        *tptr++ = color >> 8;
+        *tptr++ = color;
+        *ptr2++ = color >> 16;
+        *ptr2++ = color >> 8;
+        *ptr2++ = color ;
       }
       else{
         // color = hsv2rgb(fxVars[idx][2], 255, 255);
-      *tptr++ = (*ptr2++)*4/5;
-      *tptr++ = (*ptr2++)*4/5;
-      *tptr++ = (*ptr2++)*4/5;
+        *tptr++ = (*ptr2++)*4/5;
+        *tptr++ = (*ptr2++)*4/5;
+        *tptr++ = (*ptr2++)*4/5;
       }
     }
   }
   /*
     if(color>0){
-      *tptr++ = color >> 16;
-      *tptr++ = color >> 8;
-      *tptr++ = color;
-      *ptr2++ = color >> 16;
-      *ptr2++ = color >> 8;
-      *ptr2++ = color ;
-    }
-    else{
-      *tptr++ = (*ptr2++)*4/5;
-      *tptr++ = (*ptr2++)*4/5;
-      *tptr++ = (*ptr2++)*4/5;
-    }
-
-*/
+   *tptr++ = color >> 16;
+   *tptr++ = color >> 8;
+   *tptr++ = color;
+   *ptr2++ = color >> 16;
+   *ptr2++ = color >> 8;
+   *ptr2++ = color ;
+   }
+   else{
+   *tptr++ = (*ptr2++)*4/5;
+   *tptr++ = (*ptr2++)*4/5;
+   *tptr++ = (*ptr2++)*4/5;
+   }
+   
+   */
 
   if(fxVars[idx][3]>=numPixels){
     fxVars[idx][3]=-numPixels+1;
@@ -4291,27 +4394,74 @@ void buttonpress(){
   }
 }
 
-/*
-void runningaverage(int newval) {
- // subtract the last reading:
- total= total - readings[index];
- // read from the sensor:
- readings[index] = newval;
- // add the reading to the total:
- total= total + readings[index];
- // advance to the next position in the array:
- index = index + 1;
- // if we're at the end of the array...
- if (index >= numReadings)
- // ...wrap around to the beginning:
- index = 0;
- // calculate the average:
- average = total / numReadings;
- // send it to the computer as ASCII digits
- // Serial.println(average);
- // delay(1); // delay in between reads for stability
- }
- */
+
+void runningaveragex(int newval) {
+  if(newval==0){
+    return;
+  }
+  // subtract the last reading:
+  totalx= totalx - readingsx[indexx];
+  // read from the sensor:
+  readingsx[indexx] = newval;
+  // add the reading to the total:
+  totalx= totalx + readingsx[indexx];
+  // advance to the next position in the array:
+  indexx = indexx + 1;
+  // if we're at the end of the array...
+  if (indexx >= numReadingsx)
+    // ...wrap around to the beginning:
+    indexx = 0;
+  // calculate the average:
+  averagex = totalx / numReadingsx;
+  // send it to the computer as ASCII digits
+  // Serial.println(average);
+  // delay(1); // delay in between reads for stability
+}
+void runningaveragey(int newval) {
+  if(newval==0){
+    return;
+  }
+  // subtract the last reading:
+  totaly= totaly - readingsy[indexy];
+  // read from the sensor:
+  readingsy[indexy] = newval;
+  // add the reading to the total:
+  totaly= totaly + readingsy[indexy];
+  // advance to the next position in the array:
+  indexy = indexy + 1;
+  // if we're at the end of the array...
+  if (indexy >= numReadingsy)
+    // ...wrap around to the beginning:
+    indexy = 0;
+  // calculate the average:
+  averagey = totaly / numReadingsy;
+  // send it to the computer as ASCII digits
+  // Serial.println(average);
+  // delay(1); // delay in between reads for stability
+}
+void runningaveragez(int newval) {
+  if(newval==0){
+    return;
+  }
+  // subtract the last reading:
+  totalz= totalz - readingsz[indexz];
+  // read from the sensor:
+  readingsz[indexz] = newval;
+  // add the reading to the total:
+  totalz= totalz + readingsz[indexz];
+  // advance to the next position in the array:
+  indexz = indexz + 1;
+  // if we're at the end of the array...
+  if (indexz >= numReadingsz)
+    // ...wrap around to the beginning:
+    indexz = 0;
+  // calculate the average:
+  averagez = totalz / numReadingsz;
+  // send it to the computer as ASCII digits
+  // Serial.println(average);
+  // delay(1); // delay in between reads for stability
+}
+
 void getSerial(){
   int num;
   if( readSerialString() ) {
@@ -4414,6 +4564,18 @@ void getSerial(){
       }
       bluetoothsetup(); 
       Serial.println("Sent.");
+    }
+    if( cmd == 'A' ) { //Enable accel output
+      if(serialoutput==true){  
+        Serial.println("Enable accel output");
+      }
+     acceloutput=true;
+    }
+        if( cmd == 'a' ) { //disable accel output
+      if(serialoutput==true){  
+        Serial.println("Disable accel output");
+      }
+     acceloutput=false;
     }
     serInStr[0] = 0; // say we've used the string
   }
@@ -4826,6 +4988,10 @@ void getir(){
     irrecv.resume();
   }
 }
+
+
+
+
 
 
 
