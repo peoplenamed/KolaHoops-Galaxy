@@ -244,9 +244,9 @@ float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglas
 
 
 //############### stuff for the averages for the accell
-const int numReadingsx = 6;
-const int numReadingsy = 6;
-const int numReadingsz = 6;
+const int numReadingsx = 12;
+const int numReadingsy = 12;
+const int numReadingsz = 12;
 int readingsx[numReadingsx],readingsy[numReadingsy],readingsz[numReadingsz]; // the readings from the analog input
 int indexx,indexy,indexz; // the index of the current reading
 int totalx,totaly,totalz; // the running total
@@ -922,8 +922,8 @@ void accelread(){
  // fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
   
   runningaveragex(abs(accelx-accelxlast));//we are doing a running average 
-  runningaveragey(abs(accelx-accelxlast));//on the difference between polls
-  runningaveragex(abs(accelx-accelxlast));//to make the data more useable
+  runningaveragey(abs(accely-accelylast));//on the difference between polls
+  runningaveragex(abs(accely-accelylast));//to make the data more useable
   if(acceloutput==true){
    Serial.print("Acc:X");
    Serial.print(averagex);
@@ -1160,6 +1160,7 @@ void others(){
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
   compassread(); 
+accelread();
 }
 
 void calibrate(){
@@ -2091,32 +2092,19 @@ void accellschemesparklefade(byte idx) {
     fxVars[idx][1]=0;//position
     fxVars[idx][2]=1;//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
-    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][4]=49;//top number
+    fxVars[idx][5]=50; //bottom number
     fxVars[idx][0]=1;// init
     //read accell
 
   }
-  accelread();
 
-/*  fxVars[idx][14]=fxVars[idx][4];//copy old values
-  fxVars[idx][15]=fxVars[idx][5];//to new slot
-  fxVars[idx][16]=fxVars[idx][6];//before poll
-
-  fxVars[idx][4]=accelx;//read accell
-  fxVars[idx][5]=accely;
-  fxVars[idx][6]=accelz;
-
-  fxVars[idx][7]=fxVars[idx][4]+fxVars[idx][5]+fxVars[idx][6];//sum of all axises
-  fxVars[idx][17]=fxVars[idx][14]+fxVars[idx][15]+fxVars[idx][16];//sum of all axises old
-  fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
-  Serial.println(fxVars[idx][8]);
- */
- Serial.println((averagex+averagey+averagez)/100);
+ Serial.println((averagex+averagey+averagez)/150);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(random(averagex+averagey+averagez)/100>18){
+    if(random(averagex+averagey+averagez)/150>7){
       color = getschemacolor(random(8));
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2126,9 +2114,9 @@ void accellschemesparklefade(byte idx) {
       *ptr2++ = color;
     }
     else{
-      *tptr++ = (*ptr2++)*4/5;
-      *tptr++ = (*ptr2++)*4/5;
-      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+      *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+      *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
     }
   }
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
