@@ -1,4 +1,3 @@
-
 //flags
 boolean demo = false;
 boolean colordemo=false;
@@ -20,6 +19,8 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  blankfade,
+  longsinechasecolordrift,
   sparklefade,
   schemesparklefade,
   schemetestfade,
@@ -33,7 +34,6 @@ void (*renderEffect[])(byte) = {
   onespin,//really broken 
   onespinfade,//kind of broken
   who,//untested
-
   rainbowChase, //stock
   raindance,
   colorDrift,
@@ -67,6 +67,7 @@ void (*renderEffect[])(byte) = {
   sineChase, //stock
   sineDance, //not set up to dance yet just a placeholder
   rainbowsineChase,
+  longsinechasecolordrift,
   colorDriftsineChase,
   wavyFlag,// stock
 
@@ -2038,6 +2039,80 @@ void schemesparklefade(byte idx) {
   }
 }
 
+void blankfade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=random(8,16);//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=0;// init
+
+  }
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(i==fxVars[idx][1]){
+      color=hsv2rgb(1536*i/numPixels,255,255);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }else{
+    if(random(numPixels/2)==1){
+      color = getschemacolor(random(8));
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  if(fxVars[idx][1]>=fxVars[idx][0]){//if position at limit then
+    fxVars[idx][1]=0;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+
+void colorDriftmod(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=random(0,1536); //color were gonna write initally
+    fxVars[idx][0] = 1; // Effect initialized
+    fxVars[idx][2] =random(1,16); //increments of color drift per frame
+    // fxVars[idx][2] =1; //increments of color drift per frame
+  }
+  byte *ptr = &imgData[idx][0];
+  fxVars[idx][1]+=fxVars[idx][2];
+  long color = hsv2rgb(fxVars[idx][1]%1536, 255, 255);
+  for(int i=0; i<numPixels; i++) {
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+}
+
 void who(byte idx) { //spining fade taking up 7 pixels using 2 colors
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
@@ -3246,6 +3321,59 @@ void sineChase(byte idx) {
     *ptr++ = color;
   }
   fxVars[idx][4] += fxVars[idx][3];
+}
+void colorDriftmod2(byte idx) {
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=random(0,1536); //color were gonna write initally
+    fxVars[idx][0] = 1; // Effect initialized
+    fxVars[idx][2] =random(1,16); //increments of color drift per frame
+    // fxVars[idx][2] =1; //increments of color drift per frame
+  }
+  byte *ptr = &imgData[idx][0];
+  fxVars[idx][1]+=fxVars[idx][2];
+  long color = hsv2rgb(fxVars[idx][1]%1536, 255, 255);
+  for(int i=0; i<numPixels; i++) {
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+}
+void longsinechasecolordrift(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = 180;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][5] =random(1,16); //increments of color drift per frame
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+  fxVars[idx][1] += fxVars[idx][5];
 }
 void colorDriftsineChase(byte idx) {
 
