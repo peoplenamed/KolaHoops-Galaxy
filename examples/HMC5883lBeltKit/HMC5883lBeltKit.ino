@@ -1,5 +1,5 @@
 uint8_t brightness = 2; //DO NOT BRING >2
-uint8_t demo = 0;
+uint8_t demo = 1;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
 int planeoutput=0;
@@ -9,7 +9,7 @@ boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
-uint8_t colorschemeselector = 16;
+uint8_t colorschemeselector = 0;
 int nextspeed=0;
 uint16_t patternswitchspeed = 600; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
@@ -18,7 +18,8 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-  rotate,//untested
+  schemetestfade,
+  schemetestlongfade,
   simpleOrbit,//untested
   sineCompass, //untested
   sparkle, //untested 
@@ -44,8 +45,8 @@ void (*renderEffect[])(byte) = {
   schemestretch,//untested
   //schemetest,
   //schemetestlong,
-  schemetestfade,
-  schemetestlongfade,
+  
+  
   schemefade,
   MonsterHunter,
   
@@ -69,7 +70,7 @@ void (*renderEffect[])(byte) = {
   // somekindaChase,
   //blank,
   // thingeyDrift,
-
+//  rotate,//not sure whats going on here
   //  rainStrobe2at1,
   //strobefans2at1,
  // schemetest2at1,
@@ -639,7 +640,7 @@ const char led_chars[97][6] PROGMEM = {
   0x7c,0x82,0x92,0x92,0x5e,0x00,  // G0
   0xfe,0x10,0x10,0x10,0xfe,0x00,  // H1
   0x00,0x82,0xfe,0x82,0x00,0x00,   // I2
-  0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
+  0x04,0x02,0x82,0xfc,0x80,0x00,  // J3
   0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
   0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
   0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
@@ -849,8 +850,8 @@ void setup() {
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
   //   attachInterrupt(0, buttonpress, RISING);
-  //Timer1.initialize();
-  //Timer1.attachInterrupt(others, 1000000 / 10); //10 times/second
+  Timer1.initialize();
+  Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
 }
 
 void findplane(){
@@ -1098,13 +1099,13 @@ void mode(){
 }
 void loop() {
   others();
-  if(opmode==0){
-    callback(); //generate image
-    callback(); //generate image
-    callback(); //generate image
-    callback(); //generate image
-    callback(); //generate image
-  }
+ // if(opmode==0){
+ //   callback(); //generate image
+ //   callback(); //generate image
+//    callback(); //generate image
+ //   callback(); //generate image
+ //   callback(); //generate image
+ // }
 
 }
 void others(){
@@ -1702,12 +1703,13 @@ void schemetestlongfade(byte idx) {
   long color1,color2;
   byte r1,g1,b1,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
+    fxVars[idx][1] = 0;//spin counter
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
     fxVars[idx][0]=1; //init    
   }
   byte *ptr = &imgData[idx][0];
-  for(int i=0; i<numPixels; i++) {
+  for(int i=fxVars[idx][1]; i<numPixels; i++) {
     color1 = getschemacolor((i+fxVars[idx][4])/8);
     r1=color1 >> 16;//to r
     g1=color1 >> 8;//to g
@@ -1723,26 +1725,43 @@ void schemetestlongfade(byte idx) {
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
   }
+   for(int i=0; i<fxVars[idx][1]; i++) {
+    color1 = getschemacolor((i+fxVars[idx][4])/8);
+    r1=color1 >> 16;//to r
+    g1=color1 >> 8;//to g
+    b1=color1;
+    color2 = getschemacolor((((i+fxVars[idx][4])/8)+1));
+    r2=color2 >> 16;//to r
+    g2=color2 >> 8;//to g
+    b2=color2;//to b
+    if(abs(fxVars[idx][8])==0){
+      fxVars[idx][8]=1;
+    }
+    *ptr++ = mixColor8(color1>>16,color2>>16,abs(fxVars[idx][8]));
+    *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
+    *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
+  }
+  fxVars[idx][1]++;
+  if(fxVars[idx][1]>=numPixels){
+    fxVars[idx][1]=0;}
   fxVars[idx][8]++;
   if(fxVars[idx][8]==255){
     fxVars[idx][8]=-255;
   }
-  if(fxVars[idx][8]==0){
-  }
-  // Serial.println(fxVars[idx][8]);
 
 }
 void schemetestfade(byte idx) {
   long color1,color2;
   byte r1,g1,b1,r2,g2,b2;
   if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
     fxVars[idx][10]=random(2,6)/2;
     fxVars[idx][0]=1; //init    
   }
   byte *ptr = &imgData[idx][0];
-  for(int i=0; i<numPixels; i++) {
+  for(int i=fxVars[idx][1]; i<numPixels; i++) {
     color1 = getschemacolor((i+fxVars[idx][4])%8);
     r1=color1 >> 16;//to r
     g1=color1 >> 8;//to g
@@ -1757,6 +1776,27 @@ void schemetestfade(byte idx) {
     *ptr++ = mixColor8(color1>>16,color2>>16,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
+  }
+    for(int i=0; i<fxVars[idx][1]; i++) {
+    color1 = getschemacolor((i+fxVars[idx][4])%8);
+    r1=color1 >> 16;//to r
+    g1=color1 >> 8;//to g
+    b1=color1;
+    color2 = getschemacolor((((i+fxVars[idx][4])%8)+1));
+    r2=color2 >> 16;//to r
+    g2=color2 >> 8;//to g
+    b2=color2;//to b
+    if(abs(fxVars[idx][8])==0){
+      fxVars[idx][8]=1;
+    }
+    *ptr++ = mixColor8(color1>>16,color2>>16,abs(fxVars[idx][8]));
+    *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
+    *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
+  }
+  
+  fxVars[idx][1]++;
+  if(fxVars[idx][1]>=numPixels){
+   fxVars[idx][1]=0;
   }
   fxVars[idx][8]++;
   if(fxVars[idx][8]==255){
@@ -2320,9 +2360,8 @@ void mixColor8Chase(byte idx) {
   fxVars[idx][14] += fxVars[idx][13];
 }    
 byte mixColor8(byte color1, byte color2, uint8_t alpha){
-  alpha++;
-  byte inv = 257 - (alpha);  
-  return (color1*(alpha)+color2*inv)>>8;
+  byte inv = 257 - (alpha+1);  
+  return (color1*(alpha+1)+color2*inv)>>8;
 }
 
 long mixColor24(long color1, long color2, byte alpha){
