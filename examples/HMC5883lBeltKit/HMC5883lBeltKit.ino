@@ -1,25 +1,27 @@
-uint8_t brightness = 2; //DO NOT BRING >2
-uint8_t demo = 0;
+
+//flags
+boolean demo = false;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
 boolean planeoutput=0;
 boolean compassoutput=0;
-int lmheading;
 boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
-uint8_t colorschemeselector = 14;
+//paramaters
 int nextspeed=0;
+uint8_t colorschemeselector = 34;
+uint8_t brightness = 1; //DO NOT BRING >1
 uint16_t patternswitchspeed = 300; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
-//max ~2 secconds
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
   sparklefade,
+  schemesparklefade,
   schemetestfade,
   schemetestlongfade,
   simpleOrbit,//untested
@@ -225,6 +227,7 @@ int crazycounter;
 //#####################menu stuffs
 uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 0,menuphase4 = 0,menuphase5 = 0,menuphase6 = 0,menuphase7 = 0;
 //##############compass maths
+int lmheading;
 int plane;
 boolean compassreadphase = 0;
 uint16_t yzheadingdegrees,xzheadingdegrees,xyheadingdegrees,xyheadingdegreescalibrated,xyheadingdegreesmin,xyheadingdegreesmax,
@@ -1949,6 +1952,49 @@ void onespinfade(byte idx) {
 }
 
 void sparklefade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
+
+  }
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(random(numPixels/2)==1){
+     color = hsv2rgb(random(1536),255,255);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+void schemesparklefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
