@@ -1,23 +1,25 @@
 uint8_t brightness = 2; //DO NOT BRING >2
-uint8_t demo = 1;
+uint8_t demo = 0;
+boolean colordemo=false;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
-int planeoutput=0;
-int compassoutput=0;
+boolean planeoutput=0;
+boolean compassoutput=0;
 int lmheading;
 boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
-uint8_t colorschemeselector = 0;
+uint8_t colorschemeselector = 14;
 int nextspeed=0;
-uint16_t patternswitchspeed = 600; //# of seconds between pattern switches
+uint16_t patternswitchspeed = 300; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  sparklefade,
   schemetestfade,
   schemetestlongfade,
   simpleOrbit,//untested
@@ -641,7 +643,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x10,0x10,0x10,0xfe,0x00,  // H1
   0x00,0x82,0xfe,0x82,0x00,0x00,   // I2
   0x04,0x02,0x82,0xfc,0x80,0x00,  // J3
-  0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
+  0xfe,0x10,0x28,0x44,0x82,0x00,  // K4
   0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
   0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
@@ -850,8 +852,8 @@ void setup() {
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
   //   attachInterrupt(0, buttonpress, RISING);
-  Timer1.initialize();
-  Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
+ // Timer1.initialize();
+ // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
 }
 
 void findplane(){
@@ -1099,13 +1101,13 @@ void mode(){
 }
 void loop() {
   others();
- // if(opmode==0){
- //   callback(); //generate image
- //   callback(); //generate image
-//    callback(); //generate image
- //   callback(); //generate image
- //   callback(); //generate image
- // }
+  if(opmode==0){
+    callback(); //generate image
+    callback(); //generate image
+    callback(); //generate image
+    callback(); //generate image
+  callback(); //generate image
+  }
 
 }
 void others(){
@@ -1597,6 +1599,8 @@ void callback() {
   }
 
   if(tCounter == 0) { // Transition start
+  if(colordemo==true){
+    colorschemeselector=random(256);}
     //fxIdx[frontImgIdx] = random((sizeof(renderEffect) / sizeof(renderEffect[0]))); //original random selection
     //  if(nextpattern>0){
     //    frontImgIdx=(sizeof(renderEffect) / sizeof(renderEffect[0]))%nextpattern;
@@ -1933,6 +1937,50 @@ void onespinfade(byte idx) {
     *ptr++ = *ptr4++;
     *ptr++ = *ptr4++;
     *ptr++ = *ptr4++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+
+void sparklefade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
+
+  }
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(random(numPixels/2)==1){
+      color = getschemacolor(random(8));
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
   }
   fxVars[idx][3]--;
   if(fxVars[idx][3]<=0){
