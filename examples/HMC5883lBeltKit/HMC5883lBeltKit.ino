@@ -244,9 +244,9 @@ float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglas
 
 
 //############### stuff for the averages for the accell
-const int numReadingsx = 25;
-const int numReadingsy = 25;
-const int numReadingsz = 25;
+const int numReadingsx = 6;
+const int numReadingsy = 6;
+const int numReadingsz = 6;
 int readingsx[numReadingsx],readingsy[numReadingsy],readingsz[numReadingsz]; // the readings from the analog input
 int indexx,indexy,indexz; // the index of the current reading
 int totalx,totaly,totalz; // the running total
@@ -657,7 +657,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x82,0xfe,0x82,0x00,0x00,   // I2
   0x04,0x02,0x82,0xfc,0x80,0x00,  // J3
   0xfe,0x10,0x28,0x44,0x82,0x00,  // K4
-  0xfe,0x02,0x02,0x02,0x02,0x00, // L5
+  0xfe,0x02,0x02,0x02,0x02,0x00,  // L5
   0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
   0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
@@ -2111,12 +2111,12 @@ void accellschemesparklefade(byte idx) {
   fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
   Serial.println(fxVars[idx][8]);
  */
- 
+ Serial.println((averagex+averagey+averagez)/100);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(random(fxVars[idx][7])>30){
+    if(random(averagex+averagey+averagez)/100>18){
       color = getschemacolor(random(8));
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
