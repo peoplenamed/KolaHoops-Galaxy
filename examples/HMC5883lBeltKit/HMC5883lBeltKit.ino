@@ -18,13 +18,13 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+   simpleOrbit,
+   orbit,
   POV,
   onespin,//really broken 
   onespinfade,//kind of broken
   who,//untested
-  
- 
-  simpleOrbit,
+
   rainbowChase, //stock
   raindance,
   colorDrift,
@@ -1805,15 +1805,12 @@ void simpleOrbit(byte idx) {
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels; i++) {
+     color = hsv2rgb(fxVars[idx][22],255,127);
     for(int q=1; q<10; q++) {
-      if(i==fxVars[idx][q]%numPixels){
+      if(i==fxVars[idx][q]){
         color= getschemacolor(q);
       }
-      else{
-        color = hsv2rgb(fxVars[idx][22],255,abs(fxVars[idx][21]));
-      }
     }
-
     // color = getschemacolor(i%8);
     *ptr++ = color >> 16;
     *ptr++ = color >> 8;
@@ -1822,6 +1819,9 @@ void simpleOrbit(byte idx) {
 
   for(int i=1; i<10; i++){
     fxVars[idx][i] += fxVars[idx][i+10];//position += speed
+   if(fxVars[idx][i]>numPixels){
+     fxVars[idx][i]-=numPixels;
+   }
   }
   fxVars[idx][21]++;
   fxVars[idx][22]++;
@@ -2837,17 +2837,17 @@ void POV(byte idx) {
   if(fxVars[idx][0] == 0) {
     int i;
     fxVars[idx][1]=random(1536); //color were gonna use to cycle
-    fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
+    fxVars[idx][2]=16; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
     fxVars[idx][4]=0;//# of frames until next change
-    fxVars[idx][6]=5;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
     fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
     fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
   //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-  //fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
-    fxVars[idx][10]=8;// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+  fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+  
  // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
   }
@@ -2859,9 +2859,8 @@ void POV(byte idx) {
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
     byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]); //
     for(int i=0; i<fxVars[idx][2]; i++) {
-      if((data>>i)&1){
+      if((data>>(i/2))&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
-   //     color = getschemacolor(fxVars[idx][7]);
         *ptr++ = 255;
         *ptr++ = 0;
         *ptr++ = 0;
