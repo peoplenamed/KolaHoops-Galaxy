@@ -11,15 +11,19 @@ boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
 uint8_t colorschemeselector = 16;
 int nextspeed=0;
-uint16_t patternswitchspeed = 300; //# of seconds between pattern switches
+uint16_t patternswitchspeed = 600; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 //max ~2 secconds
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-   simpleOrbit,
-   orbit,
+  rotate,//untested
+  simpleOrbit,//untested
+  sineCompass, //untested
+  sparkle, //untested 
+  simpleOrbit,
+  mixColor8Chase,
   POV,
   onespin,//really broken 
   onespinfade,//kind of broken
@@ -44,14 +48,11 @@ void (*renderEffect[])(byte) = {
   schemetestlongfade,
   schemefade,
   MonsterHunter,
-    rotate,//untested
-    simpleOrbit,//untested
-    sineCompass, //untested
-    sparkle, //untested
+  
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
- // scrolls//untested
+  scrolls,//untested
   POV, 
   //  //###############full color
 
@@ -637,7 +638,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x90,0x90,0x90,0x80,0x00,  // F9
   0x7c,0x82,0x92,0x92,0x5e,0x00,  // G0
   0xfe,0x10,0x10,0x10,0xfe,0x00,  // H1
-  0x00,0x82,0xfe,0x82,0x00,0x00,	// I2
+  0x00,0x82,0xfe,0x82,0x00,0x00,   // I2
   0x04,0x02,0x82,0xfc,0x80,0x00,	// J3
   0xfe,0x10,0x28,0x44,0x82,0x00,	// K4
   0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
@@ -2091,30 +2092,31 @@ void compassheading(byte idx) {
 void rotate(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1] =0;//
-    fxVars[idx][2] =-255;
+    fxVars[idx][2] =-254;
+    fxVars[idx][3] = -8;
     fxVars[idx][0]=1;// init
   }
   byte *ptr = &imgData[idx][0],r,g,b,r2,g2,b2;
-  long color1 = getschemacolor(1);
-  long color2 = getschemacolor(2);
-  r=color1>>16;
-  g=color1>>8;
-  b=color1;
-  r2=color2>>16;
-  g2=color2>>8;
-  b2=color2;
-  for(int i=0; i<numPixels; i++) {
-    r =mixColor8(r,r2,abs(fxVars[idx][2])*i/numPixels);
-    g =mixColor8(g,g2,abs(fxVars[idx][2])*i/numPixels);
-    b =mixColor8(b,b2,abs(fxVars[idx][2])*i/numPixels);
+  r=getschemacolor(1)>>16;
+  g=getschemacolor(1)>>8;
+  b=getschemacolor(1);
+  r2=getschemacolor(2)>>16;
+  g2=getschemacolor(2)>>8;
+  b2=getschemacolor(2);
+  for(int i=1; i<numPixels+1; i++) {
+    r =mixColor8(r,r2,abs(fxVars[idx][2]));
+    g =mixColor8(g,g2,abs(fxVars[idx][2]));
+    b =mixColor8(b,b2,abs(fxVars[idx][2]));
     // color = getschemacolor(i%8); 
     *ptr++ = r;
     *ptr++ = g;
     *ptr++ = b;
   }
   fxVars[idx][2]++;
-  if (fxVars[idx][2]==255){
-    fxVars[idx][2]= -255; 
+  
+  
+  if (fxVars[idx][2]==254){
+    fxVars[idx][2]= -254; 
   }
 }
 
@@ -2268,7 +2270,7 @@ void thingeyDrift(byte idx) {
   }
 }
 
-void orbit(byte idx) {
+void mixColor8Chase(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][10]= random(1,4);
     // Number of repetitions (complete loops around color wheel);
