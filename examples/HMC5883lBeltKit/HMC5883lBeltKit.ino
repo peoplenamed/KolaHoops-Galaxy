@@ -1,5 +1,5 @@
 //flags
-boolean demo = false;
+boolean demo = true;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
 int opmode; //0==normal ,1=menu,2=irsetup
@@ -19,45 +19,47 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-  blankfade,
+
+//  eightfade,//eight going around leaving a train(broken)
+ // blankfade,
+  onefade,//one going around leaving a trail
   longsinechasecolordrift,
   sparklefade,
   schemesparklefade,
-  schemetestfade,
-  schemetestlongfade,
-  simpleOrbit,//untested
-  sineCompass, //untested
-  sparkle, //untested 
-  simpleOrbit,
-  mixColor8Chase,
-  POV,
-  onespin,//really broken 
-  onespinfade,//kind of broken
+  schemetestfade,//needs to "dance"
+  schemetestlongfade,//needs to "dance"
+  simpleOrbit,//not sure whats going on here...
+  sineCompass, //needs smoothing
+//  sparkle, //too slow and looks meh
+  mixColor8Chase,//almost sinechase but with my mixcolor8
+                 //is 4 byte * >> faster?
+  POV,//new and improved
+ 
   who,//untested
   rainbowChase, //stock
-  raindance,
-  colorDrift,
+  raindance,//smoothly picks a new speed every so often
+  colorDrift,//:h,s,v color wheel cycle:0-1536,255,255
   sineChase, //stock
-  compassheading,
-  compassheadingRGBFade,
-  Dice,
+  compassheading,//compass X,Y,Z mapped to one blip each
+  compassheadingRGBFade,//fade RGB according to compass xyz
+  Dice,//plane calculation 
   // what,
   // when,
   // where,
   // why,
   // how,
-  schemestretch,//untested
-  //schemetest,
-  //schemetestlong,
-  
-  
+//  schemestretch,//
+  schemetest,//non moving
+  schemetestlong,//non moving
+
+
   schemefade,
   MonsterHunter,
-  
+
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
-  scrolls,//untested
+  scrolls,//need to replace with older version
   POV, 
   //  //###############full color
 
@@ -75,15 +77,16 @@ void (*renderEffect[])(byte) = {
   // somekindaChase,
   //blank,
   // thingeyDrift,
-//  rotate,//not sure whats going on here
+  //  rotate,//not sure whats going on here
   //  rainStrobe2at1,
   //strobefans2at1,
- // schemetest2at1,
-//  MonsterStrobe2at1,
+  // schemetest2at1,
+  //  MonsterStrobe2at1,
   //  schemetestlongrain2at1,
- // schemetestrain2at1,    
+  // schemetestrain2at1,    
   //  orbit,
-
+  // onespin,//not up to par
+ // onespinfade,//interesting but not what i was going for
   //needs to store index and message string in progmem
   // 
 
@@ -648,7 +651,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x82,0xfe,0x82,0x00,0x00,   // I2
   0x04,0x02,0x82,0xfc,0x80,0x00,  // J3
   0xfe,0x10,0x28,0x44,0x82,0x00,  // K4
-  0xfe,0x02,0x02,0x02,0x02,0x00,	// L5
+  0xfe,0x02,0x02,0x02,0x02,0x00,  // L5
   0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
   0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
@@ -856,8 +859,8 @@ void setup() {
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
   //   attachInterrupt(0, buttonpress, RISING);
- // Timer1.initialize();
- // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
+  // Timer1.initialize();
+  // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
 }
 
 void findplane(){
@@ -1110,7 +1113,7 @@ void loop() {
     callback(); //generate image
     callback(); //generate image
     callback(); //generate image
-  callback(); //generate image
+    callback(); //generate image
   }
 
 }
@@ -1603,8 +1606,9 @@ void callback() {
   }
 
   if(tCounter == 0) { // Transition start
-  if(colordemo==true){
-    colorschemeselector=random(256);}
+    if(colordemo==true){
+      colorschemeselector=random(256);
+    }
     //fxIdx[frontImgIdx] = random((sizeof(renderEffect) / sizeof(renderEffect[0]))); //original random selection
     //  if(nextpattern>0){
     //    frontImgIdx=(sizeof(renderEffect) / sizeof(renderEffect[0]))%nextpattern;
@@ -1733,7 +1737,7 @@ void schemetestlongfade(byte idx) {
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
   }
-   for(int i=0; i<fxVars[idx][1]; i++) {
+  for(int i=0; i<fxVars[idx][1]; i++) {
     color1 = getschemacolor((i+fxVars[idx][4])/8);
     r1=color1 >> 16;//to r
     g1=color1 >> 8;//to g
@@ -1751,7 +1755,8 @@ void schemetestlongfade(byte idx) {
   }
   fxVars[idx][1]++;
   if(fxVars[idx][1]>=numPixels){
-    fxVars[idx][1]=0;}
+    fxVars[idx][1]=0;
+  }
   fxVars[idx][8]++;
   if(fxVars[idx][8]==255){
     fxVars[idx][8]=-255;
@@ -1785,7 +1790,7 @@ void schemetestfade(byte idx) {
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
   }
-    for(int i=0; i<fxVars[idx][1]; i++) {
+  for(int i=0; i<fxVars[idx][1]; i++) {
     color1 = getschemacolor((i+fxVars[idx][4])%8);
     r1=color1 >> 16;//to r
     g1=color1 >> 8;//to g
@@ -1801,10 +1806,10 @@ void schemetestfade(byte idx) {
     *ptr++ = mixColor8(color1>>8,color2>>8,abs(fxVars[idx][8]));
     *ptr++ = mixColor8(color1,color2,abs(fxVars[idx][8]));
   }
-  
+
   fxVars[idx][1]++;
   if(fxVars[idx][1]>=numPixels){
-   fxVars[idx][1]=0;
+    fxVars[idx][1]=0;
   }
   fxVars[idx][8]++;
   if(fxVars[idx][8]==255){
@@ -1854,7 +1859,7 @@ void simpleOrbit(byte idx) {
   byte *ptr = &imgData[idx][0];
   long color;
   for(int i=0; i<numPixels; i++) {
-     color = hsv2rgb(fxVars[idx][22],255,127);
+    color = hsv2rgb(fxVars[idx][22],255,127);
     for(int q=1; q<10; q++) {
       if(i==fxVars[idx][q]){
         color= getschemacolor(q);
@@ -1868,9 +1873,9 @@ void simpleOrbit(byte idx) {
 
   for(int i=1; i<10; i++){
     fxVars[idx][i] += fxVars[idx][i+10];//position += speed
-   if(fxVars[idx][i]>numPixels){
-     fxVars[idx][i]-=numPixels;
-   }
+    if(fxVars[idx][i]>numPixels){
+      fxVars[idx][i]-=numPixels;
+    }
   }
   fxVars[idx][21]++;
   fxVars[idx][22]++;
@@ -1903,7 +1908,7 @@ void onespin(byte idx) {
     if(fxVars[idx][1]>numPixels){
       fxVars[idx][1]=0; 
     }
-  //  fxVars[idx][3]+=fxVars[idx][2];
+    //  fxVars[idx][3]+=fxVars[idx][2];
   }
   fxVars[idx][3]+=fxVars[idx][2];
 }
@@ -1967,7 +1972,7 @@ void sparklefade(byte idx) {
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
     if(random(numPixels/2)==1){
-     color = hsv2rgb(random(1536),255,255);
+      color = hsv2rgb(random(1536),255,255);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
       *tptr++ = color;
@@ -2039,14 +2044,14 @@ void schemesparklefade(byte idx) {
   }
 }
 
-void blankfade(byte idx) {
+void onefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
-    fxVars[idx][2]=random(8,16);//frame skip holder
+    fxVars[idx][2]=0;//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
     fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
-    fxVars[idx][0]=0;// init
+    fxVars[idx][0]=1;// init
 
   }
   long color;
@@ -2054,16 +2059,7 @@ void blankfade(byte idx) {
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
     if(i==fxVars[idx][1]){
-      color=hsv2rgb(1536*i/numPixels,255,255);
-      *tptr++ = color >> 16;
-      *tptr++ = color >> 8;
-      *tptr++ = color;
-      *ptr2++ = color >>16;
-      *ptr2++ = color >> 8;
-      *ptr2++ = color;
-    }else{
-    if(random(numPixels/2)==1){
-      color = getschemacolor(random(8));
+      color = hsv2rgb(1536*i/numPixels,255,255);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
       *tptr++ = color;
@@ -2077,14 +2073,10 @@ void blankfade(byte idx) {
       *tptr++ = (*ptr2++)*4/5;
     }
   }
-  }
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
-  }
-  if(fxVars[idx][1]>=fxVars[idx][0]){//if position at limit then
-    fxVars[idx][1]=0;
   }
   fxVars[idx][3]--;
   if(fxVars[idx][3]<=0){
@@ -2095,6 +2087,103 @@ void blankfade(byte idx) {
     fxVars[idx][3]=fxVars[idx][2];
   }
 }
+void eightfade(byte idx) {
+  int i;
+  if(fxVars[idx][0] == 0) {
+    //1-8 position
+    //11-18 frame skip holder
+    //21-28 frame skip operator
+    //31-38 intended frame skip holder
+    for(i=1;i<8;i++){
+      fxVars[idx][i]=random(numPixels); //position
+    }
+
+    for(i=11;i<18;i++){
+      fxVars[idx][i]=random(8); //frame skip holder
+    }
+
+    for(i=21;i<28;i++){
+      fxVars[idx][i]=0; //frame skip operator
+    }
+    for(i=31;i<38;i++){
+      fxVars[idx][i]=0; //intended frame skip operator
+    }   
+
+    fxVars[idx][0]=2;// init and timer to reinit
+
+  }
+//  if(fxVars[idx][0] == 1) {//reinit
+//   for(i=31;i<38;i++){
+//      fxVars[idx][i]=random(16); //intended frame skip operator
+//    }   
+//    fxVars[idx][0]=2;// reinit
+//  }
+
+  long color=0;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+
+    for(int q=1;q<8;q++){
+      if(fxVars[idx][q]==i){
+        color = getschemacolor(q);
+      } //check for position
+    }
+    if(color>0){
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >> 16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color ;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+//  fxVars[idx][0]--;//reinit countdown
+  //1-8 position
+  //11-18 frame skip holder
+  //21-28 frame skip operator
+  //31-38 intended frame skip holder
+  for(int q=1;q<8;q++){
+
+    fxVars[idx][q+20]--;
+    if(fxVars[idx][q+20]<=0){//if frame skip operator <=0 then
+      fxVars[idx][q+20]=fxVars[idx][q+10];//reset frame skip operator to holder
+      fxVars[idx][q]++;//increment position
+      if(fxVars[idx][q]>=numPixels){//if position out of range
+        fxVars[idx][q]=0;//set to 0 
+      }
+    }
+
+    if(fxVars[idx][q+30]>fxVars[idx][q+10]){//if intended frame skip holder is> frame skip holder
+      fxVars[idx][q+10]++;//add one to frame skip holder
+    }
+    else{
+      if(fxVars[idx][q+30]<fxVars[idx][q+10]){//if intended frame skip holder is < frame skip holder
+        fxVars[idx][q+10]--;//take one off
+      } else{
+       if(fxVars[idx][q+30]==fxVars[idx][q+10]){//reinit that one
+         fxVars[idx][q+10]=random(32)*3; //intended frame skip operator
+       } 
+        
+        
+      }
+
+    }
+
+  }
+
+}
+
 
 void colorDriftmod(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -2322,8 +2411,8 @@ void rotate(byte idx) {
     *ptr++ = b;
   }
   fxVars[idx][2]++;
-  
-  
+
+
   if (fxVars[idx][2]==254){
     fxVars[idx][2]= -254; 
   }
@@ -3054,15 +3143,15 @@ void POV(byte idx) {
     fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
     fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
-  //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
+    //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-  fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
-  
- // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
+    fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+
+    // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
   }
- // if(fxVars[idx][0] == -1) { //re init
- // }
+  // if(fxVars[idx][0] == -1) { //re init
+  // }
   fxVars[idx][3]++;
   byte *ptr = &imgData[idx][0];
   long color;
@@ -3169,6 +3258,54 @@ void PeteOV(byte idx) {
  }
  */
 
+void blankfade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=random(8,16);//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=0;// init
+
+  }
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(i==fxVars[idx][1]){
+      color=hsv2rgb(1536*i/numPixels,255,255);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  if(fxVars[idx][1]>=fxVars[idx][0]){//if position at limit then
+    fxVars[idx][1]=0;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
     fxVars[idx][1]=0;//get new pacman color
@@ -3220,6 +3357,104 @@ void pacman(byte idx) { //hsv color chase for now
       }
     }
   }
+
+  if(fxVars[idx][3]>=numPixels){
+    fxVars[idx][3]=-numPixels+1;
+  }
+  fxVars[idx][7]++;
+  if(fxVars[idx][7]==fxVars[idx][6]){
+    fxVars[idx][3]++;
+    fxVars[idx][7]=0;
+  }
+
+  if(fxVars[idx][4]==fxVars[idx][5]){
+    fxVars[idx][0]=-1;
+  }
+  else{
+    if(abs(fxVars[idx][3])==fxVars[idx][4]){
+      fxVars[idx][4]++;
+      fxVars[idx][3]=fxVars[idx][4]+1;
+    }
+    else{
+      if(abs(fxVars[idx][3])==fxVars[idx][5]){
+        fxVars[idx][5]--;
+        fxVars[idx][3]=((0-1)*fxVars[idx][5])+1;
+      }
+    }
+  }
+}
+void pacmanfade(byte idx) { //hsv color chase for now
+  if(fxVars[idx][0] == 0) {// using hsv for pacman
+    fxVars[idx][1]=0;//get new pacman color
+    // fxVars[idx][2]=fxVars[idx][1]+256;//get new 2nd color
+    fxVars[idx][3]=numPixels/2;//pacman position
+    fxVars[idx][4]=0;//lower edge
+    fxVars[idx][5]=numPixels;//upper edge
+    fxVars[idx][6]=2;//wait counter if at 120 fps 12 would be 1/10 of a second
+    fxVars[idx][7]=0; //wait operator
+    fxVars[idx][8]=random(4); //pcaman width
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+  if(fxVars[idx][0] == -1) { //re init
+    // fxVars[idx][2]=fxVars[idx][1];
+    fxVars[idx][1]++;//get new pacman color
+    fxVars[idx][3]=numPixels/2;//pacman position
+    fxVars[idx][4]=0;//lower edge
+    fxVars[idx][5]=numPixels;//upper edge
+    fxVars[idx][8]=random(4); //pcaman width
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  int i;
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(i=0; i<numPixels; i++) {
+    long color;
+    if(i>=abs(fxVars[idx][3])-fxVars[idx][8]&&i<=abs(fxVars[idx][3])+fxVars[idx][8]){
+
+      // color = hsv2rgb(fxVars[idx][1], 255, 255);
+      color = getschemacolor(fxVars[idx][1]+1);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >> 16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color ;
+    }
+    else{
+      if(i<=fxVars[idx][4]||i>=fxVars[idx][5]){
+        // color = hsv2rgb(fxVars[idx][1], 255, 255);
+        color = getschemacolor(fxVars[idx][1]+1);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >> 16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color ;
+      }
+      else{
+        // color = hsv2rgb(fxVars[idx][2], 255, 255);
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      }
+    }
+  }
+  /*
+    if(color>0){
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >> 16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color ;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+
+*/
 
   if(fxVars[idx][3]>=numPixels){
     fxVars[idx][3]=-numPixels+1;
@@ -3617,41 +3852,41 @@ void wavyFlag(byte idx) {
 }
 
 void schemestretch(byte idx) {
-//  only run once to remove motion
+  //  only run once to remove motion
   if(fxVars[idx][0] == 0) { // Initialize effect?
-  long i, sum, s, x;
-  int idx1, idx2, a, b;
+    long i, sum, s, x;
+    int idx1, idx2, a, b;
     fxVars[idx][1] = 720 + random(720); // Wavyness
     fxVars[idx][2] = 4 + random(10); // Wave speed
     fxVars[idx][3] = 200 + random(200); // Wave 'puckeryness'
     fxVars[idx][4] = 0; // Current position
-  //fxVars[idx][0] = 1; // Effect initialized
-  
-  for(sum=0, i=0; i<numPixels-1; i++) {
-    sum += fxVars[idx][3] + fixCos(fxVars[idx][4] + fxVars[idx][1] *
-      i / numPixels);
-  }
+    //fxVars[idx][0] = 1; // Effect initialized
 
-  byte *ptr = &imgData[idx][0];
-  for(s=0, i=0; i<numPixels; i++) {
-    //x = 256L * ((sizeof(flagTable) / 3) - 1) * s / sum; //original
+    for(sum=0, i=0; i<numPixels-1; i++) {
+      sum += fxVars[idx][3] + fixCos(fxVars[idx][4] + fxVars[idx][1] *
+        i / numPixels);
+    }
+
+    byte *ptr = &imgData[idx][0];
+    for(s=0, i=0; i<numPixels; i++) {
+      //x = 256L * ((sizeof(flagTable) / 3) - 1) * s / sum; //original
       x = 256L * ((8 / 3) - 1) * s / sum;
-    //x = 256L * ((7 / 3) - 1) * s / sum; //and where do we start counting?
-    idx1 = (x >> 8) * 3;
-    idx2 = ((x >> 8) + 1) * 3;
-    b = (x & 255) + 1;
-    a = 257 - b;
-    *ptr++ = (((getschemacolor(idx1)>>16) * a) + ((getschemacolor(idx2)>>16) * b)) >> 8;
-    *ptr++ = (((getschemacolor(idx1)>>8) * a) + ((getschemacolor(idx1)>>8) * b)) >> 8;
-    *ptr++ = ((getschemacolor(idx1) * a) + ((getschemacolor(idx1) * b))) >> 8;
-    s += fxVars[idx][3] + fixCos(fxVars[idx][4] + fxVars[idx][1] *
-      i / numPixels);
-  }
+      //x = 256L * ((7 / 3) - 1) * s / sum; //and where do we start counting?
+      idx1 = (x >> 8) * 3;
+      idx2 = ((x >> 8) + 1) * 3;
+      b = (x & 255) + 1;
+      a = 257 - b;
+      *ptr++ = (((getschemacolor(idx1)>>16) * a) + ((getschemacolor(idx2)>>16) * b)) >> 8;
+      *ptr++ = (((getschemacolor(idx1)>>8) * a) + ((getschemacolor(idx1)>>8) * b)) >> 8;
+      *ptr++ = ((getschemacolor(idx1) * a) + ((getschemacolor(idx1) * b))) >> 8;
+      s += fxVars[idx][3] + fixCos(fxVars[idx][4] + fxVars[idx][1] *
+        i / numPixels);
+    }
 
-  fxVars[idx][4] += fxVars[idx][2];
-  if(fxVars[idx][4] >= 720) fxVars[idx][4] -= 720;
-fxVars[idx][0] = 1; // Effect initialized
-}
+    fxVars[idx][4] += fxVars[idx][2];
+    if(fxVars[idx][4] >= 720) fxVars[idx][4] -= 720;
+    fxVars[idx][0] = 1; // Effect initialized
+  }
 
 }
 
@@ -4591,6 +4826,9 @@ void getir(){
     irrecv.resume();
   }
 }
+
+
+
 
 
 
