@@ -11,6 +11,7 @@ uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw 
 boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=false;// will the uart respond?
 //paramaters
+int pattern = -1;
 int nextspeed=0;
 uint8_t colorschemeselector = 34;
 uint8_t brightness = 2; //DO NOT BRING >1
@@ -658,7 +659,7 @@ const char led_chars[97][6] PROGMEM = {
   0x04,0x02,0x82,0xfc,0x80,0x00,  // J3
   0xfe,0x10,0x28,0x44,0x82,0x00,  // K4
   0xfe,0x02,0x02,0x02,0x02,0x00,  // L5
-  0xfe,0x40,0x30,0x40,0xfe,0x00,	// M6
+  0xfe,0x40,0x30,0x40,0xfe,0x00,  // M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,	// N7
   0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
   0xfe,0x90,0x90,0x90,0x60,0x00,	// P9
@@ -1645,8 +1646,13 @@ void callback() {
     //    frontImgIdx=(sizeof(renderEffect) / sizeof(renderEffect[0]))%nextpattern;
     //     nextpattern=0;
     //  }else{
+      if(pattern>=0){
+       fxIdx[frontImgIdx]=pattern;
+       pattern=-1;//
+      }else{
     fxIdx[frontImgIdx]++;//instead of random now its sequential
     //  }
+  }
     if(fxIdx[frontImgIdx]>=(sizeof(renderEffect) / sizeof(renderEffect[0]))){
       fxIdx[frontImgIdx]=0;
     }
@@ -4636,24 +4642,31 @@ void getUart(){
     char* urt = urtInStr;
     while( *++urt == ' ' ); // got past any intervening whitespace
     num = atoi(urt); // the rest is arguments (maybe)
-    if( ucmd == '+' ) {
-      if(uartoutput==true){ 
-        Uart.println("Button recieved");
-      }
-      button=1;
+    if( ucmd == 'P' ) {//P means the next character is a pattern we are getting.
+    if(num>0){
+      pattern = num;//in 
     }
-    if( ucmd == 'd' ) {
-      compassdebug=0;
-      if(uartoutput==true){  
-        Uart.println("disable compass serial output");
-      }
+      tCounter=0;//start the transition
     }
-    if( ucmd == 'D' ) {
-      compassdebug=1;
-      if(uartoutput==true){
-        Uart.println("enable compass serial output");
-      }
+    if( ucmd == 'C' ) {//C means color scheme read through atoi comes next
+     if(num>0){
+     colorschemeselector = num;//in
+     }else{
+      colorschemeselector++; 
+     }
     }
+        if( ucmd == 'c' ) {//C means color scheme read through atoi comes next
+     if(num>0){
+     colorschemeselector = num;//in
+     }else{
+      colorschemeselector--; 
+     }
+    }
+    
+    if( ucmd == 'B' ) {
+     brightness=num;
+    }
+    
     if( ucmd == 'Q' ) {
 
       for (int i =0; i<ircsetup; i++){
@@ -5031,19 +5044,3 @@ void getir(){
     irrecv.resume();
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
