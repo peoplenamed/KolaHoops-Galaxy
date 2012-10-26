@@ -21,6 +21,7 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  compassschemesparklefade,
   accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
   //  eightfade,//eight going around leaving a train(broken)
   // blankfade,
@@ -53,11 +54,8 @@ void (*renderEffect[])(byte) = {
   //  schemestretch,//
   schemetest,//non moving
   schemetestlong,//non moving
-
-
-    schemefade,
+  schemefade,
   MonsterHunter,
-
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
@@ -210,7 +208,7 @@ unsigned long secondTwoBytes;
 #include <Wire.h>
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
-#define numPixels 96
+#define numPixels 94
 uint8_t framecounter,framecounter1;
 int rotationspeed;
 int upperend;
@@ -235,7 +233,7 @@ uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 
 //##############compass stuffs
 
 int lmheading;
-int plane,accelx,accely,accelz,accelxlast,accelylast,accelzlast;
+int plane,ax,ay,az,axlast,aylast,azlast;
 boolean compassreadphase = 0;
 uint16_t yzheadingdegrees,xzheadingdegrees,xyheadingdegrees,xyheadingdegreescalibrated,xyheadingdegreesmin,xyheadingdegreesmax,
 xzheadingdegreescalibrated,xzheadingdegreesmin,xzheadingdegreesmax,
@@ -245,13 +243,13 @@ float xyheading, xzheading ,yzheading,xyheadinglast, xzheadinglast ,yzheadinglas
 
 
 //############### stuff for the averages for the accell
-const int numReadingsx = 6;
-const int numReadingsy = 6;
-const int numReadingsz = 6;
-int readingsx[numReadingsx],readingsy[numReadingsy],readingsz[numReadingsz]; // the readings from the analog input
-int indexx,indexy,indexz; // the index of the current reading
-int totalx,totaly,totalz; // the running total
-int averagex,averagey,averagez;
+const int numReadingsax = 6;
+const int numReadingsay = 6;
+const int numReadingsaz = 6;
+int readingsax[numReadingsax],readingsay[numReadingsay],readingsaz[numReadingsaz]; // the readings from the analog input
+int indexax,indexay,indexaz; // the index of the current reading
+int totalax,totalay,totalaz; // the running total
+int averageax,averageay,averageaz;
 //##############bluetooth serial port
 HardwareSerial Uart = HardwareSerial();
 
@@ -661,7 +659,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x02,0x02,0x02,0x02,0x00,  // L5
   0xfe,0x40,0x30,0x40,0xfe,0x00,  // M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,  // N7
-  0x7c,0x82,0x82,0x82,0x7c,0x00,	// O8
+  0x7c,0x82,0x82,0x82,0x7c,0x00,  // O8
   0xfe,0x90,0x90,0x90,0x60,0x00,	// P9
   0x7c,0x82,0x8a,0x84,0x7a,0x00,	// Q0
   0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
@@ -912,26 +910,26 @@ void findplane(){
   }
 }
 void accelread(){
-  accelxlast=accelx;//copy old values
-  accelylast=accely;//to new slot
-  accelzlast=accelz;//before poll
-  accelx= compass.a.x;//get new
-  accely= compass.a.y;//values
-  accelz= compass.a.z;
+  axlast=ax;//copy old values
+  aylast=ay;//to new slot
+  azlast=az;//before poll
+  ax= compass.a.x;//get new
+  ay= compass.a.y;//values
+  az= compass.a.z;
   // fxVars[idx][4]+fxVars[idx][5]+fxVars[idx][6];//sum of all axises
   // fxVars[idx][17]=fxVars[idx][14]+fxVars[idx][15]+fxVars[idx][16];//sum of all axises old
   // fxVars[idx][8]=abs(fxVars[idx][7]-fxVars[idx][17]);
 
-  runningaveragex(abs(accelx-accelxlast));//we are doing a running average 
-  runningaveragey(abs(accely-accelylast));//on the difference between polls
-  runningaveragex(abs(accely-accelylast));//to make the data more useable
+  runningaverageax(abs(ax-axlast));//we are doing a running average 
+  runningaverageay(abs(ay-aylast));//on the difference between polls
+  runningaverageax(abs(ay-aylast));//to make the data more useable
   if(acceloutput==true){
     Serial.print("Acc:X");
-    Serial.print(averagex);
+    Serial.print(averageax);
     Serial.print(",Y");
-    Serial.print(averagey);
+    Serial.print(averageay);
     Serial.print(",Z");
-    Serial.println(averagez);
+    Serial.println(averageaz);
   }
 
 
@@ -994,7 +992,7 @@ void compassread()
   // runningaverage(xyheadingDegrees);
 
 
-  if(millis()>10000){
+
     //xydynamic calibration
     if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
 
@@ -1028,7 +1026,7 @@ void compassread()
       }
     }
     yzheadingdegreescalibrated = map(yzheadingdegrees,yzheadingdegreesmin,yzheadingdegreesmax,0,360);
-  }
+  
 
 
   if (compassoutput==1){
@@ -1646,13 +1644,14 @@ void callback() {
     //    frontImgIdx=(sizeof(renderEffect) / sizeof(renderEffect[0]))%nextpattern;
     //     nextpattern=0;
     //  }else{
-      if(pattern>=0){
-       fxIdx[frontImgIdx]=pattern;
-       pattern=-1;//
-      }else{
-    fxIdx[frontImgIdx]++;//instead of random now its sequential
-    //  }
-  }
+    if(pattern>=0){
+      fxIdx[frontImgIdx]=pattern;
+      pattern=-1;//
+    }
+    else{
+      fxIdx[frontImgIdx]++;//instead of random now its sequential
+      //  }
+    }
     if(fxIdx[frontImgIdx]>=(sizeof(renderEffect) / sizeof(renderEffect[0]))){
       fxIdx[frontImgIdx]=0;
     }
@@ -2105,12 +2104,12 @@ void accellschemesparklefade(byte idx) {
 
   }
 
-  Serial.println((averagex+averagey+averagez)/150);
+//  Serial.println((averageax+averageay+averageaz)/150);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(random(averagex+averagey+averagez)/150>12){
+    if(random(averageax+averageay+averageaz)/150>12){
       color = getschemacolor(0);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2120,7 +2119,7 @@ void accellschemesparklefade(byte idx) {
       *ptr2++ = color;
     }
     else{
-      if(random(averagex+averagey+averagez)/150>9){
+      if(random(averageax+averageay+averageaz)/150>9){
         color = getschemacolor(1);
         *tptr++ = (color >> 16)>>1;
         *tptr++ = (color >> 8)>>1;
@@ -2130,7 +2129,7 @@ void accellschemesparklefade(byte idx) {
         *ptr2++ = (color)>>1;
       }
       else{
-        if(random(averagex+averagey+averagez)/150>6){
+        if(random(averageax+averageay+averageaz)/150>6){
           color = getschemacolor(2);
           *tptr++ = (color >> 16)>>2;
           *tptr++ = (color >> 8)>>2;
@@ -2140,7 +2139,7 @@ void accellschemesparklefade(byte idx) {
           *ptr2++ = (color)>>2;
         }
         else{
-          if(random(averagex+averagey+averagez)/150>4){
+          if(random(averageax+averageay+averageaz)/150>4){
             color = getschemacolor(3);
             *tptr++ = (color >> 16)>>3;
             *tptr++ = (color >> 8)>>3;
@@ -2150,7 +2149,7 @@ void accellschemesparklefade(byte idx) {
             *ptr2++ = (color)>>3;
           }
           else{
-            if(random(averagex+averagey+averagez)/150>2||random(1000)==50){
+            if(random(averageax+averageay+averageaz)/150>2||random(1000)==50){
               color = getschemacolor(4);
               *tptr++ = (color >> 16)>>4;
               *tptr++ = (color >> 8)>>4;
@@ -2160,7 +2159,7 @@ void accellschemesparklefade(byte idx) {
               *ptr2++ = (color)>>4;
             }
             else{
-              if(random(averagex+averagey+averagez)/150>0){
+              if(random(averageax+averageay+averageaz)/150>0){
                 color = getschemacolor(5);
                 *tptr++ = (color >> 16)>>5;
                 *tptr++ = (color >> 8)>>5;
@@ -2194,6 +2193,110 @@ void accellschemesparklefade(byte idx) {
     fxVars[idx][3]=fxVars[idx][2];
   }
 }
+
+void compassschemesparklefade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=17;//top number
+    fxVars[idx][5]=18; //bottom number
+    fxVars[idx][0]=1;// init
+    //read accell
+
+  }
+
+  Serial.println((averageax+averageay+averageaz)/150);
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(random(averageax+averageay+averageaz)/150>12){
+      color = getschemacolor(0);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      if(random(averageax+averageay+averageaz)/150>9){
+        color = getschemacolor(1);
+        *tptr++ = (color >> 16)>>1;
+        *tptr++ = (color >> 8)>>1;
+        *tptr++ = (color)>>1;
+        *ptr2++ = (color >>16)>>1;
+        *ptr2++ = (color >> 8)>>1;
+        *ptr2++ = (color)>>1;
+      }
+      else{
+        if(random(averageax+averageay+averageaz)/150>6){
+          color = getschemacolor(2);
+          *tptr++ = (color >> 16)>>2;
+          *tptr++ = (color >> 8)>>2;
+          *tptr++ = (color)>>2;
+          *ptr2++ = (color >>16)>>2;
+          *ptr2++ = (color >> 8)>>2;
+          *ptr2++ = (color)>>2;
+        }
+        else{
+          if(random(averageax+averageay+averageaz)/150>4){
+            color = getschemacolor(3);
+            *tptr++ = (color >> 16)>>3;
+            *tptr++ = (color >> 8)>>3;
+            *tptr++ = (color)>>3;
+            *ptr2++ = (color >>16)>>3;
+            *ptr2++ = (color >> 8)>>3;
+            *ptr2++ = (color)>>3;
+          }
+          else{
+            if(random(averageax+averageay+averageaz)/150>2||random(1000)==50){
+              color = getschemacolor(4);
+              *tptr++ = (color >> 16)>>4;
+              *tptr++ = (color >> 8)>>4;
+              *tptr++ = (color)>>4;
+              *ptr2++ = (color >>16)>>4;
+              *ptr2++ = (color >> 8)>>4;
+              *ptr2++ = (color)>>4;
+            }
+            else{
+              if(random(averageax+averageay+averageaz)/150>0){
+                color = getschemacolor(5);
+                *tptr++ = (color >> 16)>>5;
+                *tptr++ = (color >> 8)>>5;
+                *tptr++ = (color)>>5;
+                *ptr2++ = (color >>16)>>5;
+                *ptr2++ = (color >> 8)>>5;
+                *ptr2++ = (color)>>5;
+              }
+              else{
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
+
 
 void onefade(byte idx) {
 
@@ -2294,6 +2397,7 @@ void eightfade(byte idx) {
       *tptr++ = (*ptr2++)*4/5;
     }
   }
+  
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
@@ -2325,15 +2429,10 @@ void eightfade(byte idx) {
       else{
         if(fxVars[idx][q+30]==fxVars[idx][q+10]){//reinit that one
           fxVars[idx][q+10]=random(32)*3; //intended frame skip operator
-        } 
-
-
+        }
       }
-
     }
-
   }
-
 }
 
 
@@ -4386,7 +4485,7 @@ PROGMEM prog_uchar gammaTable[][255] = {
   76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91,
   92, 93, 94, 95, 96, 97, 98, 99,100,101,102,104,105,106,107,108,
   109,110,111,113,114,115,116,117,118,120,121,122,123,125,126,127,
- 
+
 };
 
 // This function (which actually gets 'inlined' anywhere it's called)
@@ -4395,8 +4494,8 @@ PROGMEM prog_uchar gammaTable[][255] = {
 // folks before even getting into the real substance of the program, and
 // the compiler permits forward references to functions but not data.
 inline byte gamma(byte x) {
-    return pgm_read_byte(&gammaTable[brightness][x]);
- // return x>>(brightness+1);
+  return pgm_read_byte(&gammaTable[brightness][x]);
+  // return x>>(brightness+1);
 }
 
 // Fixed-point colorspace conversion: HSV (hue-saturation-value) to RGB.
@@ -4531,68 +4630,68 @@ void buttonpress(){
 }
 
 
-void runningaveragex(int newval) {
+void runningaverageax(int newval) {
   if(newval==0){
     return;
   }
   // subtract the last reading:
-  totalx= totalx - readingsx[indexx];
+  totalax= totalax - readingsax[indexax];
   // read from the sensor:
-  readingsx[indexx] = newval;
+  readingsax[indexax] = newval;
   // add the reading to the total:
-  totalx= totalx + readingsx[indexx];
+  totalax= totalax + readingsax[indexax];
   // advance to the next position in the array:
-  indexx = indexx + 1;
+  indexax = indexax + 1;
   // if we're at the end of the array...
-  if (indexx >= numReadingsx)
+  if (indexax >= numReadingsax)
     // ...wrap around to the beginning:
-    indexx = 0;
+    indexax = 0;
   // calculate the average:
-  averagex = totalx / numReadingsx;
+  averageax = totalax / numReadingsax;
   // send it to the computer as ASCII digits
   // Serial.println(average);
   // delay(1); // delay in between reads for stability
 }
-void runningaveragey(int newval) {
+void runningaverageay(int newval) {
   if(newval==0){
     return;
   }
   // subtract the last reading:
-  totaly= totaly - readingsy[indexy];
+  totalay= totalay - readingsay[indexay];
   // read from the sensor:
-  readingsy[indexy] = newval;
+  readingsay[indexay] = newval;
   // add the reading to the total:
-  totaly= totaly + readingsy[indexy];
+  totalay= totalay + readingsay[indexay];
   // advance to the next position in the array:
-  indexy = indexy + 1;
+  indexay = indexay + 1;
   // if we're at the end of the array...
-  if (indexy >= numReadingsy)
+  if (indexay >= numReadingsay)
     // ...wrap around to the beginning:
-    indexy = 0;
+    indexay = 0;
   // calculate the average:
-  averagey = totaly / numReadingsy;
+  averageay = totalay / numReadingsay;
   // send it to the computer as ASCII digits
   // Serial.println(average);
   // delay(1); // delay in between reads for stability
 }
-void runningaveragez(int newval) {
+void runningaverageaz(int newval) {
   if(newval==0){
     return;
   }
   // subtract the last reading:
-  totalz= totalz - readingsz[indexz];
+  totalaz= totalaz - readingsaz[indexaz];
   // read from the sensor:
-  readingsz[indexz] = newval;
+  readingsaz[indexaz] = newval;
   // add the reading to the total:
-  totalz= totalz + readingsz[indexz];
+  totalaz= totalaz + readingsaz[indexaz];
   // advance to the next position in the array:
-  indexz = indexz + 1;
+  indexaz = indexaz + 1;
   // if we're at the end of the array...
-  if (indexz >= numReadingsz)
+  if (indexaz >= numReadingsaz)
     // ...wrap around to the beginning:
-    indexz = 0;
+    indexaz = 0;
   // calculate the average:
-  averagez = totalz / numReadingsz;
+  averageaz = totalaz / numReadingsaz;
   // send it to the computer as ASCII digits
   // Serial.println(average);
   // delay(1); // delay in between reads for stability
@@ -4730,30 +4829,32 @@ void getUart(){
     while( *++urt == ' ' ); // got past any intervening whitespace
     num = atoi(urt); // the rest is arguments (maybe)
     if( ucmd == 'P' ) {//P means the next character is a pattern we are getting.
-    if(num>0){
-      pattern = num;//in 
-    }
+      if(num>0){
+        pattern = num;//in 
+      }
       tCounter=0;//start the transition
     }
     if( ucmd == 'C' ) {//C means color scheme read through atoi comes next
-     if(num>0){
-     colorschemeselector = num;//in
-     }else{
-      colorschemeselector++; 
-     }
+      if(num>0){
+        colorschemeselector = num;//in
+      }
+      else{
+        colorschemeselector++; 
+      }
     }
-        if( ucmd == 'c' ) {//C means color scheme read through atoi comes next
-     if(num>0){
-     colorschemeselector = num;//in
-     }else{
-      colorschemeselector--; 
-     }
+    if( ucmd == 'c' ) {//C means color scheme read through atoi comes next
+      if(num>0){
+        colorschemeselector = num;//in
+      }
+      else{
+        colorschemeselector--; 
+      }
     }
-    
+
     if( ucmd == 'B' ) {
-     brightness=num;
+      brightness=num;
     }
-    
+
     if( ucmd == 'Q' ) {
 
       for (int i =0; i<ircsetup; i++){
