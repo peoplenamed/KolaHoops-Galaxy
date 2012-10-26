@@ -6,4 +6,5 @@ This Library was written by adafruit for the LPD8806 PWM LED driver and is used 
 ##Available until Nov 3rd on [KickStarter](http://kck.st/RgyQ1X)
 ##[www.kolahoops.com](www.kolahoops.com)
 
+##Check out our [bluetooth app](https://github.com/mmmaxwwwell/KolaHoops-Bluetooth) for android##
 
