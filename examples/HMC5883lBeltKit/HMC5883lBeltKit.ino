@@ -208,7 +208,8 @@ unsigned long secondTwoBytes;
 #include <Wire.h>
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
-#define numPixels 94
+int numPixels = 94;
+#define numPixelsHolder numPixels;
 uint8_t framecounter,framecounter1;
 int rotationspeed;
 int upperend;
@@ -660,7 +661,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x40,0x30,0x40,0xfe,0x00,  // M6
   0xfe,0x20,0x10,0x08,0xfe,0x00,  // N7
   0x7c,0x82,0x82,0x82,0x7c,0x00,  // O8
-  0xfe,0x90,0x90,0x90,0x60,0x00,	// P9
+  0xfe,0x90,0x90,0x90,0x60,0x00,  // P9
   0x7c,0x82,0x8a,0x84,0x7a,0x00,	// Q0
   0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
   0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
@@ -1559,7 +1560,8 @@ void callback() {
     // Render front image and alpha mask based on current effect indices...
     (*renderEffect[fxIdx[frontImgIdx]])(frontImgIdx);
     (*renderAlpha[fxIdx[2]])();
-
+    
+    
     // ...then composite front over back:
     /*  for(i=upperend; i<numPixels; i++) {
      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
@@ -3555,6 +3557,26 @@ void blankfade(byte idx) {
     }
     fxVars[idx][3]=fxVars[idx][2];
   }
+}
+
+void halfrandom(byte idx) {
+  if(fxVars[idx][0]==0){
+  int front =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+  int back = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+  fxVars[idx][0]=1;
+  }
+   numPixels = numPixelsHolder/2;//set numPixels to half; we are doing 2 renders for each frame and slapping them togeather for full strip
+   byte *ptr = &imgData[idx][0], *ptr2 = &imgData[idx][numPixels*3];//
+
+    // Render front image and alpha mask based on current effect indices...
+    (*renderEffect[fxIdx[front]])(front);//generate 2nd half in 1st half spot
+    for(int i=0;i<numPixels;i+=){
+   *ptr2++ = *ptr++;// copy 1st half of imgdata to 2nd hald
+    }
+      // Always render back image based on current effect index:
+  (*renderEffect[fxIdx[back]])(back); //generate first half
+  numPixels=numPixelsHolder;
+  
 }
 
 void pacman(byte idx) { //hsv color chase for now
