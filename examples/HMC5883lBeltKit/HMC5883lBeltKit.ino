@@ -21,6 +21,7 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  halfrandom,
   compassschemesparklefade,
   accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
   //  eightfade,//eight going around leaving a train(broken)
