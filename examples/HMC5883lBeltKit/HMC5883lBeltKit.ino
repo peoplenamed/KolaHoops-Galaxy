@@ -22,6 +22,7 @@ uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by
 
 void (*renderEffect[])(byte) = {
   halfrandom,
+  quarterrandom,
   compassschemesparklefade,
   accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
   //  eightfade,//eight going around leaving a train(broken)
@@ -3578,6 +3579,37 @@ void halfrandom(byte idx) {
   (*renderEffect[fxIdx[back]])(back); //generate first half
   numPixels=numPixelsHolder;
   
+}
+
+void quarterrandom(byte idx) {
+  if(fxVars[idx][0]==0){
+  int one =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+  int two = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+  int three = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+  int four= random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+  fxVars[idx][0]=1;
+  
+  }
+   numPixels = numPixelsHolder/4;//set numPixels to half; we are doing 2 renders for each frame and slapping them togeather for full strip
+   byte *ptr1a = &imgData[idx][0], *ptr1b = &imgData[idx][numPixels*3];//
+   byte *ptr2a = &imgData[idx][0], *ptr2b = &imgData[idx][numPixels*3*2];//
+   byte *ptr3a = &imgData[idx][0], *ptr3b = &imgData[idx][numPixels*3*3];//
+// only do 3 shifts; the 4th image lands where it needs to go
+    // Render front image and alpha mask based on current effect indices...
+    (*renderEffect[fxIdx[one]])(one);//generate 2nd 1/4 in 1st 1/4 spot
+    for(int i=0;i<numPixels;i+=){
+   *ptrb++ = *ptra++;// copy 1st 1/4 of imgdata to 2nd 1/4
+    }
+        (*renderEffect[fxIdx[two]])(two);//generate 2nd 1/4 in 1st 1/4 spot
+    for(int i=0;i<numPixels;i+=){
+   *ptr2b++ = *ptr2a++;// copy 1st 1/4 of imgdata to 3rd 1/4
+    }
+       (*renderEffect[fxIdx[three]])(three);//generate 2nd half in 1st half spot
+    for(int i=0;i<numPixels;i+=){
+   *ptr3b++ = *ptr3a++;// copy 1st 1/4 of imgdata to 4th 1/4
+    }
+  (*renderEffect[fxIdx[four]])(four); //generate first half in correct spot; no shifting needed
+  numPixels=numPixelsHolder;// reset numpixels so nothing else catches an error
 }
 
 void pacman(byte idx) { //hsv color chase for now
