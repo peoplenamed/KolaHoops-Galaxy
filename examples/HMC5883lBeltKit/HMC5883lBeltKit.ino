@@ -1,11 +1,11 @@
 //flags
-boolean demo = false;
+boolean demo = true;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
 boolean acceloutput=false;
-int opmode; //0==normal ,1=menu,2=irsetup
-boolean planeoutput=0;
-boolean compassoutput=0;
+int opmode=0; //0==normal ,1=menu,2=irsetup
+boolean planeoutput=false;
+boolean compassoutput=false;
 boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
@@ -14,21 +14,21 @@ boolean uartoutput=false;// will the uart respond?
 int pattern = -1;
 int nextspeed=0;
 uint8_t colorschemeselector = 34;
-uint8_t brightness = 2; //DO NOT BRING >1
-uint16_t patternswitchspeed = 1000; //# of seconds between pattern switches
+uint8_t brightness = 0; //DO NOT BRING >1
+uint16_t patternswitchspeed = 500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 uint16_t transitionspeed = 90;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-  halfrandom,
-  quarterrandom,
-  compassschemesparklefade,
-  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
+//  halfrandom,
+//  quarterrandom,
+//  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
+//  compassschemesparklefade,
+  
   //  eightfade,//eight going around leaving a train(broken)
   // blankfade,
   onefade,//one going around leaving a trail
-
   sparklefade,
   schemesparklefade,
   schemetestfade,//needs to "dance"
@@ -210,7 +210,7 @@ unsigned long secondTwoBytes;
 #include <Wire.h>
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
-int numPixels = 94;
+const int numPixels = 94;
 #define numPixelsHolder numPixels;
 uint8_t framecounter,framecounter1;
 int rotationspeed;
@@ -664,7 +664,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x20,0x10,0x08,0xfe,0x00,  // N7
   0x7c,0x82,0x82,0x82,0x7c,0x00,  // O8
   0xfe,0x90,0x90,0x90,0x60,0x00,  // P9
-  0x7c,0x82,0x8a,0x84,0x7a,0x00,	// Q0
+  0x7c,0x82,0x8a,0x84,0x7a,0x00,  // Q0
   0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
   0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
   0x80,0x80,0xfe,0x80,0x80,0x00,	// T3
@@ -2153,7 +2153,7 @@ void accellschemesparklefade(byte idx) {
             *ptr2++ = (color)>>3;
           }
           else{
-            if(random(averageax+averageay+averageaz)/150>2||random(1000)==50){
+            if(random(averageax+averageay+averageaz)/150>2||random(1000)>=50){
               color = getschemacolor(4);
               *tptr++ = (color >> 16)>>4;
               *tptr++ = (color >> 8)>>4;
@@ -2163,7 +2163,7 @@ void accellschemesparklefade(byte idx) {
               *ptr2++ = (color)>>4;
             }
             else{
-              if(random(averageax+averageay+averageaz)/150>0){
+              if(random(averageax+averageay+averageaz)/150>1){
                 color = getschemacolor(5);
                 *tptr++ = (color >> 16)>>5;
                 *tptr++ = (color >> 8)>>5;
@@ -2173,9 +2173,9 @@ void accellschemesparklefade(byte idx) {
                 *ptr2++ = (color)>>5;
               }
               else{
-                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
-                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
-                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*(fxVars[idx][4]/fxVars[idx][5]);
+                *tptr++ = (*ptr2++)*(fxVars[idx][4]/fxVars[idx][5]);
+                *tptr++ = (*ptr2++)*(fxVars[idx][4]/fxVars[idx][5]);
               }
             }
           }
@@ -2211,7 +2211,7 @@ void compassschemesparklefade(byte idx) {
 
   }
 
-  Serial.println((averageax+averageay+averageaz)/150);
+//  Serial.println((averageax+averageay+averageaz)/150);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
@@ -3560,7 +3560,7 @@ void blankfade(byte idx) {
     fxVars[idx][3]=fxVars[idx][2];
   }
 }
-
+/*
 void halfrandom(byte idx) {
   if(fxVars[idx][0]==0){
   int front =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
@@ -3611,7 +3611,7 @@ void quarterrandom(byte idx) {
   (*renderEffect[fxIdx[four]])(four); //generate first half in correct spot; no shifting needed
   numPixels=numPixelsHolder;// reset numpixels so nothing else catches an error
 }
-
+*/
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
     fxVars[idx][1]=0;//get new pacman color
@@ -4439,22 +4439,7 @@ void renderAlpha02(void) {
 // thus occur in a single operation.
 PROGMEM prog_uchar gammaTable[][255] = {
   //brightness 0
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2,
-  2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4,
-  4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7,
-  7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11,
-  11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15, 16, 16,
-  16, 17, 17, 17, 18, 18, 18, 19, 19, 20, 20, 21, 21, 21, 22, 22,
-  23, 23, 24, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30,
-  30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 37, 37, 38, 38, 39,
-  40, 40, 41, 41, 42, 43, 43, 44, 45, 45, 46, 47, 47, 48, 49, 50,
-  50, 51, 52, 52, 53, 54, 55, 55, 56, 57, 58, 58, 59, 60, 61, 62,
-  62, 63, 64, 65, 66, 67, 67, 68, 69, 70, 71, 72, 73, 74, 74, 75,
-  76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91,
-  92, 93, 94, 95, 96, 97, 98, 99,100,101,102,104,105,106,107,108,
-  109,110,111,113,114,115,116,117,118,120,121,122,123,125,126,127,
+0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39, 39, 40, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47, 47, 48, 48, 48, 48, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54, 54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58, 58, 59, 59, 59, 59, 60, 60, 60, 60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63,
   //brightness 0
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
@@ -4549,8 +4534,8 @@ PROGMEM prog_uchar gammaTable[][255] = {
 // folks before even getting into the real substance of the program, and
 // the compiler permits forward references to functions but not data.
 inline byte gamma(byte x) {
-  return pgm_read_byte(&gammaTable[brightness][x]);
-  // return x>>(brightness+1);
+//  return pgm_read_byte(&gammaTable[x][2]);
+   return x>>(brightness+1);
 }
 
 // Fixed-point colorspace conversion: HSV (hue-saturation-value) to RGB.
