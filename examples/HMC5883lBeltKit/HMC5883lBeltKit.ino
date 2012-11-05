@@ -21,25 +21,27 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+
 //  halfrandom,
 //  quarterrandom,
-//  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
-//  compassschemesparklefade,
+  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
+  accellschemesparklefade2,//increases in colors and brightness depending on how hard you shake it
+ // compassschemesparklefade,
   
   //  eightfade,//eight going around leaving a train(broken)
   // blankfade,
+//  accel1,
   onefade,//one going around leaving a trail
   sparklefade,
+  schemesparklefadelong,
   schemesparklefade,
   schemetestfade,//needs to "dance"
   schemetestlongfade,//needs to "dance"
   simpleOrbit,//not sure whats going on here...
   sineCompass, //needs smoothing
-  //  sparkle, //too slow and looks meh
   mixColor8Chase,//almost sinechase but with my mixcolor8
   //is 4 byte * >> faster?
   POV,//new and improved
-
   who,//untested
   rainbowChase, //stock
   raindance,//smoothly picks a new speed every so often
@@ -665,7 +667,7 @@ const char led_chars[97][6] PROGMEM = {
   0x7c,0x82,0x82,0x82,0x7c,0x00,  // O8
   0xfe,0x90,0x90,0x90,0x60,0x00,  // P9
   0x7c,0x82,0x8a,0x84,0x7a,0x00,  // Q0
-  0xfe,0x90,0x98,0x94,0x62,0x00,	// R1
+  0xfe,0x90,0x98,0x94,0x62,0x00,  // R1
   0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
   0x80,0x80,0xfe,0x80,0x80,0x00,	// T3
   0xfc,0x02,0x02,0x02,0xfc,0x00,	// U4
@@ -1760,6 +1762,7 @@ void schemetestlongfade(byte idx) {
     fxVars[idx][3] = random(-8,8);//spin frame wait holder
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
+    colorschemeselector = random(16,23);
     fxVars[idx][0]=random(60,180); //init    
   }
   if(fxVars[idx][0] == 1) {
@@ -1801,7 +1804,7 @@ void schemetestlongfade(byte idx) {
   }
   fxVars[idx][2]--;
   if(fxVars[idx][2]<=0){
-    fxVars[idx][2]=random(-8,8);
+    fxVars[idx][2]=fxVars[idx][3];
 
     fxVars[idx][1]++;
     if(fxVars[idx][1]>=numPixels){
@@ -2008,6 +2011,50 @@ void onespinfade(byte idx) {
   }
 }
 
+void accel1(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
+
+  }
+  fxVars[idx][4]=1/2;
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(random(numPixels/2)==1){
+      color = hsv2rgb(random(1536),255,255);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
 void sparklefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
@@ -2051,6 +2098,8 @@ void sparklefade(byte idx) {
     fxVars[idx][3]=fxVars[idx][2];
   }
 }
+
+
 void schemesparklefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
@@ -2095,17 +2144,21 @@ void schemesparklefade(byte idx) {
   }
 }
 
+void schemesparklefadelong(byte idx) {
+}
+
+
 void accellschemesparklefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
     fxVars[idx][2]=1;//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
-    fxVars[idx][4]=17;//top number
-    fxVars[idx][5]=18; //bottom number
+    fxVars[idx][4]=4;//top number
+    fxVars[idx][5]=5; //bottom number
     fxVars[idx][0]=1;// init
     //read accell
-
+    colorschemeselector = 34;
   }
 
 //  Serial.println((averageax+averageay+averageaz)/150);
@@ -2113,7 +2166,17 @@ void accellschemesparklefade(byte idx) {
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(random(averageax+averageay+averageaz)/150>12){
+    if(i== fxVars[idx][1]){
+       color = getschemacolor(0);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }else{
+      
+    if(random(averageax+averageay+averageaz)/150>9){
       color = getschemacolor(0);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2123,7 +2186,7 @@ void accellschemesparklefade(byte idx) {
       *ptr2++ = color;
     }
     else{
-      if(random(averageax+averageay+averageaz)/150>9){
+      if(random(averageax+averageay+averageaz)/150>7){
         color = getschemacolor(1);
         *tptr++ = (color >> 16)>>1;
         *tptr++ = (color >> 8)>>1;
@@ -2133,7 +2196,7 @@ void accellschemesparklefade(byte idx) {
         *ptr2++ = (color)>>1;
       }
       else{
-        if(random(averageax+averageay+averageaz)/150>6){
+        if(random(averageax+averageay+averageaz)/150>1){
           color = getschemacolor(2);
           *tptr++ = (color >> 16)>>2;
           *tptr++ = (color >> 8)>>2;
@@ -2143,44 +2206,13 @@ void accellschemesparklefade(byte idx) {
           *ptr2++ = (color)>>2;
         }
         else{
-          if(random(averageax+averageay+averageaz)/150>4){
-            color = getschemacolor(3);
-            *tptr++ = (color >> 16)>>3;
-            *tptr++ = (color >> 8)>>3;
-            *tptr++ = (color)>>3;
-            *ptr2++ = (color >>16)>>3;
-            *ptr2++ = (color >> 8)>>3;
-            *ptr2++ = (color)>>3;
+
+                *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
+                *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
+                *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
+             }
           }
-          else{
-            if(random(averageax+averageay+averageaz)/150>2||random(1000)>=50){
-              color = getschemacolor(4);
-              *tptr++ = (color >> 16)>>4;
-              *tptr++ = (color >> 8)>>4;
-              *tptr++ = (color)>>4;
-              *ptr2++ = (color >>16)>>4;
-              *ptr2++ = (color >> 8)>>4;
-              *ptr2++ = (color)>>4;
-            }
-            else{
-              if(random(averageax+averageay+averageaz)/150>1){
-                color = getschemacolor(5);
-                *tptr++ = (color >> 16)>>5;
-                *tptr++ = (color >> 8)>>5;
-                *tptr++ = (color)>>5;
-                *ptr2++ = (color >>16)>>5;
-                *ptr2++ = (color >> 8)>>5;
-                *ptr2++ = (color)>>5;
-              }
-              else{
-                *tptr++ = (*ptr2++)*(fxVars[idx][4]/fxVars[idx][5]);
-                *tptr++ = (*ptr2++)*(fxVars[idx][4]/fxVars[idx][5]);
-                *tptr++ = (*ptr2++)*(fxVars[idx][4]/fxVars[idx][5]);
-              }
-            }
-          }
-        }
-      }
+       }
     }
   }
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
@@ -2300,6 +2332,8 @@ void compassschemesparklefade(byte idx) {
     fxVars[idx][3]=fxVars[idx][2];
   }
 }
+
+
 
 
 void onefade(byte idx) {
@@ -2439,6 +2473,109 @@ void eightfade(byte idx) {
   }
 }
 
+
+void accellschemesparklefade2(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=1;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=17;//top number
+    fxVars[idx][5]=18; //bottom number
+    fxVars[idx][0]=1;// init
+    //read accell
+
+  }
+
+//  Serial.println((averageax+averageay+averageaz)/150);
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(random(averageax+averageay+averageaz)/150>12){
+      color = getschemacolor(0);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      if(random(averageax+averageay+averageaz)/150>9){
+        color = getschemacolor(1);
+        *tptr++ = (color >> 16)>>1;
+        *tptr++ = (color >> 8)>>1;
+        *tptr++ = (color)>>1;
+        *ptr2++ = (color >>16)>>1;
+        *ptr2++ = (color >> 8)>>1;
+        *ptr2++ = (color)>>1;
+      }
+      else{
+        if(random(averageax+averageay+averageaz)/150>6){
+          color = getschemacolor(2);
+          *tptr++ = (color >> 16)>>2;
+          *tptr++ = (color >> 8)>>2;
+          *tptr++ = (color)>>2;
+          *ptr2++ = (color >>16)>>2;
+          *ptr2++ = (color >> 8)>>2;
+          *ptr2++ = (color)>>2;
+        }
+        else{
+          if(random(averageax+averageay+averageaz)/150>4){
+            color = getschemacolor(3);
+            *tptr++ = (color >> 16)>>3;
+            *tptr++ = (color >> 8)>>3;
+            *tptr++ = (color)>>3;
+            *ptr2++ = (color >>16)>>3;
+            *ptr2++ = (color >> 8)>>3;
+            *ptr2++ = (color)>>3;
+          }
+          else{
+            if(random(averageax+averageay+averageaz)/150>2||random(1000)==50){
+              color = getschemacolor(4);
+              *tptr++ = (color >> 16)>>4;
+              *tptr++ = (color >> 8)>>4;
+              *tptr++ = (color)>>4;
+              *ptr2++ = (color >>16)>>4;
+              *ptr2++ = (color >> 8)>>4;
+              *ptr2++ = (color)>>4;
+            }
+            else{
+              if(random(averageax+averageay+averageaz)/150>0){
+                color = getschemacolor(5);
+                *tptr++ = (color >> 16)>>5;
+                *tptr++ = (color >> 8)>>5;
+                *tptr++ = (color)>>5;
+                *ptr2++ = (color >>16)>>5;
+                *ptr2++ = (color >> 8)>>5;
+                *ptr2++ = (color)>>5;
+              }
+              else{
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+                *tptr++ = (*ptr2++)*fxVars[idx][4]/fxVars[idx][5];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
 
 void colorDriftmod(byte idx) {
   if(fxVars[idx][0] == 0) {
@@ -2941,17 +3078,7 @@ void colorDrift(byte idx) {
     *ptr++ = color;
   }
 }
-void sparkle(byte idx) {
-  if(fxVars[idx][0] == 0) {
-    fxVars[idx][0]=1;
-  }
-  byte *ptr = &imgData[idx][0];
-  for(int i=0; i<numPixels; i++) {
-    *ptr++ = random(255);
-    *ptr++ = random(255);
-    *ptr++ = random(255);
-  }
-}
+
 void strobe(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1] = 0; //
