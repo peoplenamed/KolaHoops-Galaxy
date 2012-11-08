@@ -3592,10 +3592,12 @@ void PeteOV(byte idx) {
     ":=-=",
     "!$?#@&*",
     "<>",
-    "()",
+   
     "{|}",
     "[]",
-    "~-^-"
+    "~-^-",
+     "()"
+     
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
@@ -3610,13 +3612,15 @@ void PeteOV(byte idx) {
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=random(0,15);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+   // fxVars[idx][10]=random(0,15);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][10]=0;
     fxVars[idx][11]=-127;//even fade counter
     fxVars[idx][12]=0;//odd fade counter
     fxVars[idx][13]=0;//rotation position
-    fxVars[idx][14]=0;//rotation wait holder
+    fxVars[idx][14]=24;//rotation wait holder
     fxVars[idx][15]=0;//rotation wait operator
-    fxVars[idx][16]=0;//intended rotation wait holder
+    fxVars[idx][16]=random(fxVars[idx][14]);//intended rotation wait holder
+    fxVars[idx][17]=fxVars[idx][14];//maximum slowness
   //  fxVars[idx][13]=0;//rotation operator
        
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
@@ -3638,22 +3642,22 @@ void PeteOV(byte idx) {
   }
   fxVars[idx][3]++;
   byte *ptr = &imgData[idx][0];
-  long color=hsv2rgb(fxVars[idx][1],255,64);
+  long color=hsv2rgb(fxVars[idx][1],255,abs(fxVars[idx][11])),color2=hsv2rgb(fxVars[idx][1]+512,255,64);
   fxVars[idx][1]++;
   
-  for(int i=fxVars[idx][13]; i<numPixels/fxVars[idx][2]; i++) {
+  for(int i=fxVars[idx][13]/fxVars[idx][2]; i<numPixels/fxVars[idx][2]; i++) {
     byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]); //
     for(int i=0; i<fxVars[idx][2]; i++) {
       if((data>>(i/2))&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
-        if(fxVars[idx][7]%2==1){
-        *ptr++ = abs(fxVars[idx][11]);
-        }else{
-          *ptr++ = abs(fxVars[idx][12]);
-        }
+ //       if(fxVars[idx][7]%2==1){
+        *ptr++ = color2>>16;
+ //       }else{
+//          *ptr++ = abs(fxVars[idx][12]);
+//        }
        // *ptr++ = 255;
-        *ptr++ = 0;
-        *ptr++ = 0;
+        *ptr++ = color2>>8;
+        *ptr++ = color2;
       }
       else{
         *ptr++ = color>>16;
@@ -3663,7 +3667,7 @@ void PeteOV(byte idx) {
     }
     fxVars[idx][7]++;
   }
-  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {//this is for the remainder
+  for(int i=0; i<fxVars[idx][13]%fxVars[idx][2]; i++) {//this is for the remainder
     *ptr++ = 0;
     *ptr++ = 0;
     *ptr++ = 0;
@@ -3690,14 +3694,29 @@ void PeteOV(byte idx) {
     }
     fxVars[idx][7]++;
   }
-  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {//this is for the remainder
+  for(int i=0; i<fxVars[idx][13]%fxVars[idx][2]; i++) {//this is for the remainder
     *ptr++ = 0;
     *ptr++ = 0;
     *ptr++ = 0;
   }
-  
+  fxVars[idx][15]++;
+  Serial.println(fxVars[idx][15]);
+  if(fxVars[idx][15]>=fxVars[idx][14]){
   fxVars[idx][13]++;
+  fxVars[idx][15]=0;
   
+  if(fxVars[idx][16]>fxVars[idx][14]){
+   fxVars[idx][14]++; 
+  }else{
+   if(fxVars[idx][16]<fxVars[idx][14]){
+     fxVars[idx][14]--; 
+   }else{
+    if(fxVars[idx][16]==fxVars[idx][14]){
+     fxVars[idx][16]=random(fxVars[idx][17]);//intended rotation wait holder
+    }
+   } 
+  }
+  }
   fxVars[idx][3]++;//increment frame wait
   if(fxVars[idx][3]>=fxVars[idx][4]){// if frame operator >= frame holder
   fxVars[idx][3]=0;//reset frame operator
@@ -3707,7 +3726,7 @@ void PeteOV(byte idx) {
   {
     fxVars[idx][5]=0;
     fxVars[idx][9]++;
-    if(fxVars[idx][9]>=(Message[fxVars[idx][10]].length())-1){
+    if((fxVars[idx][9]+1)>=Message[fxVars[idx][10]].length()){
       fxVars[idx][9]=0;
     }
     //Serial.println(fxVars[idx][5]);
