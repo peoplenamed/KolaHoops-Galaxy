@@ -1,5 +1,5 @@
 //flags
-boolean demo = true;
+boolean demo = false;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
 boolean acceloutput=false;
@@ -21,7 +21,7 @@ uint16_t transitionspeed = 90;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-
+PeteOV,
 //  halfrandom,
 //  quarterrandom,
   accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
@@ -668,7 +668,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x90,0x90,0x90,0x60,0x00,  // P9
   0x7c,0x82,0x8a,0x84,0x7a,0x00,  // Q0
   0xfe,0x90,0x98,0x94,0x62,0x00,  // R1
-  0x62,0x92,0x92,0x92,0x8c,0x00,	// S2
+  0x62,0x92,0x92,0x92,0x8c,0x00,  // S2
   0x80,0x80,0xfe,0x80,0x80,0x00,	// T3
   0xfc,0x02,0x02,0x02,0xfc,0x00,	// U4
   0xf8,0x04,0x02,0x04,0xf8,0x00,	// V5
@@ -710,8 +710,11 @@ const char led_chars[97][6] PROGMEM = {
   0x22,0x26,0x2a,0x32,0x22,0x00, // z1
   0x00,0x10,0x6c,0x82,0x00,0x00,	// {2
   0x00,0x00,0xfe,0x00,0x00,0x00,	// |3
-  0x00,0x82,0x6c,0x10,0x00,0x00,
-  0x18,0x3c,0x7e,0xff,0x7e,0x3c}; //4
+  0x00,0x82,0x6c,0x10,0x00,0x00,//96
+//  0x18,0x3c,0x7e,0xff,0x7e,0x3c,//97 we added this line and bellow
+
+
+}; //4
 
 // Principle of operation: at any given time, the LEDs depict an image or
 // animation effect (referred to as the "back" image throughout this code).
@@ -3575,70 +3578,98 @@ void POV(byte idx) {
   }
 }
 
-/*
+
 void PeteOV(byte idx) {
- if(fxVars[idx][0] == 0) {
- int i;
- fxVars[idx][1]=random(1536); //color were gonna use to cycle
- fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
- fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
- fxVars[idx][4]=30;//# of frames until next change
- fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
- fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
- fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
- fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
- //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
- fxVars[idx][9]=0;// character counter
- fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
- fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
- fxVars[idx][0]=1;// Effect initialized
+  const String Message[11] = {
+    "CREATE ",
+    "MAKE ",
+    "HACK ",
+    "KolaHoops.com ",
+    "Did you see that?",
+    "Shannon",
+    ":) :( (: :(",
+    "////",
+    "01010101",
+    "what?",
+    "!$?#@&*",
+  };
+  const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
+  if(fxVars[idx][0] == 0) {
+    int i;
+    fxVars[idx][1]=random(1536); //color were gonna use to cycle
+    fxVars[idx][2]=16; //either 8 or 16 (scale of 1 or 2 ), used to determine # of pixels in height; our character table is 8 x 6
+    fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
+    fxVars[idx][4]=16;//# of frames until next change
+    fxVars[idx][6]=6;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
+    fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
+    fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+    //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
+    fxVars[idx][9]=0;// character counter
+    fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][11]=-127;//even fade counter
+    fxVars[idx][12]=0;//odd fade counter
+    // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
+    fxVars[idx][0]=1;// Effect initialized
+  }
+  // if(fxVars[idx][0] == -1) { //re init
+  // }
+  fxVars[idx][11]++;
+  fxVars[idx][12]++;
+  if(fxVars[idx][11]>=255){
+   fxVars[idx][11]=-255; 
+  }
+    if(fxVars[idx][12]>=255){
+   fxVars[idx][12]=-255; 
+  }
+  fxVars[idx][3]++;
+  byte *ptr = &imgData[idx][0];
+  long color;
+  for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+    byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]); //
+    for(int i=0; i<fxVars[idx][2]; i++) {
+      if((data>>(i/2))&1){
+        //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
+        if(fxVars[idx][7]%2==1){
+        *ptr++ = abs(fxVars[idx][11]);
+        }else{
+          *ptr++ = abs(fxVars[idx][12]);
+        }
+       // *ptr++ = 255;
+        *ptr++ = 0;
+        *ptr++ = 0;
+      }
+      else{
+        *ptr++ = 0;
+        *ptr++ = 0;
+        *ptr++ = 0;
+      }
+    }
+    fxVars[idx][7]++;
+  }
+  for(int i=0; i<numPixels%fxVars[idx][2]; i++) {//this is for the remainder
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0;
+  }
+  fxVars[idx][3]++;
+  if(fxVars[idx][3]>=fxVars[idx][4]){
+  fxVars[idx][3]=0;
+  fxVars[idx][5]++;
+  //  }
+  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
+  {
+    fxVars[idx][5]=0;
+    fxVars[idx][9]++;
+    if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
+      fxVars[idx][9]=0;
+    }
+    //Serial.println(fxVars[idx][5]);
+    fxVars[idx][7]=0;
+  }
+}
  }
- if(fxVars[idx][0] == -1) { //re init
- }
- fxVars[idx][3]++;
- byte *ptr = &imgData[idx][0];
- long color;
- for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
- for(int i=0; i<fxVars[idx][2]; i++) {
- byte data=0xfa;
- // if(data>>i==1){
- if((data>>i)&1){
- //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
- color = hsv2rgb(((1536/fxVars[idx][8]+fxVars[idx][1])*fxVars[idx][7]),
- 255, 255);
- *ptr++ = color >> 16;
- *ptr++ = color >> 8;
- *ptr++ = color;
- }
- else{
- *ptr++ = 0;
- *ptr++ = 0;
- *ptr++ = 0;
- }
- }
- fxVars[idx][7]++;
- }
- for(int i=0; i<numPixels%fxVars[idx][2]; i++) {// do the same thing here, this is for the remainder
- *ptr++ = 0;
- *ptr++ = 0;
- *ptr++ = 0;
- }
- if(fxVars[idx][3]>=fxVars[idx][4]){
- fxVars[idx][3]=0;
- fxVars[idx][5]++;
- }
- if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
- {
- fxVars[idx][5]=0;
- fxVars[idx][9]++;
- if(fxVars[idx][9]>=Message[fxVars[idx][10]].length()){
- fxVars[idx][9]=0;
- }
- //Serial.println(fxVars[idx][5]);
- fxVars[idx][7]=0;
- }
- }
- */
+
 
 void blankfade(byte idx) {
 
