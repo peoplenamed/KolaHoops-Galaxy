@@ -8,23 +8,23 @@ boolean planeoutput=false;
 boolean compassoutput=false;
 boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
-boolean serialoutput=true;// will the serial respond?
-boolean uartoutput=false;// will the uart respond?
+boolean serialoutput=false;// will the serial respond?
+boolean uartoutput=true;// will the uart respond?
 //paramaters
 int pattern = -1;
 int nextspeed=0;
 uint8_t colorschemeselector = 34;
-uint8_t brightness = 0; //DO NOT BRING >1
+uint8_t brightness = 0; //lower=greater brightness
 uint16_t patternswitchspeed = 500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
-uint16_t transitionspeed = 90;// # of secconds transition lasts 
+uint16_t transitionspeed = 30;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-PeteOV,
+// PeteOV,
 //  halfrandom,
 //  quarterrandom,
-  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
+//  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
   accellschemesparklefade2,//increases in colors and brightness depending on how hard you shake it
  // compassschemesparklefade,
   
@@ -33,7 +33,7 @@ PeteOV,
 //  accel1,
   onefade,//one going around leaving a trail
   sparklefade,
-  schemesparklefadelong,
+//  schemesparklefadelong,
   schemesparklefade,
   schemetestfade,//needs to "dance"
   schemetestlongfade,//needs to "dance"
@@ -670,7 +670,7 @@ const char led_chars[97][6] PROGMEM = {
   0xfe,0x90,0x98,0x94,0x62,0x00,  // R1
   0x62,0x92,0x92,0x92,0x8c,0x00,  // S2
   0x80,0x80,0xfe,0x80,0x80,0x00,  // T3
-  0xfc,0x02,0x02,0x02,0xfc,0x00,	// U4
+  0xfc,0x02,0x02,0x02,0xfc,0x00,  // U4
   0xf8,0x04,0x02,0x04,0xf8,0x00,	// V5
   0xfc,0x02,0x1c,0x02,0xfc,0x00,	// W6
   0xc6,0x28,0x10,0x28,0xc6,0x00,	// X7
@@ -781,7 +781,7 @@ void setup() {
   if(serialoutput==true){ //do we print info?
     Serial.println("Serial monitor Online.");
   }
-  Uart.begin(38400); //start serial connection to bluetooth module
+  Uart.begin(9600); //start serial connection to bluetooth module , 9600 doesnt work for some reason
   if(serialoutput==true){ //do we print info?
     Serial.println("Uart port Online");
   }
@@ -1163,7 +1163,8 @@ void others(){
       irsetup(true); 
     }  
   }
-  getSerial();
+//  getSerial();
+  getUart();
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
   compassread(); 
@@ -5083,11 +5084,11 @@ void getSerial(){
 
 void getUart(){
   int num;
-  if(Uart.available() > 0) {
+  if(readUartString()) {
     if(uartoutput==true){
-      Uart.println(urtInStr);
+ //    Uart.println(urtInStr);
     }
-    char ucmd = serInStr[0]; // first char is command
+    char ucmd = urtInStr[0]; // first char is command
     char* urt = urtInStr;
     while( *++urt == ' ' ); // got past any intervening whitespace
     num = atoi(urt); // the rest is arguments (maybe)
@@ -5101,16 +5102,10 @@ void getUart(){
       if(num>0){
         colorschemeselector = num;//in
       }
-      else{
-        colorschemeselector++; 
-      }
     }
     if( ucmd == 'c' ) {//C means color scheme read through atoi comes next
       if(num>0){
         colorschemeselector = num;//in
-      }
-      else{
-        colorschemeselector--; 
       }
     }
 
@@ -5118,7 +5113,7 @@ void getUart(){
       brightness=num;
     }
 
-    if( ucmd == 'Q' ) {
+/*    if( ucmd == 'Q' ) {
 
       for (int i =0; i<ircsetup; i++){
         Uart.print (irc[i]);
@@ -5133,21 +5128,8 @@ void getUart(){
         Uart.println (i);
       }
     }
-    //int opmode; //0==normal ,1=menu,2=irsetup
-    if( ucmd == 'M' ) {
-      if(uartoutput==true){ 
-        Uart.println("Entering Menu");
-      }
-      opmode = 1;
-    }
-    if( ucmd == 'm' ) {
-      //Timer1.detachInterrupt();
-      if(uartoutput==true){ 
-        Uart.println("Woah.");
-      }
-      opmode=0;
-    }
-    if( ucmd == 'I' ) {
+ */   
+/*    if( ucmd == 'I' ) {
       //Timer1.detachInterrupt();
       if(uartoutput==true){ 
         Uart.println("Entering irsetup");
@@ -5155,34 +5137,21 @@ void getUart(){
       opmode=2;
     }
     //  boolean serialoutput=false;// will the serial respond?
-    if( ucmd == 'S' ) {
-      uartoutput=true;
-      if(uartoutput==true){  
-        Uart.print("Serial output enabled");
-      }
-    }
-    if( ucmd == 's' ) {
-
-      if(uartoutput==true){  
-        Uart.print("Serial output disabled");
-        uartoutput=false;
-      }
-    }
-
-    if( ucmd == 'C' ) {
-      colorschemeselector++;
-      if(uartoutput==true){  
-        Uart.print("Color Scheme ");
-        Uart.println(colorschemeselector);
-      }
-    }
-    if( ucmd == 'c' ) {
-      colorschemeselector--;
-      if(uartoutput==true){  
-        Uart.print("Color Scheme ");
-        Uart.println(colorschemeselector);
-      }
-    }
+*/
+      if( ucmd == 'P' ) {//P means pattern number read through atoi comes next
+      
+        pattern = num;//in
+        button=1;
+          }
+          if( ucmd == 'D' ) {//D means toggle demo mode
+  
+        demo=!demo;
+       
+        if(demo==1){
+          Uart.println("Demo mode enabled");
+        }else{
+        Uart.println("Demo mode disabled");}
+          }
     urtInStr[0] = 0; // say we've used the string
   }
 }
@@ -5200,6 +5169,22 @@ uint8_t readSerialString()
   int i = 0;
   while (Serial.available()) {
     serInStr[i] = Serial.read(); // FIXME: doesn't check buffer overrun
+    i++;
+  }
+  //serInStr[i] = 0; // indicate end of read string
+  return i; // return number of chars read
+}
+uint8_t readUartString()
+{
+  if(!Uart.available()) {
+    return 0;
+  }
+  delay(10); // wait a little for serial data
+
+  memset( serInStr, 0, sizeof(serInStr) ); // set it all to zero
+  int i = 0;
+  while (Uart.available()) {
+    urtInStr[i] = Uart.read(); // FIXME: doesn't check buffer overrun
     i++;
   }
   //serInStr[i] = 0; // indicate end of read string
