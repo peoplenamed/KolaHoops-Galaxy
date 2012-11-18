@@ -671,7 +671,7 @@ const char led_chars[97][6] PROGMEM = {
   0x62,0x92,0x92,0x92,0x8c,0x00,  // S2
   0x80,0x80,0xfe,0x80,0x80,0x00,  // T3
   0xfc,0x02,0x02,0x02,0xfc,0x00,  // U4
-  0xf8,0x04,0x02,0x04,0xf8,0x00,	// V5
+  0xf8,0x04,0x02,0x04,0xf8,0x00,  // V5
   0xfc,0x02,0x1c,0x02,0xfc,0x00,	// W6
   0xc6,0x28,0x10,0x28,0xc6,0x00,	// X7
   0xe0,0x10,0x0e,0x10,0xe0,0x00,	// Y8
@@ -781,7 +781,7 @@ void setup() {
   if(serialoutput==true){ //do we print info?
     Serial.println("Serial monitor Online.");
   }
-  Uart.begin(9600); //start serial connection to bluetooth module , 9600 doesnt work for some reason
+  Uart.begin(38400); //start serial connection to bluetooth module , timer seems a bit off so i took off 200 to compensate
   if(serialoutput==true){ //do we print info?
     Serial.println("Uart port Online");
   }
@@ -1039,12 +1039,12 @@ void compassread()
 
   if (compassoutput==1){
 
-    Serial.print("xy");
-    Serial.println(xyheadingdegrees);
-    Serial.print("xz");
-    Serial.println(xzheadingdegrees);
-    Serial.print("yz");
-    Serial.println(yzheadingdegrees);
+    Uart.print("xy");
+    Uart.println(xyheadingdegrees);
+    Uart.print("xz");
+    Uart.println(xzheadingdegrees);
+    Uart.print("yz");
+    Uart.println(yzheadingdegrees);
     //delay(250);
 
   }
@@ -5085,6 +5085,8 @@ void getSerial(){
 void getUart(){
   int num;
   if(readUartString()) {
+    irrecv.pause();
+    delay(10);
     if(uartoutput==true){
  //    Uart.println(urtInStr);
     }
@@ -5144,16 +5146,22 @@ void getUart(){
         button=1;
           }
           if( ucmd == 'D' ) {//D means toggle demo mode
-  
         demo=!demo;
-       
         if(demo==1){
           Uart.println("Demo mode enabled");
         }else{
         Uart.println("Demo mode disabled");}
           }
+           if( ucmd == 'A' ) {//D means toggle demo mode
+        compassoutput=!compassoutput;
+        if(compassoutput==1){
+          Uart.println("compass output enabled");
+        }else{
+        Uart.println("compass outputdisabled");}
+          }
     urtInStr[0] = 0; // say we've used the string
-  }
+irrecv.resume();  
+}
 }
 
 //read a string from the serial and store it in an array
