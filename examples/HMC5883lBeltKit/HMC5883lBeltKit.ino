@@ -2399,7 +2399,7 @@ void fourfade(byte idx) {
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(i==fxVars[idx][1]||i%numPixels==fxVars[idx][1]+numPixels/4||i%numPixels==fxVars[idx][1]+numPixels/2||i%numPixels==fxVars[idx][1]+numPixels*3/4){
+    if(i==fxVars[idx][1]||i%numPixels==(fxVars[idx][1]+(numPixels/4))%numPixels||i%numPixels==fxVars[idx][1]+numPixels/2||i%numPixels==fxVars[idx][1]+numPixels*3/4){
       color = hsv2rgb(1536*i/numPixels,255,255);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2878,7 +2878,46 @@ void compassheadingRGBFade(byte idx) {
     *ptr++ = fxVars[idx][3];
   }
 }
+ 
+ void petechase(byte idx) {
+  if(fxVars[idx][0] == 0) { // Initialize effect?
+    fxVars[idx][1] = random(1536);
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(2 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring.  It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = random(1,35);
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][5] = fxVars[idx][1]+256;
+    fxVars[idx][0] = 1; // Effect initialized
+  }
 
+  byte *ptr = &imgData[idx][0];
+  int  foo;
+  long color, i;
+  int colorX = random(2);
+
+  
+    for(long i=0; i<numPixels; i++) {
+      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+      // Peaks of sine wave are white, troughs are black, mid-range
+      // values are pure hue (100% saturated).
+      color = (foo >= 0) ?
+      hsv2rgb(fxVars[idx][1], 255,  foo * 2 ) :
+      hsv2rgb(fxVars[idx][5], 255, 254 - (foo * 2));
+      *ptr++ = color >> 16; 
+      *ptr++ = color >> 8; 
+      *ptr++ = color;
+    }
+    fxVars[idx][4] += fxVars[idx][3];
+ 
+}
+ 
 void sendOnedowntheline(byte idx) {
   int i;
   if(fxVars[idx][0] == 0) {
@@ -2923,8 +2962,7 @@ void sineChase(byte idx) {
  // Peaks of sine wave are white, troughs are black, mid-range
  // values are pure hue (100% saturated).
  color = (foo >= 0) ?
- hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
- hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+
  *ptr++ = color >> 16;
  *ptr++ = color >> 8;
  *ptr++ = color;
