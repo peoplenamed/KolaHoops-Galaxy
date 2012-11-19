@@ -1,3 +1,4 @@
+#define galaxyversion 1 // version of this code. used for bluetooth handshake to determine capabilities
 //flags
 boolean demo = false;
 boolean colordemo=false;
@@ -672,7 +673,7 @@ const char led_chars[97][6] PROGMEM = {
   0x80,0x80,0xfe,0x80,0x80,0x00,  // T3
   0xfc,0x02,0x02,0x02,0xfc,0x00,  // U4
   0xf8,0x04,0x02,0x04,0xf8,0x00,  // V5
-  0xfc,0x02,0x1c,0x02,0xfc,0x00,	// W6
+  0xfc,0x02,0x1c,0x02,0xfc,0x00,  // W6
   0xc6,0x28,0x10,0x28,0xc6,0x00,	// X7
   0xe0,0x10,0x0e,0x10,0xe0,0x00,	// Y8
   0x86,0x8b,0x92,0xa2,0xc2,0x00,	// Z9
@@ -4087,6 +4088,42 @@ void sineChase(byte idx) {
   }
   fxVars[idx][4] += fxVars[idx][3];
 }
+void petesineChase(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+
+    fxVars[idx][1] = random(1536); // Random hue
+    // Number of repetitions (complete loops around color wheel);
+    // any more than 4 per meter just looks too chaotic.
+    // Store as distance around complete belt in half-degree units:
+    fxVars[idx][2] = (1 + random(4 * ((numPixels + 31) / 32))) * 720;
+    // Frame-to-frame increment (speed) -- may be positive or negative,
+    // but magnitude shouldn't be so small as to be boring. It's generally
+    // still less than a full pixel per frame, making motion very smooth.
+    fxVars[idx][3] = 4 + random(fxVars[idx][1]) / numPixels;
+    // Reverse direction half the time.
+    if(random(2) == 0) fxVars[idx][3] = -fxVars[idx][3];
+    fxVars[idx][4] = 0; // Current position
+    fxVars[idx][1] = random(1536); // Random hue
+    fxVars[idx][0] = 1; // Effect initialized
+  }
+
+  byte *ptr = &imgData[idx][0];
+  int foo;
+  long color, i;
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(fxVars[idx][1], 254 - (foo * 2), 255) :
+    hsv2rgb(fxVars[idx][1], 255, 254 + foo * 2);
+    *ptr++ = color >> 16;
+    *ptr++ = color >> 8;
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+}
 void colorDriftmod2(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=random(0,1536); //color were gonna write initally
@@ -5085,7 +5122,7 @@ void getSerial(){
 void getUart(){
   int num;
   if(readUartString()) {
-    irrecv.pause();
+// irrecv.pause();
     delay(10);
     if(uartoutput==true){
  //    Uart.println(urtInStr);
@@ -5112,7 +5149,11 @@ void getUart(){
     }
 
     if( ucmd == 'B' ) {
-      brightness=num;
+      brightness=num;//self explanitory.
+    }
+        if( ucmd == 'H' ) {//handshake. when recieved reply with 'ver#'
+      Uart.print("ver");
+      Uart.print(galaxyversion);
     }
 
 /*    if( ucmd == 'Q' ) {
@@ -5160,7 +5201,7 @@ void getUart(){
         Uart.println("compass outputdisabled");}
           }
     urtInStr[0] = 0; // say we've used the string
-irrecv.resume();  
+//irrecv.resume();  
 }
 }
 
