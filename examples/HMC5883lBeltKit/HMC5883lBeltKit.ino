@@ -22,20 +22,22 @@ uint16_t transitionspeed = 30;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-fourfade,
-  // PeteOV,
-//  halfrandom,
-//  quarterrandom,
-//  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
+  fourfade,
+  petechase,
+
+   PeteOV,
+  //  halfrandom,
+  //  quarterrandom,
+  //  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
   accellschemesparklefade2,//increases in colors and brightness depending on how hard you shake it
- // compassschemesparklefade,
-  
+  // compassschemesparklefade,
+
   //  eightfade,//eight going around leaving a train(broken)
   // blankfade,
-//  accel1,
+  //  accel1,
   onefade,//one going around leaving a trail
   sparklefade,
-//  schemesparklefadelong,
+  //  schemesparklefadelong,
   schemesparklefade,
   schemetestfade,//needs to "dance"
   schemetestlongfade,//needs to "dance"
@@ -713,7 +715,7 @@ const char led_chars[97][6] PROGMEM = {
   0x00,0x10,0x6c,0x82,0x00,0x00,	// {2
   0x00,0x00,0xfe,0x00,0x00,0x00,	// |3
   0x00,0x82,0x6c,0x10,0x00,0x00,//96
-//  0x18,0x3c,0x7e,0xff,0x7e,0x3c,//97 we added this line and bellow
+  //  0x18,0x3c,0x7e,0xff,0x7e,0x3c,//97 we added this line and bellow
 
 
 }; //4
@@ -1003,40 +1005,40 @@ void compassread()
 
 
 
-    //xydynamic calibration
-    if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
+  //xydynamic calibration
+  if (xyheadingdegrees>xyheadingdegreesmax||xyheadingdegreesmax==0){
 
-      xyheadingdegreesmax=xyheadingdegrees;
+    xyheadingdegreesmax=xyheadingdegrees;
 
+  }
+  else{
+    if(xyheadingdegrees<xyheadingdegreesmin||xyheadingdegreesmin==0){
+      xyheadingdegreesmin=xyheadingdegrees;
     }
-    else{
-      if(xyheadingdegrees<xyheadingdegreesmin||xyheadingdegreesmin==0){
-        xyheadingdegreesmin=xyheadingdegrees;
-      }
-    }
-    xyheadingdegreescalibrated = map(xyheadingdegrees,xyheadingdegreesmin,xyheadingdegreesmax,0,360);
-    //xzdynamic calibration
-    if (xzheadingdegrees>xzheadingdegreesmax||xzheadingdegreesmax==0){
-      xzheadingdegreesmax=xzheadingdegrees;
-    }
-    else{
-      if(xzheadingdegrees<xzheadingdegreesmin||xzheadingdegreesmin==0){
+  }
+  xyheadingdegreescalibrated = map(xyheadingdegrees,xyheadingdegreesmin,xyheadingdegreesmax,0,360);
+  //xzdynamic calibration
+  if (xzheadingdegrees>xzheadingdegreesmax||xzheadingdegreesmax==0){
+    xzheadingdegreesmax=xzheadingdegrees;
+  }
+  else{
+    if(xzheadingdegrees<xzheadingdegreesmin||xzheadingdegreesmin==0){
 
-        xzheadingdegreesmin=xzheadingdegrees;
-      }
+      xzheadingdegreesmin=xzheadingdegrees;
     }
-    xzheadingdegreescalibrated = map(xzheadingdegrees,xzheadingdegreesmin,xzheadingdegreesmax,0,360);
-    //yzdynamic calibration
-    if (yzheadingdegrees>yzheadingdegreesmax||yzheadingdegreesmax==0){
-      yzheadingdegreesmax=yzheadingdegrees;
+  }
+  xzheadingdegreescalibrated = map(xzheadingdegrees,xzheadingdegreesmin,xzheadingdegreesmax,0,360);
+  //yzdynamic calibration
+  if (yzheadingdegrees>yzheadingdegreesmax||yzheadingdegreesmax==0){
+    yzheadingdegreesmax=yzheadingdegrees;
+  }
+  else{
+    if(yzheadingdegrees<yzheadingdegreesmin||yzheadingdegreesmin==0){
+      yzheadingdegreesmin=yzheadingdegrees;
     }
-    else{
-      if(yzheadingdegrees<yzheadingdegreesmin||yzheadingdegreesmin==0){
-        yzheadingdegreesmin=yzheadingdegrees;
-      }
-    }
-    yzheadingdegreescalibrated = map(yzheadingdegrees,yzheadingdegreesmin,yzheadingdegreesmax,0,360);
-  
+  }
+  yzheadingdegreescalibrated = map(yzheadingdegrees,yzheadingdegreesmin,yzheadingdegreesmax,0,360);
+
 
 
   if (compassoutput==1){
@@ -1165,7 +1167,7 @@ void others(){
       irsetup(true); 
     }  
   }
-//  getSerial();
+  //  getSerial();
   getUart();
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
@@ -1570,8 +1572,8 @@ void callback() {
     // Render front image and alpha mask based on current effect indices...
     (*renderEffect[fxIdx[frontImgIdx]])(frontImgIdx);
     (*renderAlpha[fxIdx[2]])();
-    
-    
+
+
     // ...then composite front over back:
     /*  for(i=upperend; i<numPixels; i++) {
      alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
@@ -2167,22 +2169,12 @@ void accellschemesparklefade(byte idx) {
     colorschemeselector = 34;
   }
 
-//  Serial.println((averageax+averageay+averageaz)/150);
+  //  Serial.println((averageax+averageay+averageaz)/150);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
     if(i== fxVars[idx][1]){
-       color = getschemacolor(0);
-      *tptr++ = color >> 16;
-      *tptr++ = color >> 8;
-      *tptr++ = color;
-      *ptr2++ = color >>16;
-      *ptr2++ = color >> 8;
-      *ptr2++ = color;
-    }else{
-      
-    if(random(averageax+averageay+averageaz)/150>9){
       color = getschemacolor(0);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2192,33 +2184,44 @@ void accellschemesparklefade(byte idx) {
       *ptr2++ = color;
     }
     else{
-      if(random(averageax+averageay+averageaz)/150>7){
-        color = getschemacolor(1);
-        *tptr++ = (color >> 16)>>1;
-        *tptr++ = (color >> 8)>>1;
-        *tptr++ = (color)>>1;
-        *ptr2++ = (color >>16)>>1;
-        *ptr2++ = (color >> 8)>>1;
-        *ptr2++ = (color)>>1;
+
+      if(random(averageax+averageay+averageaz)/150>9){
+        color = getschemacolor(0);
+        *tptr++ = color >> 16;
+        *tptr++ = color >> 8;
+        *tptr++ = color;
+        *ptr2++ = color >>16;
+        *ptr2++ = color >> 8;
+        *ptr2++ = color;
       }
       else{
-        if(random(averageax+averageay+averageaz)/150>1){
-          color = getschemacolor(2);
-          *tptr++ = (color >> 16)>>2;
-          *tptr++ = (color >> 8)>>2;
-          *tptr++ = (color)>>2;
-          *ptr2++ = (color >>16)>>2;
-          *ptr2++ = (color >> 8)>>2;
-          *ptr2++ = (color)>>2;
+        if(random(averageax+averageay+averageaz)/150>7){
+          color = getschemacolor(1);
+          *tptr++ = (color >> 16)>>1;
+          *tptr++ = (color >> 8)>>1;
+          *tptr++ = (color)>>1;
+          *ptr2++ = (color >>16)>>1;
+          *ptr2++ = (color >> 8)>>1;
+          *ptr2++ = (color)>>1;
         }
         else{
-
-                *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
-                *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
-                *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
-             }
+          if(random(averageax+averageay+averageaz)/150>1){
+            color = getschemacolor(2);
+            *tptr++ = (color >> 16)>>2;
+            *tptr++ = (color >> 8)>>2;
+            *tptr++ = (color)>>2;
+            *ptr2++ = (color >>16)>>2;
+            *ptr2++ = (color >> 8)>>2;
+            *ptr2++ = (color)>>2;
           }
-       }
+          else{
+
+            *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
+            *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
+            *tptr++ = (*ptr2++ * fxVars[idx][4]/fxVars[idx][5]);
+          }
+        }
+      }
     }
   }
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
@@ -2249,7 +2252,7 @@ void compassschemesparklefade(byte idx) {
 
   }
 
-//  Serial.println((averageax+averageay+averageaz)/150);
+  //  Serial.println((averageax+averageay+averageaz)/150);
   long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
@@ -2388,10 +2391,11 @@ void onefade(byte idx) {
 void fourfade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1]=0;//position
-    fxVars[idx][2]=0;//frame skip holder
+    fxVars[idx][1]=0;//position 1
+    fxVars[idx][5]=numPixels;//position 2
+    fxVars[idx][2]=random(3,6);//frame skip holder
     fxVars[idx][3]=fxVars[idx][2];//frame skip operator
-    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][4]=1/6;//how much to drop each pixel by if not updated
     fxVars[idx][0]=1;// init
 
   }
@@ -2399,7 +2403,19 @@ void fourfade(byte idx) {
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(i==fxVars[idx][1]||i%numPixels==(fxVars[idx][1]+(numPixels/4))%numPixels||i%numPixels==fxVars[idx][1]+numPixels/2||i%numPixels==fxVars[idx][1]+numPixels*3/4){
+    if(
+
+    i==fxVars[idx][1] ||
+      i==(fxVars[idx][1]+(numPixels*1/4))%numPixels||
+      i==(fxVars[idx][1]+(numPixels*2/4))%numPixels||
+      i==(fxVars[idx][1]+(numPixels*3/4))%numPixels||
+      i==fxVars[idx][5] ||
+      i==(fxVars[idx][5]+(numPixels*1/4))%numPixels||
+      i==(fxVars[idx][5]+(numPixels*2/4))%numPixels||
+      i==(fxVars[idx][5]+(numPixels*3/4))%numPixels
+
+
+      ){
       color = hsv2rgb(1536*i/numPixels,255,255);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2422,6 +2438,10 @@ void fourfade(byte idx) {
   fxVars[idx][3]--;
   if(fxVars[idx][3]<=0){
     fxVars[idx][1]++;
+    fxVars[idx][5]--;
+    if(fxVars[idx][5]<=0){
+      fxVars[idx][5]=numPixels; 
+    }
     if(fxVars[idx][1]>numPixels){
       fxVars[idx][1]=0; 
     }
@@ -2484,7 +2504,7 @@ void eightfade(byte idx) {
       *tptr++ = (*ptr2++)*4/5;
     }
   }
-  
+
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
@@ -2536,7 +2556,7 @@ void accellschemesparklefade2(byte idx) {
 
   }
 
-//  Serial.println((averageax+averageay+averageaz)/150);
+  //  Serial.println((averageax+averageay+averageaz)/150);
   long color;
   int accelsum = averageax+averageay+averageaz;
   //color = getschemacolor(0); //first color in color scheme
@@ -2878,8 +2898,8 @@ void compassheadingRGBFade(byte idx) {
     *ptr++ = fxVars[idx][3];
   }
 }
- 
- void petechase(byte idx) {
+
+void petechase(byte idx) {
   if(fxVars[idx][0] == 0) { // Initialize effect?
     fxVars[idx][1] = random(1536);
     // Number of repetitions (complete loops around color wheel);
@@ -2902,22 +2922,22 @@ void compassheadingRGBFade(byte idx) {
   long color, i;
   int colorX = random(2);
 
-  
-    for(long i=0; i<numPixels; i++) {
-      foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
-      // Peaks of sine wave are white, troughs are black, mid-range
-      // values are pure hue (100% saturated).
-      color = (foo >= 0) ?
-      hsv2rgb(fxVars[idx][1], 255,  foo * 2 ) :
-      hsv2rgb(fxVars[idx][5], 255, 254 - (foo * 2));
-      *ptr++ = color >> 16; 
-      *ptr++ = color >> 8; 
-      *ptr++ = color;
-    }
-    fxVars[idx][4] += fxVars[idx][3];
- 
+
+  for(long i=0; i<numPixels; i++) {
+    foo = fixSin(fxVars[idx][4] + fxVars[idx][2] * i / numPixels);
+    // Peaks of sine wave are white, troughs are black, mid-range
+    // values are pure hue (100% saturated).
+    color = (foo >= 0) ?
+    hsv2rgb(fxVars[idx][1], 255,  foo * 2 ) :
+    hsv2rgb(fxVars[idx][5], 255, 254 - (foo * 2));
+    *ptr++ = color >> 16; 
+    *ptr++ = color >> 8; 
+    *ptr++ = color;
+  }
+  fxVars[idx][4] += fxVars[idx][3];
+
 }
- 
+
 void sendOnedowntheline(byte idx) {
   int i;
   if(fxVars[idx][0] == 0) {
@@ -2962,7 +2982,7 @@ void sineChase(byte idx) {
  // Peaks of sine wave are white, troughs are black, mid-range
  // values are pure hue (100% saturated).
  color = (foo >= 0) ?
-
+ 
  *ptr++ = color >> 16;
  *ptr++ = color >> 8;
  *ptr++ = color;
@@ -3677,12 +3697,12 @@ void PeteOV(byte idx) {
     ":=-=",
     "!$?#@&*",
     "<>",
-   
+
     "{|}",
     "[]",
     "~-^-",
-     "()"
-     
+    "()"
+
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
@@ -3697,8 +3717,9 @@ void PeteOV(byte idx) {
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-   // fxVars[idx][10]=random(0,15);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
-    fxVars[idx][10]=0;
+    // fxVars[idx][10]=random(0,15);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of
+  
+      fxVars[idx][10]=0;
     fxVars[idx][11]=-127;//even fade counter
     fxVars[idx][12]=0;//odd fade counter
     fxVars[idx][13]=0;//rotation position
@@ -3706,8 +3727,8 @@ void PeteOV(byte idx) {
     fxVars[idx][15]=0;//rotation wait operator
     fxVars[idx][16]=random(fxVars[idx][14]);//intended rotation wait holder
     fxVars[idx][17]=fxVars[idx][14];//maximum slowness
-  //  fxVars[idx][13]=0;//rotation operator
-       
+    //  fxVars[idx][13]=0;//rotation operator
+
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=600;// Effect initialized
   }
@@ -3720,27 +3741,27 @@ void PeteOV(byte idx) {
   fxVars[idx][11]++;
   fxVars[idx][12]++;
   if(fxVars[idx][11]>=255){
-   fxVars[idx][11]=-255; 
+    fxVars[idx][11]=-255; 
   }
-    if(fxVars[idx][12]>=255){
-   fxVars[idx][12]=-255; 
+  if(fxVars[idx][12]>=255){
+    fxVars[idx][12]=-255; 
   }
   fxVars[idx][3]++;
   byte *ptr = &imgData[idx][0];
   long color=hsv2rgb(fxVars[idx][1],255,abs(fxVars[idx][11])),color2=hsv2rgb(fxVars[idx][1]+512,255,64);
   fxVars[idx][1]++;
-  
+
   for(int i=fxVars[idx][13]/fxVars[idx][2]; i<numPixels/fxVars[idx][2]; i++) {
     byte data=pgm_read_byte (&led_chars[led_chars_index.indexOf(Message[fxVars[idx][10]].charAt(fxVars[idx][9]))][fxVars[idx][5]]); //
     for(int i=0; i<fxVars[idx][2]; i++) {
       if((data>>(i/2))&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
- //       if(fxVars[idx][7]%2==1){
+        //       if(fxVars[idx][7]%2==1){
         *ptr++ = color2>>16;
- //       }else{
-//          *ptr++ = abs(fxVars[idx][12]);
-//        }
-       // *ptr++ = 255;
+        //       }else{
+        //          *ptr++ = abs(fxVars[idx][12]);
+        //        }
+        // *ptr++ = 255;
         *ptr++ = color2>>8;
         *ptr++ = color2;
       }
@@ -3763,11 +3784,12 @@ void PeteOV(byte idx) {
       if((data>>(i/2))&1){
         //led_chars_index.indexOf(Message.charAt(fxVars[idx][9]))
         if(fxVars[idx][7]%2==1){
-        *ptr++ = abs(fxVars[idx][11]);
-        }else{
+          *ptr++ = abs(fxVars[idx][11]);
+        }
+        else{
           *ptr++ = abs(fxVars[idx][12]);
         }
-       // *ptr++ = 255;
+        // *ptr++ = 255;
         *ptr++ = 0;
         *ptr++ = 0;
       }
@@ -3787,38 +3809,40 @@ void PeteOV(byte idx) {
   fxVars[idx][15]++;
   Serial.println(fxVars[idx][15]);
   if(fxVars[idx][15]>=fxVars[idx][14]){
-  fxVars[idx][13]++;
-  fxVars[idx][15]=0;
-  
-  if(fxVars[idx][16]>fxVars[idx][14]){
-   fxVars[idx][14]++; 
-  }else{
-   if(fxVars[idx][16]<fxVars[idx][14]){
-     fxVars[idx][14]--; 
-   }else{
-    if(fxVars[idx][16]==fxVars[idx][14]){
-     fxVars[idx][16]=random(fxVars[idx][17]);//intended rotation wait holder
+    fxVars[idx][13]++;
+    fxVars[idx][15]=0;
+
+    if(fxVars[idx][16]>fxVars[idx][14]){
+      fxVars[idx][14]++; 
     }
-   } 
-  }
+    else{
+      if(fxVars[idx][16]<fxVars[idx][14]){
+        fxVars[idx][14]--; 
+      }
+      else{
+        if(fxVars[idx][16]==fxVars[idx][14]){
+          fxVars[idx][16]=random(fxVars[idx][17]);//intended rotation wait holder
+        }
+      } 
+    }
   }
   fxVars[idx][3]++;//increment frame wait
   if(fxVars[idx][3]>=fxVars[idx][4]){// if frame operator >= frame holder
-  fxVars[idx][3]=0;//reset frame operator
-  fxVars[idx][5]++;//increment the coloum, checks bellow
-  //  }
-  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
-  {
-    fxVars[idx][5]=0;
-    fxVars[idx][9]++;
-    if((fxVars[idx][9]+1)>=Message[fxVars[idx][10]].length()){
-      fxVars[idx][9]=0;
+    fxVars[idx][3]=0;//reset frame operator
+    fxVars[idx][5]++;//increment the coloum, checks bellow
+    //  }
+    if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
+    {
+      fxVars[idx][5]=0;
+      fxVars[idx][9]++;
+      if((fxVars[idx][9]+1)>=Message[fxVars[idx][10]].length()){
+        fxVars[idx][9]=0;
+      }
+      //Serial.println(fxVars[idx][5]);
+      fxVars[idx][7]=0;
     }
-    //Serial.println(fxVars[idx][5]);
-    fxVars[idx][7]=0;
   }
 }
- }
 
 
 void blankfade(byte idx) {
@@ -3870,56 +3894,56 @@ void blankfade(byte idx) {
 }
 /*
 void halfrandom(byte idx) {
-  if(fxVars[idx][0]==0){
-  int front =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
-  int back = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
-  fxVars[idx][0]=1;
-  }
-   numPixels = numPixelsHolder/2;//set numPixels to half; we are doing 2 renders for each frame and slapping them togeather for full strip
-   byte *ptr = &imgData[idx][0], *ptr2 = &imgData[idx][numPixels*3];//
-
-    // Render front image and alpha mask based on current effect indices...
-    (*renderEffect[fxIdx[front]])(front);//generate 2nd half in 1st half spot
-    for(int i=0;i<numPixels;i+=){
-   *ptr2++ = *ptr++;// copy 1st half of imgdata to 2nd hald
-    }
-      // Always render back image based on current effect index:
-  (*renderEffect[fxIdx[back]])(back); //generate first half
-  numPixels=numPixelsHolder;
-  
-}
-
-void quarterrandom(byte idx) {
-  if(fxVars[idx][0]==0){
-  int one =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
-  int two = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
-  int three = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
-  int four= random((sizeof(renderEffect) / sizeof(renderEffect[0])));
-  fxVars[idx][0]=1;
-  
-  }
-   numPixels = numPixelsHolder/4;//set numPixels to half; we are doing 2 renders for each frame and slapping them togeather for full strip
-   byte *ptr1a = &imgData[idx][0], *ptr1b = &imgData[idx][numPixels*3];//
-   byte *ptr2a = &imgData[idx][0], *ptr2b = &imgData[idx][numPixels*3*2];//
-   byte *ptr3a = &imgData[idx][0], *ptr3b = &imgData[idx][numPixels*3*3];//
-// only do 3 shifts; the 4th image lands where it needs to go
-    // Render front image and alpha mask based on current effect indices...
-    (*renderEffect[fxIdx[one]])(one);//generate 2nd 1/4 in 1st 1/4 spot
-    for(int i=0;i<numPixels;i+=){
-   *ptrb++ = *ptra++;// copy 1st 1/4 of imgdata to 2nd 1/4
-    }
-        (*renderEffect[fxIdx[two]])(two);//generate 2nd 1/4 in 1st 1/4 spot
-    for(int i=0;i<numPixels;i+=){
-   *ptr2b++ = *ptr2a++;// copy 1st 1/4 of imgdata to 3rd 1/4
-    }
-       (*renderEffect[fxIdx[three]])(three);//generate 2nd half in 1st half spot
-    for(int i=0;i<numPixels;i+=){
-   *ptr3b++ = *ptr3a++;// copy 1st 1/4 of imgdata to 4th 1/4
-    }
-  (*renderEffect[fxIdx[four]])(four); //generate first half in correct spot; no shifting needed
-  numPixels=numPixelsHolder;// reset numpixels so nothing else catches an error
-}
-*/
+ if(fxVars[idx][0]==0){
+ int front =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+ int back = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+ fxVars[idx][0]=1;
+ }
+ numPixels = numPixelsHolder/2;//set numPixels to half; we are doing 2 renders for each frame and slapping them togeather for full strip
+ byte *ptr = &imgData[idx][0], *ptr2 = &imgData[idx][numPixels*3];//
+ 
+ // Render front image and alpha mask based on current effect indices...
+ (*renderEffect[fxIdx[front]])(front);//generate 2nd half in 1st half spot
+ for(int i=0;i<numPixels;i+=){
+ *ptr2++ = *ptr++;// copy 1st half of imgdata to 2nd hald
+ }
+ // Always render back image based on current effect index:
+ (*renderEffect[fxIdx[back]])(back); //generate first half
+ numPixels=numPixelsHolder;
+ 
+ }
+ 
+ void quarterrandom(byte idx) {
+ if(fxVars[idx][0]==0){
+ int one =random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+ int two = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+ int three = random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+ int four= random((sizeof(renderEffect) / sizeof(renderEffect[0])));
+ fxVars[idx][0]=1;
+ 
+ }
+ numPixels = numPixelsHolder/4;//set numPixels to half; we are doing 2 renders for each frame and slapping them togeather for full strip
+ byte *ptr1a = &imgData[idx][0], *ptr1b = &imgData[idx][numPixels*3];//
+ byte *ptr2a = &imgData[idx][0], *ptr2b = &imgData[idx][numPixels*3*2];//
+ byte *ptr3a = &imgData[idx][0], *ptr3b = &imgData[idx][numPixels*3*3];//
+ // only do 3 shifts; the 4th image lands where it needs to go
+ // Render front image and alpha mask based on current effect indices...
+ (*renderEffect[fxIdx[one]])(one);//generate 2nd 1/4 in 1st 1/4 spot
+ for(int i=0;i<numPixels;i+=){
+ *ptrb++ = *ptra++;// copy 1st 1/4 of imgdata to 2nd 1/4
+ }
+ (*renderEffect[fxIdx[two]])(two);//generate 2nd 1/4 in 1st 1/4 spot
+ for(int i=0;i<numPixels;i+=){
+ *ptr2b++ = *ptr2a++;// copy 1st 1/4 of imgdata to 3rd 1/4
+ }
+ (*renderEffect[fxIdx[three]])(three);//generate 2nd half in 1st half spot
+ for(int i=0;i<numPixels;i+=){
+ *ptr3b++ = *ptr3a++;// copy 1st 1/4 of imgdata to 4th 1/4
+ }
+ (*renderEffect[fxIdx[four]])(four); //generate first half in correct spot; no shifting needed
+ numPixels=numPixelsHolder;// reset numpixels so nothing else catches an error
+ }
+ */
 void pacman(byte idx) { //hsv color chase for now
   if(fxVars[idx][0] == 0) {// using hsv for pacman
     fxVars[idx][1]=0;//get new pacman color
@@ -4783,7 +4807,7 @@ void renderAlpha02(void) {
 // thus occur in a single operation.
 PROGMEM prog_uchar gammaTable[][255] = {
   //brightness 0
-0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39, 39, 40, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47, 47, 48, 48, 48, 48, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54, 54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58, 58, 59, 59, 59, 59, 60, 60, 60, 60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63,
+  0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39, 39, 40, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47, 47, 48, 48, 48, 48, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54, 54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58, 58, 59, 59, 59, 59, 60, 60, 60, 60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63,
   //brightness 0
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
@@ -4878,8 +4902,8 @@ PROGMEM prog_uchar gammaTable[][255] = {
 // folks before even getting into the real substance of the program, and
 // the compiler permits forward references to functions but not data.
 inline byte gamma(byte x) {
-//  return pgm_read_byte(&gammaTable[x][2]);
-   return x>>(brightness+2);
+  //  return pgm_read_byte(&gammaTable[x][2]);
+  return x>>(brightness+2);
 }
 
 // Fixed-point colorspace conversion: HSV (hue-saturation-value) to RGB.
@@ -5205,10 +5229,10 @@ void getSerial(){
 void getUart(){
   int num;
   if(readUartString()) {
-// irrecv.pause();
+    // irrecv.pause();
     delay(10);
     if(uartoutput==true){
- //    Uart.println(urtInStr);
+      //    Uart.println(urtInStr);
     }
     char ucmd = urtInStr[0]; // first char is command
     char* urt = urtInStr;
@@ -5234,58 +5258,62 @@ void getUart(){
     if( ucmd == 'B' ) {
       brightness=num;//self explanitory.
     }
-        if( ucmd == 'H' ) {//handshake. when recieved reply with 'ver#'
+    if( ucmd == 'H' ) {//handshake. when recieved reply with 'ver#'
       Uart.print("ver");
       Uart.print(galaxyversion);
     }
 
-/*    if( ucmd == 'Q' ) {
+    /*    if( ucmd == 'Q' ) {
+     
+     for (int i =0; i<ircsetup; i++){
+     Uart.print (irc[i]);
+     Uart.print(" , " );
+     Uart.println (i);
+     
+     }
+     Uart.println();
+     for (int i =0; i<ircsetup; i++){
+     Uart.print (irc2[i]);
+     Uart.print(" , " );
+     Uart.println (i);
+     }
+     }
+     */
+    /*    if( ucmd == 'I' ) {
+     //Timer1.detachInterrupt();
+     if(uartoutput==true){ 
+     Uart.println("Entering irsetup");
+     }
+     opmode=2;
+     }
+     //  boolean serialoutput=false;// will the serial respond?
+     */
+    if( ucmd == 'P' ) {//P means pattern number read through atoi comes next
 
-      for (int i =0; i<ircsetup; i++){
-        Uart.print (irc[i]);
-        Uart.print(" , " );
-        Uart.println (i);
-
+      pattern = num;//in
+      button=1;
+    }
+    if( ucmd == 'D' ) {//D means toggle demo mode
+      demo=!demo;
+      if(demo==1){
+        Uart.println("Demo mode enabled");
       }
-      Uart.println();
-      for (int i =0; i<ircsetup; i++){
-        Uart.print (irc2[i]);
-        Uart.print(" , " );
-        Uart.println (i);
+      else{
+        Uart.println("Demo mode disabled");
       }
     }
- */   
-/*    if( ucmd == 'I' ) {
-      //Timer1.detachInterrupt();
-      if(uartoutput==true){ 
-        Uart.println("Entering irsetup");
+    if( ucmd == 'A' ) {//D means toggle demo mode
+      compassoutput=!compassoutput;
+      if(compassoutput==1){
+        Uart.println("compass output enabled");
       }
-      opmode=2;
+      else{
+        Uart.println("compass outputdisabled");
+      }
     }
-    //  boolean serialoutput=false;// will the serial respond?
-*/
-      if( ucmd == 'P' ) {//P means pattern number read through atoi comes next
-      
-        pattern = num;//in
-        button=1;
-          }
-          if( ucmd == 'D' ) {//D means toggle demo mode
-        demo=!demo;
-        if(demo==1){
-          Uart.println("Demo mode enabled");
-        }else{
-        Uart.println("Demo mode disabled");}
-          }
-           if( ucmd == 'A' ) {//D means toggle demo mode
-        compassoutput=!compassoutput;
-        if(compassoutput==1){
-          Uart.println("compass output enabled");
-        }else{
-        Uart.println("compass outputdisabled");}
-          }
     urtInStr[0] = 0; // say we've used the string
-//irrecv.resume();  
-}
+    //irrecv.resume();  
+  }
 }
 
 //read a string from the serial and store it in an array
