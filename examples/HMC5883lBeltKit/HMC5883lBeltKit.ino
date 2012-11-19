@@ -1767,7 +1767,7 @@ void schemetestlongfade(byte idx) {
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1] = 0;//spin opeartor
     fxVars[idx][2] = 0;//spin frame wait operator
-    fxVars[idx][3] = random(-8,8);//spin frame wait holder
+    fxVars[idx][3] = random(5,10);//spin frame wait holder
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
     colorschemeselector = random(16,23);
@@ -3321,23 +3321,28 @@ void raindance(byte idx){
     // Number of repetitions (complete loops around color wheel); any
     // more than 4 per meter just looks too chaotic and un-rainbow-like.
     // Store as hue 'distance' around complete belt:
-    fxVars[idx][1] = (1 + random(4 * ((numPixels + 31) / 32))) * 1536;
+    fxVars[idx][1] = (1 + random(4 * ((numPixels + 31) / 32)))*768;
     // Frame-to-frame hue increment (speed) -- may be positive or negative,
     // but magnitude shouldn't be so small as to be boring. It's generally
     // still less than a full pixel per frame, making motion very smooth.
-    fxVars[idx][2] = 0;
+    fxVars[idx][2] = 250;
     // Reverse speed and hue shift direction half the time.
     if(random(2) == 0) fxVars[idx][1] = -fxVars[idx][1];
     if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
     fxVars[idx][3] = 0; //position
-    fxVars[idx][4] = 4 + random(fxVars[idx][1]*100) / numPixels;//next speed
+    fxVars[idx][4] = 100 + random(fxVars[idx][1]*100) / numPixels;//next speed
     fxVars[idx][5] = random(300); // countdown to next change after speed match
     fxVars[idx][0] = 1; // Effect initialized
   }
   if(fxVars[idx][0] == -1) {
-    fxVars[idx][4] = 4 + random(fxVars[idx][1]) / numPixels;
-    // Reverse speed and hue shift direction half the time.
-    if(random(2) == 0) fxVars[idx][4] = -fxVars[idx][4];
+    if(fxVars[idx][4]>=0){
+      
+    fxVars[idx][4] =-1*( 25 + random(fxVars[idx][1]) / numPixels);
+    }else{
+     if(fxVars[idx][4]<0){
+     fxVars[idx][4] = 25 + random(fxVars[idx][1]) / numPixels;
+     } 
+    }
     //   if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
     fxVars[idx][5] = random(60); // countdown to next change after speed match
     fxVars[idx][0] = 1; // Effect initialized
