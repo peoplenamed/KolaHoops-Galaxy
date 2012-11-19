@@ -22,7 +22,8 @@ uint16_t transitionspeed = 30;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-// PeteOV,
+fourfade,
+  // PeteOV,
 //  halfrandom,
 //  quarterrandom,
 //  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
@@ -2384,6 +2385,49 @@ void onefade(byte idx) {
     fxVars[idx][3]=fxVars[idx][2];
   }
 }
+void fourfade(byte idx) {
+
+  if(fxVars[idx][0] == 0) {
+    fxVars[idx][1]=0;//position
+    fxVars[idx][2]=0;//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/2;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
+
+  }
+  long color;
+  //color = getschemacolor(0); //first color in color scheme
+  byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
+  for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(i==fxVars[idx][1]||i%numPixels==fxVars[idx][1]+numPixels/4||i%numPixels==fxVars[idx][1]+numPixels/2||i%numPixels==fxVars[idx][1]+numPixels*3/4){
+      color = hsv2rgb(1536*i/numPixels,255,255);
+      *tptr++ = color >> 16;
+      *tptr++ = color >> 8;
+      *tptr++ = color;
+      *ptr2++ = color >>16;
+      *ptr2++ = color >> 8;
+      *ptr2++ = color;
+    }
+    else{
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+      *tptr++ = (*ptr2++)*4/5;
+    }
+  }
+  for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+    *ptr++ = *tptr2++;
+  }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
+    }
+    fxVars[idx][3]=fxVars[idx][2];
+  }
+}
 void eightfade(byte idx) {
   int i;
   if(fxVars[idx][0] == 0) {
@@ -2494,10 +2538,11 @@ void accellschemesparklefade2(byte idx) {
 
 //  Serial.println((averageax+averageay+averageaz)/150);
   long color;
+  int accelsum = averageax+averageay+averageaz;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
-    if(random(averageax+averageay+averageaz)/150>12){
+    if(random(accelsum)/150>12){
       color = getschemacolor(0);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
@@ -2507,7 +2552,7 @@ void accellschemesparklefade2(byte idx) {
       *ptr2++ = color;
     }
     else{
-      if(random(averageax+averageay+averageaz)/150>9){
+      if(random(accelsum)/150>9){
         color = getschemacolor(1);
         *tptr++ = (color >> 16)>>1;
         *tptr++ = (color >> 8)>>1;
@@ -2517,7 +2562,7 @@ void accellschemesparklefade2(byte idx) {
         *ptr2++ = (color)>>1;
       }
       else{
-        if(random(averageax+averageay+averageaz)/150>6){
+        if(random(accelsum)/150>6){
           color = getschemacolor(2);
           *tptr++ = (color >> 16)>>2;
           *tptr++ = (color >> 8)>>2;
@@ -2527,7 +2572,7 @@ void accellschemesparklefade2(byte idx) {
           *ptr2++ = (color)>>2;
         }
         else{
-          if(random(averageax+averageay+averageaz)/150>4){
+          if(random(accelsum)/150>4){
             color = getschemacolor(3);
             *tptr++ = (color >> 16)>>3;
             *tptr++ = (color >> 8)>>3;
@@ -2537,7 +2582,7 @@ void accellschemesparklefade2(byte idx) {
             *ptr2++ = (color)>>3;
           }
           else{
-            if(random(averageax+averageay+averageaz)/150>2||random(1000)==50){
+            if(random(accelsum)/150>2||random(1000)==50){
               color = getschemacolor(4);
               *tptr++ = (color >> 16)>>4;
               *tptr++ = (color >> 8)>>4;
@@ -2547,7 +2592,7 @@ void accellschemesparklefade2(byte idx) {
               *ptr2++ = (color)>>4;
             }
             else{
-              if(random(averageax+averageay+averageaz)/150>0){
+              if(random(accelsum)/150>0){
                 color = getschemacolor(5);
                 *tptr++ = (color >> 16)>>5;
                 *tptr++ = (color >> 8)>>5;
