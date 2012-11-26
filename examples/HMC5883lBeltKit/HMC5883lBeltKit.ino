@@ -14,7 +14,7 @@ boolean uartoutput=true;// will the uart respond?
 //paramaters
 int pattern = -1;
 int nextspeed=0;
-byte colorschemeselector = 255;
+byte colorschemeselector = 0;
 uint8_t brightness = 0; //lower=greater brightness
 uint16_t patternswitchspeed = 500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
@@ -169,10 +169,10 @@ LSM303::vector running_min = {
 
 
 //ir remote stuffs
-#include <IRremote.h>
+  //#include <IRremote.h>
 int irrxpin=19;
-IRrecv irrecv(irrxpin);
-decode_results results;
+//IRrecv irrecv(irrxpin);
+//decode_results results;
 #define ircsetup 11
 unsigned long irc[ircsetup];
 unsigned long irc2[ircsetup]= {
@@ -773,12 +773,72 @@ char fixCos(int angle);
 
 void bluetoothsetup(){ //for linvorV1.5 firmware, baud for arduino has already
   // been set in setup(), we are NOT supposed to send newline
-  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400
-  delay(1000);
-  Uart.print("AT+NAMEMaxs Galaxy"); //sets name seen by android to "Maxs Galaxy"
-  delay(1000);
-  Uart.print("AT+PIN0000");//sets pin to 0000
-  delay(1000);
+  int baudrate = 6; //when finished we will have a bt chip on 38400 baud
+Serial.println("This may take a while");
+for(int i=0;i<10;i++){
+Uart.begin(1200);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(2400);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(4800);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(9600);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(19200);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(38400);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(57600);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");
+Uart.begin(115200);
+delay(1000);
+Uart.print("AT+BAUD");
+Uart.print(baudrate);
+delay(1000);
+Serial.print(".");}
+Serial.println();
+Serial.println("done");
+ // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
+ //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
+ //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
+ //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
+ //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
+ //  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400
+ //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
+ //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
+// delay(1000);
+//  Uart.print("AT+NAMEMaxs Galaxy"); //sets name seen by android to "Maxs Galaxy"
+//  delay(1000);
+//  Uart.print("AT+PIN0000");//sets pin to 0000
+//  delay(1000);
 } 
 
 void setup() {
@@ -875,7 +935,7 @@ void setup() {
   randomSeed(analogRead(0));
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
-  irrecv.enableIRIn();
+//  irrecv.enableIRIn();
   //   attachInterrupt(0, buttonpress, RISING);
   // Timer1.initialize();
   // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
@@ -1161,7 +1221,7 @@ void loop() {
 }
 void others(){
   if(opmode==0||opmode==1){
-    getir(); 
+ //   getir(); 
   }
   else{
     if(opmode==3){
@@ -1712,7 +1772,7 @@ unsigned long usercolorscheme[8] = {0xffffff,0xffffff,0xff0000,0xffffff,0xffffff
 
 unsigned long getschemacolor(uint8_t y){
   long color;
-  if(colorschemeselector==255){
+  if(colorschemeselector==0){
     color= usercolorscheme[y%8];
   }else{
   color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
@@ -5267,8 +5327,10 @@ unsigned long num;
 
 
 void getUart(){
-  int num;
+  long num;
+  int i;
   if(readUartString()) {
+ //   Serial.println(readUartString());
     // irrecv.pause();
     delay(10);
     if(uartoutput==true){
@@ -5277,7 +5339,31 @@ void getUart(){
     char ucmd = urtInStr[0]; // first char is command
     char* urt = urtInStr;
     while( *++urt == ' ' ); // got past any intervening whitespace
-    num = atoi(urt); // the rest is arguments (maybe)
+    num = atol(urt); // the rest is arguments (maybe)
+     if( ucmd == 'J' ) { //
+      if(serialoutput==true){  
+   //     Serial.println(".");
+      }
+      for(i=0;i<8;i++){
+          num = atol(urt); // the rest is arguments (maybe)
+    //      num=num>>8;
+        usercolorscheme[i] = num;//what?
+     
+       Serial.println(num, HEX);
+        
+    while( *++urt != ' ' ){ // got to intervening whitespace
+     
+    }
+    while( *++urt == ' ' ); // got past any intervening whitespace
+  //  *++str;
+ //   num = atoi(str); // the rest is arguments (maybe)
+     
+      }
+      Serial.println();
+      colorschemeselector=0;
+     //  Serial.println("Read user color scheme");
+      
+    }
     if( ucmd == 'P' ) {//P means the next character is a pattern we are getting.
       if(num>0){
         pattern = num;//in 
@@ -5470,13 +5556,15 @@ void irsetup(boolean feedback) {
   for(int q=0;q<ircsetup;q++){
     strip.setPixelColor(q, 32,0,0);
   }
-  if (irrecv.decode(&results)) {
+  if ( 1==0
+ // irrecv.decode(&results)
+  ) {
     if(serialoutput==true){
       Serial.print("got code ");
     }
-    irc[i] = results.value;
+   // irc[i] = results.value;
     if(serialoutput==true){   
-      Serial.println(results.value, DEC);
+//      Serial.println(results.value, DEC);
       Serial.print("Stored in slot ");
       Serial.println(i); 
     }
@@ -5494,7 +5582,7 @@ void irsetup(boolean feedback) {
     i++;   
     delay(1500);//needed for frequent button presses
 
-    irrecv.resume();
+//    irrecv.resume();
     if(serialoutput==true){
       Serial.println("ready for next button");
     }
@@ -5524,7 +5612,8 @@ void irsetup(boolean feedback) {
   // irsetupflag=0;
 }
 
-void getir(){
+
+//void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup(true);
@@ -5578,7 +5667,10 @@ void getir(){
    
    
    */
-  if (irrecv.decode(&results)) {
+   /*
+  if (0
+//  irrecv.decode(&results)
+  ) {
     if (results.value == irc2[0]) {
       if(serialoutput==true){
         Serial.println("recognised 0 on ir");
@@ -5680,3 +5772,4 @@ void getir(){
     irrecv.resume();
   }
 }
+*/
