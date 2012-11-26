@@ -1708,7 +1708,7 @@ void callback() {
 // indexes, are automatically carried with them.
 
 // Simplest rendering effect: fill entire image with solid color
-long usercolorscheme[8] = {0xffffff,0xffffff,0xff0000,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff};//color scheme stored in ram 
+unsigned long usercolorscheme[8] = {0xffffff,0xffffff,0xff0000,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff};//color scheme stored in ram 
 
 unsigned long getschemacolor(uint8_t y){
   long color;
@@ -5122,22 +5122,27 @@ void getSerial(){
 unsigned long num;
   int i;
   if( readSerialString() ) {
-   if(serialoutput==true){
+//   if(serialoutput==true){
       Serial.println(serInStr);
-    }
+//    }
     char cmd = serInStr[0]; // first char is command
     char* str = serInStr;
     while( *++str == ' ' ); // got past any intervening whitespace
-    num = atoi(str); // the rest is arguments (maybe)
+    num = atol(str); // the rest is arguments (maybe)
    if( cmd == 'J' ) { //
       if(serialoutput==true){  
         Serial.println(".");
       }
       for(i=0;i<8;i++){
-          num = atoi(str); // the rest is arguments (maybe)
-        usercolorscheme[i] = num;
-        Serial.println(num);
-    while( *++str != ' ' ); // got to intervening whitespace
+          num = atol(str); // the rest is arguments (maybe)
+    //      num=num>>8;
+        usercolorscheme[i] = num;//what?
+     
+        Serial.println(num, HEX);
+        
+    while( *++str != ' ' ){ // got to intervening whitespace
+     
+    }
     while( *++str == ' ' ); // got past any intervening whitespace
   //  *++str;
  //   num = atoi(str); // the rest is arguments (maybe)
