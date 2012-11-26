@@ -14,7 +14,7 @@ boolean uartoutput=true;// will the uart respond?
 //paramaters
 int pattern = -1;
 int nextspeed=0;
-uint8_t colorschemeselector = 34;
+byte colorschemeselector = 255;
 uint8_t brightness = 0; //lower=greater brightness
 uint16_t patternswitchspeed = 500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
@@ -22,14 +22,15 @@ uint16_t transitionspeed = 30;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  schemetest,//non moving
   fourfade,
   petechase,
 
    PeteOV,
   //  halfrandom,
   //  quarterrandom,
-  //  accellschemesparklefade,//increases in colors and brightness depending on how hard you shake it
-  accellschemesparklefade2,//increases in colors and brightness depending on how hard you shake it
+  //  accelschemesparklefade,//increases in colors and brightness depending on how hard you shake it
+  accelsparklefade,//increases in colors and brightness depending on how hard you shake it
   // compassschemesparklefade,
 
   //  eightfade,//eight going around leaving a train(broken)
@@ -271,8 +272,8 @@ uint16_t debounceDelay = 200;
 uint8_t button = 0;
 uint8_t longbutton = 0;
 uint8_t lastbuttonstate = 0;
-char serInStr[30]; // array that will hold the serial input string
-char urtInStr[30]; // array that will hold the serial input string
+char serInStr[35]; // array that will hold the serial input string
+char urtInStr[35]; // array that will hold the serial input string
 
 
 #define maroon 0x800000
@@ -1169,6 +1170,7 @@ void others(){
   }
   //  getSerial();
   getUart();
+  getSerial();
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
   compassread(); 
@@ -1706,9 +1708,15 @@ void callback() {
 // indexes, are automatically carried with them.
 
 // Simplest rendering effect: fill entire image with solid color
-long getschemacolor(uint8_t y){
+long usercolorscheme[8] = {0xffffff,0xffffff,0xff0000,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff};//color scheme stored in ram 
+
+unsigned long getschemacolor(uint8_t y){
   long color;
+  if(colorschemeselector==255){
+    color= usercolorscheme[y%8];
+  }else{
   color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
+}
   return color;
 }
 void schemefade(byte idx) {
@@ -2156,7 +2164,7 @@ void schemesparklefadelong(byte idx) {
 }
 
 
-void accellschemesparklefade(byte idx) {
+void accelschemesparklefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
@@ -2543,7 +2551,7 @@ void eightfade(byte idx) {
 }
 
 
-void accellschemesparklefade2(byte idx) {
+void accelsparklefade(byte idx) {
 
   if(fxVars[idx][0] == 0) {
     fxVars[idx][1]=0;//position
@@ -5111,15 +5119,35 @@ void runningaverageaz(int newval) {
 }
 
 void getSerial(){
-  int num;
+unsigned long num;
+  int i;
   if( readSerialString() ) {
-    if(serialoutput==true){
+   if(serialoutput==true){
       Serial.println(serInStr);
     }
     char cmd = serInStr[0]; // first char is command
     char* str = serInStr;
     while( *++str == ' ' ); // got past any intervening whitespace
     num = atoi(str); // the rest is arguments (maybe)
+   if( cmd == 'J' ) { //
+      if(serialoutput==true){  
+        Serial.println(".");
+      }
+      for(i=0;i<8;i++){
+          num = atoi(str); // the rest is arguments (maybe)
+        usercolorscheme[i] = num;
+        Serial.println(num);
+    while( *++str != ' ' ); // got to intervening whitespace
+    while( *++str == ' ' ); // got past any intervening whitespace
+  //  *++str;
+ //   num = atoi(str); // the rest is arguments (maybe)
+     
+      }
+       Serial.println("Read user color scheme");
+      
+    }
+   
+   
     if( cmd == '+' ) {
       if(serialoutput==true){ 
         Serial.println("Button recieved");
@@ -5225,8 +5253,10 @@ void getSerial(){
       }
       acceloutput=false;
     }
+     
     serInStr[0] = 0; // say we've used the string
   }
+  
 }
 
 
