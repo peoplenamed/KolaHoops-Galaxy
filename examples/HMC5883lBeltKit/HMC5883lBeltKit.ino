@@ -1,6 +1,6 @@
 #define galaxyversion 1 // version of this code. used for bluetooth handshake to determine capabilities
 //flags
-boolean demo = false;
+boolean demo = true;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
 boolean acceloutput=false;
@@ -15,8 +15,8 @@ boolean uartoutput=true;// will the uart respond?
 int pattern = -1;
 int nextspeed=0;
 byte colorschemeselector = 0;
-uint8_t brightness = 0; //lower=greater brightness
-uint16_t patternswitchspeed = 500; //# of seconds between pattern switches
+uint8_t brightness = 2; //lower=brighter
+uint16_t patternswitchspeed = 1500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 uint16_t transitionspeed = 30;// # of secconds transition lasts 
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
@@ -38,6 +38,7 @@ void (*renderEffect[])(byte) = {
   simpleOrbit,//not sure whats going on here...
   sineChase, //stock
   sineCompass, //needs smoothing
+  POV,
   /*
    * Color scheme responsive patterns
    */
@@ -5439,6 +5440,9 @@ void getUart(){
     if( ucmd == 'H' ) {//handshake. when recieved reply with 'ver#'
       Uart.print("ver");
       Uart.print(galaxyversion);
+    }
+    if( ucmd == 'R' ) {//re-init pattern
+    fxVars[0][0]=0;
     }
 
     /*    if( ucmd == 'Q' ) {
