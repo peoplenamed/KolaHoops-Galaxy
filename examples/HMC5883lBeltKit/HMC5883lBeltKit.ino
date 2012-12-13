@@ -22,36 +22,47 @@ uint16_t transitionspeed = 30;// # of secconds transition lasts
 uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  /*
+   * Full color patterns
+   */
+  sparklefade,
+  rainbowChase, //stock
+  colorDrift,//fades the whole hoop quickly around the color wheel
+  raindance,//great!
+  sineChase, //stock
+  sineDance, //not set up to dance yet just a placeholder
+  rainbowsineChase,
+  longsinechasecolordrift,
+  colorDriftsineChase,
+  wavyFlag,// stock
+  simpleOrbit,//not sure whats going on here...
+  sineChase, //stock
+  sineCompass, //needs smoothing
+  /*
+   * Color scheme responsive patterns
+   */
   schemetest,//non moving
   fourfade,
   petechase,
-
-   PeteOV,
+  PeteOV,
   //  halfrandom,
   //  quarterrandom,
   //  accelschemesparklefade,//increases in colors and brightness depending on how hard you shake it
   accelsparklefade,//increases in colors and brightness depending on how hard you shake it
   // compassschemesparklefade,
-
   //  eightfade,//eight going around leaving a train(broken)
   // blankfade,
   //  accel1,
   onefade,//one going around leaving a trail
-  sparklefade,
-  //  schemesparklefadelong,
+  //schemesparklefadelong,
   schemesparklefade,
   schemetestfade,//needs to "dance"
   schemetestlongfade,//needs to "dance"
-  simpleOrbit,//not sure whats going on here...
-  sineCompass, //needs smoothing
   mixColor8Chase,//almost sinechase but with my mixcolor8
   //is 4 byte * >> faster?
-  POV,//new and improved
   who,//untested
   rainbowChase, //stock
   raindance,//smoothly picks a new speed every so often
-  colorDrift,//:h,s,v color wheel cycle:0-1536,255,255
-  sineChase, //stock
   compassheading,//compass X,Y,Z mapped to one blip each
   compassheadingRGBFade,//fade RGB according to compass xyz
   Dice,//plane calculation 
@@ -63,24 +74,14 @@ void (*renderEffect[])(byte) = {
   //  schemestretch,//
   schemetest,//non moving
   schemetestlong,//non moving
-  schemefade,
+  schemefade,//like color drift but for schemes
   MonsterHunter,
   pacman,   //mr pac man bounces back from end to end and builds 
   strobe, //strobes to color schemes
   fans, 
   scrolls,//need to replace with older version
   POV, 
-  //  //###############full color
-
-  colorDrift,
-  rainbowChase, //stock
-  raindance,//great!
-  sineChase, //stock
-  sineDance, //not set up to dance yet just a placeholder
-  rainbowsineChase,
-  longsinechasecolordrift,
-  colorDriftsineChase,
-  wavyFlag,// stock
+  
 
   //##########in development###########
   // somekindaChase,
@@ -124,7 +125,21 @@ void (*renderEffect[])(byte) = {
  http://www.arduino.cc/en/Tutorial/Smoothing
  This example code is in the public domain.
  */
+
 /*
+ * RGBConverter.h - Arduino library for converting between RGB, HSV and HSL
+ * 
+ * Ported from the Javascript at http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+ * The hard work was Michael's, all the bugs are mine.
+ *
+ * Robert Atkins, December 2010 (ratkins_at_fastmail_dot_fm).
+ *
+ * https://github.com/ratkins/RGBConverter
+ *
+ */
+
+/*
+
 
  HMC5883L_Example.pde - Examhsvple sketch for integration with an HMC5883L triple axis magnetomerwe.
  Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)
@@ -420,39 +435,78 @@ char urtInStr[35]; // array that will hold the serial input string
 // each primary color and there are 8 colors which goes into 256 evenly; 256%8=0
 long eightcolorschema[][8] PROGMEM={
 
-  //0-7 single color roygtbiv
-  red,red,red,red,red,red,red,red,
-  orange,orange,orange,orange,orange,orange,orange,orange,
-  yellow,yellow,yellow,yellow,yellow,yellow,yellow,yellow,
-  green,green,green,green,green,green,green,green,
-  teal,teal,teal,teal,teal,teal,teal,teal,
-  blue,blue,blue,blue,blue,blue,blue,blue,
-  indigo,indigo,indigo,indigo,indigo,indigo,indigo,indigo,
-  violet,violet,violet,violet,violet,violet,violet,violet,
+    /*
+  1 Major
+  2 Natural minor
+  3 Harmonic minor
+  4 Dorian
+  5 Mixolydian
+  6 Red-Green 1/4
+  7 Green-Blue 1/4
+  8 Blue-Red 1/4
+  9 Red-Blue 1/2
+  10 Green-Red 1/2
+  11 Blue-Green 1/2
+  12 Solid Red
+  13 Solid Orange
+  14 Solid Orange
+  15 Solid Yellow
+  16 Solid Green
+  17 Solid Teal
+  18 Solid Blue
+  19 Solid Indigo
+  20 Solid Violet
+  21 Red and Black
+  22 Orange and Black
+  23 Yellow and Black
+  24 Green and Black
+  25 Teal and Black
+  26 Blue and Black
+  27 Indigo and Black
+  28 Violet and Black
+  29 Red and White
+  30 Orange and White
+  31 Yellow and White
+  32 Green and White
+  33 Teal and White
+  34 Blue and White
+  35 Indigo and White
+  36 Violet and White  
+  37 Rainbow
+  */
+    0,0,0,0,0,0,0,0,//placeholder for user color scheme
+  //splitting a color wheel up into 3 sections 1 for each 
+  //primary color, and then splitting each section in half 2 more times
+  //gives us 12 different sections which is the same number of steps in halftones
+  //between octaves. Major, minor, etc use 8 of the 12 spots. we have eight
+  //colors per scheme. this set uses red as the root note
+  //are always red.
+  //
+  //http://www.bandnotes.info/tidbits/scales/half-whl.htm
+  //
+  //  Major Scale: R, W, W, H, W, W, W, H
+  //  Natural Minor Scale: R, W, H, W, W, H, W, W
+  //  Harmonic Minor Scale: R, W, H, W, W, H, 1 1/2, H   (notice the step and a half)
+  //  Dorian Mode is: R, W, H, W, W, W, H, W
+  //  Mixolydian Mode is: R, W, W, H, W, W, H, W
+  //1 to 5
+  // major
+  0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0xc00040,0xff0000,
 
-  //2 of 32
-  //8-15 2 color roygtbiv and black
-  red,0,red,0,red,0,red,0,
-  orange,0,orange,0,orange,0,orange,0,
-  yellow,0,yellow,0,yellow,0,yellow,0,
-  green,0,green,0,green,0,green,0,
-  teal,0,teal,0,teal,0,teal,0,
-  blue,0,blue,0,blue,0,blue,0,
-  indigo,0,indigo,0,indigo,0,indigo,0,
-  violet,0,violet,0,violet,0,violet,0,
+  //natural minor
+  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0x800080,0xff0000,
 
-  //3 of 32
-  //16-23 2 color roygtbiv and white
-  red,white,red,white,red,white,red,white,
-  orange,white,orange,white,orange,white,orange,white,
-  yellow,white,yellow,white,yellow,white,yellow,white,
-  green,white,green,white,green,white,green,white,
-  teal,white,teal,white,teal,white,teal,white,
-  blue,white,blue,white,blue,white,blue,white,
-  indigo,white,indigo,white,indigo,white,indigo,white,
-  violet,white,violet,white,violet,white,violet,white,
+  //harmonic minor
+  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0xc00040,0xff0000,
 
-  //4 of 32 //0x80 is 50%, 0x40 is 25%, 0xc0 is 75%, 0x00 is 0% and ff is 100%, format 0xRRGGBB in hex 0-f
+  //dorian mode
+  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
+
+  //Mixolydian Mode
+  0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
+
+  //6-11
+  //0x80 is 50%, 0x40 is 25%, 0xc0 is 75%, 0x00 is 0% and ff is 100%, format 0xRRGGBB in hex 0-f
   //24-31 stretch between 2 primary colors 3 steps between and back
   //1st is primary1,
   //2nd  is 3/4 p1 and 1/4 p2.
@@ -469,41 +523,39 @@ long eightcolorschema[][8] PROGMEM={
   0xff0000,0x808000,0x00ff00,0x008080,0x0000ff,0x008080,0x00ff00,0x808000,//red to blue 1/2 increments
   0x00ff00,0x008080,0x0000ff,0x800080,0xff0000,0x800080,0x0000ff,0x008080,//green to red  1/2 increments
   0x0000ff,0x800080,0xff0000,0x808000,0x00ff00,0x808000,0xff0000,0x800080, //blue to green 1/2 increments
+
+  //12-20 single color roygtbiv
+  red,red,red,red,red,red,red,red,
+  orange,orange,orange,orange,orange,orange,orange,orange,
+  yellow,yellow,yellow,yellow,yellow,yellow,yellow,yellow,
+  green,green,green,green,green,green,green,green,
+  teal,teal,teal,teal,teal,teal,teal,teal,
+  blue,blue,blue,blue,blue,blue,blue,blue,
+  indigo,indigo,indigo,indigo,indigo,indigo,indigo,indigo,
+  violet,violet,violet,violet,violet,violet,violet,violet,
+
+  //21-28 2 color roygtbiv and black
+  red,0,red,0,red,0,red,0,
+  orange,0,orange,0,orange,0,orange,0,
+  yellow,0,yellow,0,yellow,0,yellow,0,
+  green,0,green,0,green,0,green,0,
+  teal,0,teal,0,teal,0,teal,0,
+  blue,0,blue,0,blue,0,blue,0,
+  indigo,0,indigo,0,indigo,0,indigo,0,
+  violet,0,violet,0,violet,0,violet,0,
+  
+  //29-36 2 color roygtbiv and white
+  red,white,red,white,red,white,red,white,
+  orange,white,orange,white,orange,white,orange,white,
+  yellow,white,yellow,white,yellow,white,yellow,white,
+  green,white,green,white,green,white,green,white,
+  teal,white,teal,white,teal,white,teal,white,
+  blue,white,blue,white,blue,white,blue,white,
+  indigo,white,indigo,white,indigo,white,indigo,white,
+  violet,white,violet,white,violet,white,violet,white,
+ 
   red,orange,yellow,green,teal,blue,indigo,violet, //rainbow!
-  violet,indigo,blue,teal,green,yellow,orange,red, //backwards rainbow!
-
-  //5 of 32
-  //32-39
-  //splitting a color wheel up into 3 sections 1 for each 
-  //primary color, and then splitting each section in half 2 more times
-  //gives us 12 different steps which is the same number of steps in halftones
-  //between octaves. Major, minor, etc use 8 of the 12 spots. we have eight
-  //colors per scheme. this set uses red as the root note
-  //this is not exactly as i had imagined it because the first and last
-  //are always red.
-  //http://www.bandnotes.info/tidbits/scales/half-whl.htm
-  //
-  //  Major Scale: R, W, W, H, W, W, W, H
-  //  Natural Minor Scale: R, W, H, W, W, H, W, W
-  //  Harmonic Minor Scale: R, W, H, W, W, H, 1 1/2, H   (notice the step and a half)
-  //  Dorian Mode is: R, W, H, W, W, W, H, W
-  //  Mixolydian Mode is: R, W, W, H, W, W, H, W
-
-
-  // major
-  0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0xc00040,0xff0000,
-
-  //natural minor
-  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0x800080,0xff0000,
-
-  //harmonic minor
-  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x0000ff,0xc00040,0xff0000,
-
-  //dorian mode
-  0xff0000,0x808000,0x40c000,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
-
-  //Mixolydian Mode
-  0xff0000,0x808000,0x00ff00,0x00c040,0x0040c0,0x4000c0,0x800080,0xff0000,
+ 
 
   //6 of 32
   //40-47
@@ -1768,7 +1820,7 @@ void callback() {
 // indexes, are automatically carried with them.
 
 // Simplest rendering effect: fill entire image with solid color
-unsigned long usercolorscheme[8] = {0xffffff,0xffffff,0xff0000,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff};//color scheme stored in ram 
+unsigned long usercolorscheme[8] = {0,0,0,0,0,0,0,0};//color scheme stored in ram 
 
 unsigned long getschemacolor(uint8_t y){
   long color;
@@ -2428,7 +2480,7 @@ void onefade(byte idx) {
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
     if(i==fxVars[idx][1]){
-      color = hsv2rgb(1536*i/numPixels,255,255);
+      color = getschemacolor(i/8);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
       *tptr++ = color;
@@ -2484,7 +2536,7 @@ void fourfade(byte idx) {
 
 
       ){
-      color = hsv2rgb(1536*i/numPixels,255,255);
+      color = getschemacolor(i/8);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
       *tptr++ = color;
@@ -5773,3 +5825,48 @@ void irsetup(boolean feedback) {
   }
 }
 */
+
+/**
+ * Converts an RGB color value to HSV. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+ * Assumes r, g, and b are contained in the set [0, 255] and
+ * returns h, s, and v in the set [0, 1].
+ *
+ * @param   Number  r       The red color value
+ * @param   Number  g       The green color value
+ * @param   Number  b       The blue color value
+ * @return  Array           The HSV representation
+ */
+//unsigned long rgbToHsv(byte r, byte g, byte b, double hsv[]) {
+  unsigned long rgbToHsv(byte r, byte g, byte b) {
+    double rd = (double) r/255;
+    double gd = (double) g/255;
+    double bd = (double) b/255;
+    double max = threeway_max(rd, gd, bd), min = threeway_min(rd, gd, bd);
+    double h, s, v = max;
+
+    double d = max - min;
+    s = max == 0 ? 0 : d / max;
+
+    if (max == min) { 
+        h = 0; // achromatic
+    } else {
+        if (max == rd) {
+            h = (gd - bd) / d + (gd < bd ? 6 : 0);
+        } else if (max == gd) {
+            h = (bd - rd) / d + 2;
+        } else if (max == bd) {
+            h = (rd - gd) / d + 4;
+        }
+        h /= 6;
+    }
+
+    return h,s,v;
+    }
+
+unsigned long threeway_max(double a, double b, double c) {
+    return max(a, max(b, c));
+}
+unsigned long threeway_min(double a, double b, double c) {
+    return min(a, min(b, c));
+}
