@@ -44,7 +44,7 @@ void (*renderEffect[])(byte) = {
   schemetest,//non moving
   fourfade,
   petechase,
-  PeteOV,
+  Whacky,
   //  halfrandom,
   //  quarterrandom,
   //  accelschemesparklefade,//increases in colors and brightness depending on how hard you shake it
@@ -80,7 +80,7 @@ void (*renderEffect[])(byte) = {
   strobe, //strobes to color schemes
   fans, 
   scrolls,//need to replace with older version
-  POV, 
+
   
 
   //##########in development###########
@@ -1825,8 +1825,8 @@ unsigned long usercolorscheme[8] = {0,0,0,0,0,0,0,0};//color scheme stored in ra
 unsigned long getschemacolor(uint8_t y){
   long color;
   if(colorschemeselector==0){
-    color= usercolorscheme[y%8];
-  }else{
+  color=usercolorscheme[y%8];
+ }else{
   color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
 }
   return color;
@@ -3809,7 +3809,7 @@ void POV(byte idx) {
 }
 
 
-void PeteOV(byte idx) {
+void Whacky(byte idx) {
   const String Message[15] = {
     ":.",
     "/",
