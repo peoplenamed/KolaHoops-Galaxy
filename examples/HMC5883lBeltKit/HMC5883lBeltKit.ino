@@ -15,7 +15,7 @@ boolean uartoutput=true;// will the uart respond?
 int pattern = -1;
 int nextspeed=0;
 byte colorschemeselector = 0;
-uint8_t brightness = 2; //lower=brighter
+uint8_t brightness = 4; //lower=brighter
 uint16_t patternswitchspeed = 1500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 uint16_t transitionspeed = 30;// # of secconds transition lasts 
@@ -95,7 +95,7 @@ void (*renderEffect[])(byte) = {
   //  MonsterStrobe2at1,
   //  schemetestlongrain2at1,
   // schemetestrain2at1,    
-  //  orbit,
+
   // onespin,//not up to par
   // onespinfade,//interesting but not what i was going for
   //needs to store index and message string in progmem
@@ -255,7 +255,7 @@ int tCounter = 0;
 
 int crazycounter;
 //#####################menu stuffs
-uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0,menuphase3 = 0,menuphase4 = 0,menuphase5 = 0,menuphase6 = 0,menuphase7 = 0;
+uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0;
 //##############compass stuffs
 
 int lmheading;
@@ -989,7 +989,7 @@ void setup() {
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
 //  irrecv.enableIRIn();
-  //   attachInterrupt(0, buttonpress, RISING);
+  attachInterrupt(4, buttonpress, HIGH); //PE4
   // Timer1.initialize();
   // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
 }
@@ -1345,6 +1345,19 @@ void menurender() {
 }
 void menu() {
   byte *ptr = &imgData[backImgIdx][0];
+  int type;//placeholder
+  long color[3]={0,0,0};
+  if(type==0){//type tells us what value we are polling the user for. this 
+   color[0] = red;//will choose colors and set the apropriate values
+   color[1] = green;
+   color[2] = blue;
+  }
+  if(type==1){//type tells us what value we are polling the user for. this 
+   color[0] = purple;
+   color[1] = yellow;
+   color[2] = teal;
+  }
+
   switch(menuphase){
   case 0:
     if(button==1){
@@ -1355,11 +1368,11 @@ void menu() {
     }
     else{
       for(int i=0; i<numPixels; i++) {
-        long color=red;
+        
         if(i<=xyheadingdegreescalibrated/60){
-          *ptr++ = color >> 16;
-          *ptr++ = color >> 8;
-          *ptr++ = color;
+          *ptr++ = color[0] >> 16;
+          *ptr++ = color[0] >> 8;
+          *ptr++ = color[0];
         }
         else{
           // for(int i=0; i<numPixels; i++) {
@@ -1380,17 +1393,15 @@ void menu() {
     else{
       for(int i=0; i<numPixels; i++) {
         if(i<=menuphase0){
-          long color=red;
-          *ptr++ = color >> 16;
-          *ptr++ = color >> 8;
-          *ptr++ = color;
+          *ptr++ = color[0] >> 16;
+          *ptr++ = color[0] >> 8;
+          *ptr++ = color[0];
         }
         else{
           if(i>=menuphase0&&i<=menuphase0+(xyheadingdegreescalibrated/60)){
-            long color=magenta;
-            *ptr++ = color >> 16;
-            *ptr++ = color >> 8;
-            *ptr++ = color;
+            *ptr++ = color[1] >> 16;
+            *ptr++ = color[1] >> 8;
+            *ptr++ = color[1];
           }
           else{
             *ptr++=0;
@@ -1411,24 +1422,21 @@ void menu() {
     else{
       for(int i=0; i<numPixels; i++) {
         if(i<=menuphase0){
-          long color=red;
-          *ptr++ = color >> 16;
-          *ptr++ = color >> 8;
-          *ptr++ = color;
+          *ptr++ = color[0] >> 16;
+          *ptr++ = color[0] >> 8;
+          *ptr++ = color[0];
         }
         else{
           if(i>=menuphase0&&i<=menuphase0+menuphase1){
-            long color=magenta;
-            *ptr++ = color >> 16;
-            *ptr++ = color >> 8;
-            *ptr++ = color;
+            *ptr++ = color[1] >> 16;
+            *ptr++ = color[1] >> 8;
+            *ptr++ = color[1];
           }
           else{
             if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+(xyheadingdegreescalibrated/60)){
-              long color=blue;
-              *ptr++ = color >> 16;
-              *ptr++ = color >> 8;
-              *ptr++ = color;
+              *ptr++ = color[2] >> 16;
+              *ptr++ = color[2] >> 8;
+              *ptr++ = color[2];
             }
             else{
               *ptr++=0;
@@ -1440,7 +1448,40 @@ void menu() {
       }
     }
     break;
-  case 3:
+  case 3: // if we are at 3 then the user just selected the last digit.
+  //  Timer1.detachInterrupt();
+    if(serialoutput==true){
+      Serial.println(menuphase0);
+      Serial.println(menuphase1);
+      Serial.println(menuphase2);
+    }
+    uint8_t selection;
+
+    if(menuphase1==-1&&menuphase2==-1){
+      //code to calculate menu selection if only 1st digit supplied
+     selection = menuphase0;
+    }else{
+     if(menuphase2==-1){
+     //code to calculate menu selection if 2 digits supplied.
+     selection = (menuphase0*10)+ menuphase1;
+     }else{
+     //code to calculate menu selection if all 3 digits caught here
+     selection = (menuphase0*100)+(menuphase1*10)+ menuphase2;
+     } 
+    }
+    if(serialoutput==true){
+    Serial.print("selection ");
+    Serial.println(selection);
+  }
+    if(type==0){//0 is pattern selection
+    
+      
+    }
+    //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
+    menuphase=0;
+    break;
+
+/*  case 3:
     if(button==1){
       menuphase3=xyheadingdegreescalibrated/60;
       menuphase++;
@@ -1608,19 +1649,7 @@ void menu() {
       }  
     }
     break;
-  case 6:
-    Timer1.detachInterrupt();
-    if(serialoutput==true){
-      Serial.println(menuphase0);
-      Serial.println(menuphase1);
-      Serial.println(menuphase2);
-      Serial.println(menuphase3);
-      Serial.println(menuphase4);
-      Serial.println(menuphase5);
-    }
-    //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
-    menuphase=0;
-    break;
+    */
   }
 }// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
@@ -1655,8 +1684,6 @@ void callback() {
     menuphase0=0;
     menuphase1=0;
     menuphase2=0;
-    menuphase3=0;
-    menuphase4=0;
   }
   // Very first thing here is to issue the strip data generated from the
   // *previous* callback. It's done this way on purpose because show() is
@@ -2570,54 +2597,40 @@ void fourfade(byte idx) {
   }
 }
 void eightfade(byte idx) {
-  int i;
+
   if(fxVars[idx][0] == 0) {
-    //1-8 position
-    //11-18 frame skip holder
-    //21-28 frame skip operator
-    //31-38 intended frame skip holder
-    for(i=1;i<8;i++){
-      fxVars[idx][i]=random(numPixels); //position
-    }
-
-    for(i=11;i<18;i++){
-      fxVars[idx][i]=random(8); //frame skip holder
-    }
-
-    for(i=21;i<28;i++){
-      fxVars[idx][i]=0; //frame skip operator
-    }
-    for(i=31;i<38;i++){
-      fxVars[idx][i]=0; //intended frame skip operator
-    }   
-
-    fxVars[idx][0]=2;// init and timer to reinit
+    fxVars[idx][1]=0;//position 1
+    fxVars[idx][5]=numPixels;//position 2
+    fxVars[idx][2]=random(3,6);//frame skip holder
+    fxVars[idx][3]=fxVars[idx][2];//frame skip operator
+    fxVars[idx][4]=1/6;//how much to drop each pixel by if not updated
+    fxVars[idx][0]=1;// init
 
   }
-  //  if(fxVars[idx][0] == 1) {//reinit
-  //   for(i=31;i<38;i++){
-  //      fxVars[idx][i]=random(16); //intended frame skip operator
-  //    }   
-  //    fxVars[idx][0]=2;// reinit
-  //  }
-
-  long color=0;
+  long color;
   //color = getschemacolor(0); //first color in color scheme
   byte *ptr = &imgData[idx][0], *tptr = &tempimgData[0], *ptr2 = &imgData[idx][0], *tptr2 = &tempimgData[0];
   for(int i=0; i<numPixels; i++) {//write to temp strip so we can remember our data!
+    if(
 
-    for(int q=1;q<8;q++){
-      if(fxVars[idx][q]==i){
-        color = getschemacolor(q);
-      } //check for position
-    }
-    if(color>0){
+    i==fxVars[idx][1] ||
+      i==(fxVars[idx][1]+(numPixels*1/4))%numPixels||
+      i==(fxVars[idx][1]+(numPixels*2/4))%numPixels||
+      i==(fxVars[idx][1]+(numPixels*3/4))%numPixels||
+      i==fxVars[idx][5] ||
+      i==(fxVars[idx][5]+(numPixels*1/4))%numPixels||
+      i==(fxVars[idx][5]+(numPixels*2/4))%numPixels||
+      i==(fxVars[idx][5]+(numPixels*3/4))%numPixels
+
+
+      ){
+      color = getschemacolor(i/8);
       *tptr++ = color >> 16;
       *tptr++ = color >> 8;
       *tptr++ = color;
-      *ptr2++ = color >> 16;
+      *ptr2++ = color >>16;
       *ptr2++ = color >> 8;
-      *ptr2++ = color ;
+      *ptr2++ = color;
     }
     else{
       *tptr++ = (*ptr2++)*4/5;
@@ -2625,41 +2638,22 @@ void eightfade(byte idx) {
       *tptr++ = (*ptr2++)*4/5;
     }
   }
-
   for(int i=0; i<numPixels; i++) {//copy temp strip to regular strip for write at end of callback
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
     *ptr++ = *tptr2++;
   }
-  //  fxVars[idx][0]--;//reinit countdown
-  //1-8 position
-  //11-18 frame skip holder
-  //21-28 frame skip operator
-  //31-38 intended frame skip holder
-  for(int q=1;q<8;q++){
-
-    fxVars[idx][q+20]--;
-    if(fxVars[idx][q+20]<=0){//if frame skip operator <=0 then
-      fxVars[idx][q+20]=fxVars[idx][q+10];//reset frame skip operator to holder
-      fxVars[idx][q]++;//increment position
-      if(fxVars[idx][q]>=numPixels){//if position out of range
-        fxVars[idx][q]=0;//set to 0 
-      }
+  fxVars[idx][3]--;
+  if(fxVars[idx][3]<=0){
+    fxVars[idx][1]++;
+    fxVars[idx][5]--;
+    if(fxVars[idx][5]<=0){
+      fxVars[idx][5]=numPixels; 
     }
-
-    if(fxVars[idx][q+30]>fxVars[idx][q+10]){//if intended frame skip holder is> frame skip holder
-      fxVars[idx][q+10]++;//add one to frame skip holder
+    if(fxVars[idx][1]>numPixels){
+      fxVars[idx][1]=0; 
     }
-    else{
-      if(fxVars[idx][q+30]<fxVars[idx][q+10]){//if intended frame skip holder is < frame skip holder
-        fxVars[idx][q+10]--;//take one off
-      } 
-      else{
-        if(fxVars[idx][q+30]==fxVars[idx][q+10]){//reinit that one
-          fxVars[idx][q+10]=random(32)*3; //intended frame skip operator
-        }
-      }
-    }
+    fxVars[idx][3]=fxVars[idx][2];
   }
 }
 
@@ -5146,8 +5140,10 @@ char fixCos(int angle) {
 
 
 void buttonpress(){
+  if(digitalRead(36)==0){
+   lastbuttonstate=0; 
+  }
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    //    if(lastbuttonstate==button){
     if(lastbuttonstate==1) {
       longbutton=1;
     }
@@ -5442,7 +5438,16 @@ void getUart(){
       Uart.print(galaxyversion);
     }
     if( ucmd == 'R' ) {//re-init pattern
-    fxVars[0][0]=0;
+ //   fxVars[0][0]=0;
+   button=1;
+    }
+        if( ucmd == 'C' ) {//re-init pattern
+ //   fxVars[0][0]=0;
+     longbutton=1;
+    }
+            if( ucmd == 'A' ) {//re-init pattern
+ //   fxVars[0][0]=0;
+     opmode=1;
     }
 
     /*    if( ucmd == 'Q' ) {
@@ -5484,15 +5489,15 @@ void getUart(){
         Uart.println("Demo mode disabled");
       }
     }
-    if( ucmd == 'A' ) {//D means toggle demo mode
-      compassoutput=!compassoutput;
-      if(compassoutput==1){
-        Uart.println("compass output enabled");
-      }
-      else{
-        Uart.println("compass outputdisabled");
-      }
-    }
+ //   if( ucmd == 'A' ) {//D means toggle demo mode
+ //     compassoutput=!compassoutput;
+ //     if(compassoutput==1){
+ //       Uart.println("compass output enabled");
+ //     }
+  //    else{
+ //       Uart.println("compass outputdisabled");
+ //     }
+ //   }
     urtInStr[0] = 0; // say we've used the string
     //irrecv.resume();  
   }
