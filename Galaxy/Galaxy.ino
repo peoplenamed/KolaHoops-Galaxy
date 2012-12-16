@@ -9,13 +9,13 @@ boolean planeoutput=false;
 boolean compassoutput=false;
 boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
-boolean serialoutput=false;// will the serial respond?
+boolean serialoutput=true;// will the serial respond?
 boolean uartoutput=true;// will the uart respond?
 //paramaters
 int pattern = -1;
 int nextspeed=0;
 byte colorschemeselector = 0;
-uint8_t brightness = 4; //lower=brighter
+uint8_t brightness = 3; //lower=brighter
 uint16_t patternswitchspeed = 1500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 uint16_t transitionspeed = 30;// # of secconds transition lasts 
@@ -185,10 +185,10 @@ LSM303::vector running_min = {
 
 
 //ir remote stuffs
-  //#include <IRremote.h>
+#include <IRremote.h>
 int irrxpin=19;
-//IRrecv irrecv(irrxpin);
-//decode_results results;
+IRrecv irrecv(irrxpin);
+decode_results results;
 #define ircsetup 11
 unsigned long irc[ircsetup];
 unsigned long irc2[ircsetup]= {
@@ -917,36 +917,42 @@ void setup() {
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, i, 0, 0);
     }
+    delay(5);
     strip.show();
   }
   for(int i=127;i>0;i--){ //fade out red
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, i, 0, 0);
     }
+    delay(5);
     strip.show();
   }
   for(int i=0;i<127;i++){ //fade in green
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, i, 0);
     }
+    delay(5);
     strip.show();
   }
   for(int i=0;i<127;i++){ //fade out green
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0,abs(i-127), 0);
     }
+    delay(5);
     strip.show();
   }
   for(int i=0;i<127;i++){ //fade in blue
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, i);
     }
+   delay(5);
     strip.show();
   }
   for(int i=0;i<127;i++){ //fade out blue
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, abs(i-127));
     }
+  delay(5);
     strip.show();
   }
   //delay(100000);
@@ -955,9 +961,10 @@ void setup() {
   Serial.println(" read from EEPROM spot 255");
   if(irsetupflag==3){//if our pair flag is 2 then
     opmode=3;
-    for(int q=0;q<ircsetup;q++){
+    for(int q=1;q<ircsetup;q++){
       strip.setPixelColor(q,64,0,0); 
     }
+    strip.setPixelColor(0,0,64,0);
   }
   else{
     EEPROM.write(255,0); //otherwise we want to write eeprom spot 255 to 0  
@@ -988,7 +995,7 @@ void setup() {
   randomSeed(analogRead(0));
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
-//  irrecv.enableIRIn();
+  irrecv.enableIRIn();
   attachInterrupt(4, buttonpress, HIGH); //PE4
   // Timer1.initialize();
   // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
@@ -1274,7 +1281,7 @@ void loop() {
 }
 void others(){
   if(opmode==0||opmode==1){
- //   getir(); 
+   getir(); 
   }
   else{
     if(opmode==3){
@@ -5597,6 +5604,7 @@ void EEPreadirc()
 
 
     irc[i] = firstTwoBytes + secondTwoBytes;
+    if(serialoutput==true){
     Serial.print("Read code from eeprom spots ");
     Serial.print(i);
     Serial.print(" to ");
@@ -5605,6 +5613,7 @@ void EEPreadirc()
     Serial.print(firstTwoBytes + secondTwoBytes, DEC);
     Serial.print(" in irc spot ");
     Serial.println(i);
+    }
     firstTwoBytes = 0;
     secondTwoBytes = 0;
   }
@@ -5674,7 +5683,7 @@ void irsetup(boolean feedback) {
 }
 
 
-//void getir(){
+void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup(true);
@@ -5728,9 +5737,8 @@ void irsetup(boolean feedback) {
    
    
    */
-   /*
-  if (0
-//  irrecv.decode(&results)
+   
+  if (irrecv.decode(&results)
   ) {
     if (results.value == irc2[0]) {
       if(serialoutput==true){
@@ -5833,9 +5841,9 @@ void irsetup(boolean feedback) {
     irrecv.resume();
   }
 }
-*/
 
-/**
+
+/*
  * Converts an RGB color value to HSV. Conversion formula
  * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
  * Assumes r, g, and b are contained in the set [0, 255] and
