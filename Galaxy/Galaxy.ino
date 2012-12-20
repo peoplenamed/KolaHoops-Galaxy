@@ -186,7 +186,7 @@ LSM303::vector running_min = {
 
 //ir remote stuffs
 #include <IRremote.h>
-int irrxpin=19;
+int irrxpin=18;
 IRrecv irrecv(irrxpin);
 decode_results results;
 #define ircsetup 11
@@ -732,7 +732,7 @@ const char led_chars[97][6] PROGMEM = {
   0xf8,0x04,0x02,0x04,0xf8,0x00,  // V5
   0xfc,0x02,0x1c,0x02,0xfc,0x00,  // W6
   0xc6,0x28,0x10,0x28,0xc6,0x00,  // X7
-  0xe0,0x10,0x0e,0x10,0xe0,0x00,	// Y8
+  0xe0,0x10,0x0e,0x10,0xe0,0x00,  // Y8
   0x86,0x8b,0x92,0xa2,0xc2,0x00,	// Z9
   0x00,0xfe,0x82,0x82,0x00,0x00,	// [0
   0x00,0x00,0x00,0x00,0x00,0x00, //1 *** do not remove this empty char ***
@@ -824,9 +824,36 @@ char fixCos(int angle);
 
 // ---------------------------------------------------------------------------
 
-void bluetoothsetup(){ //for linvorV1.5 firmware, baud for arduino has already
-  // been set in setup(), we are NOT supposed to send newline
+void bluetoothsetup(){
+  Serial.println("Setting up bluetooth module");
+  //inital baud rate of the bluetooth modules we use is 9600. I think we get the best performance
+  //out of 38400 baud because of the timing errors due to the prescaler. we are specifically not using nl/cr
+ //* Uart.begin(9600);//change uart baud to match bt default
+  // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
+ //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
+ //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
+ //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
+ //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
+ //*  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
+ //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
+ //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
+  delay(1000);//wait a sec
+  Uart.print("AT+NAMEPete's Galaxy"); //sets name seen by android to "Maxs Galaxy"
+  delay(1000);
+  Uart.print("AT+PIN0000");//sets pin to 0000
+  delay(1000); 
+}
+void brutebluetooth(){ //mess your bluetooth chip up? not to fear. this will try all available baud rates and
   int baudrate = 6; //when finished we will have a bt chip on 38400 baud
+   // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
+ //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
+ //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
+ //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
+ //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
+//   Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 
+ //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
+ //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
+  delay(1000);//wait a sec
 Serial.println("This may take a while");
 for(int i=0;i<10;i++){
 Uart.begin(1200);
@@ -879,22 +906,13 @@ delay(1000);
 Serial.print(".");}
 Serial.println();
 Serial.println("done");
- // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
- //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
- //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
- //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
- //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
- //  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400
- //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
- //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
-// delay(1000);
-//  Uart.print("AT+NAMEMaxs Galaxy"); //sets name seen by android to "Maxs Galaxy"
-//  delay(1000);
-//  Uart.print("AT+PIN0000");//sets pin to 0000
-//  delay(1000);
+
 } 
 
 void setup() {
+  pinMode(19, OUTPUT);//using internal pull up resistor for button
+  digitalWrite(19, HIGH);// up!
+  
   Serial.begin(115200);//start serial connection through usb 
   if(serialoutput==true){ //do we print info?
     Serial.println("Serial monitor Online.");
@@ -971,6 +989,7 @@ void setup() {
   }                      //to reset discoverable / learn counter
   int i;
   pinMode(irrxpin, INPUT);
+  pinMode(19, INPUT);
   EEPreadirc();
   /*
  if(serialoutput==true){
@@ -996,7 +1015,7 @@ void setup() {
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
-  attachInterrupt(4, buttonpress, HIGH); //PE4
+  attachInterrupt(7, buttonpress, LOW); //button 19 esternal interrupt 7
   // Timer1.initialize();
   // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
 }
@@ -1277,7 +1296,6 @@ void loop() {
     callback(); //generate image
     callback(); //generate image
   }
-
 }
 void others(){
   if(opmode==0||opmode==1){
@@ -1306,7 +1324,7 @@ void calibrate(){
   running_max.y = max(running_max.y, compass.m.y);
   running_max.z = max(running_max.z, compass.m.z);
 
-  if(serialoutput==true&&compassdebug==true){  
+ /* if(serialoutput==true&&compassdebug==true){  
     Serial.print("M min ");
     Serial.print("X: ");
     Serial.print((int)running_min.x);
@@ -1322,7 +1340,9 @@ void calibrate(){
     Serial.print((int)running_max.y);
     Serial.print(" Z: ");
     Serial.println((int)running_max.z);
+    
   }
+  */
   //recalculate calibration
 
   // Calibration values. Use the Calibrate example program to get the values for
@@ -5147,7 +5167,7 @@ char fixCos(int angle) {
 
 
 void buttonpress(){
-  if(digitalRead(36)==0){
+  if(digitalRead(19)==0){
    lastbuttonstate=0; 
   }
   if ((millis() - lastDebounceTime) > debounceDelay) {
@@ -5276,13 +5296,13 @@ unsigned long num;
       button=1;
     }
     if( cmd == 'd' ) {
-      compassdebug=0;
+      compassoutput=0;
       if(serialoutput==true){  
         Serial.println("disable compass serial output");
       }
     }
     if( cmd == 'D' ) {
-      compassdebug=1;
+      compassoutput=1;
       if(serialoutput==true){
         Serial.println("enable compass serial output");
       }
