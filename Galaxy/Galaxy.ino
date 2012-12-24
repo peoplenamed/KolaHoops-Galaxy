@@ -15,7 +15,7 @@ boolean uartoutput=true;// will the uart respond?
 int pattern = -1;
 int nextspeed=0;
 byte colorschemeselector = 0;
-uint8_t brightness = 3; //lower=brighter
+uint8_t brightness = 2; //lower=brighter
 uint16_t patternswitchspeed = 1500; //# of seconds between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
 uint16_t transitionspeed = 30;// # of secconds transition lasts 
@@ -25,18 +25,18 @@ void (*renderEffect[])(byte) = {
   /*
    * Full color patterns
    */
-  sparklefade,
+  sparklefade, 
   rainbowChase, //stock
   colorDrift,//fades the whole hoop quickly around the color wheel
-  raindance,//great!
+  raindance,//changes speeds quickly and smoothly
   sineChase, //stock
   sineDance, //not set up to dance yet just a placeholder
-  rainbowsineChase,
-  longsinechasecolordrift,
-  colorDriftsineChase,
+  rainbowsineChase,//needs to be stretched to fit entire color wheel
+  longsinechasecolordrift,//needs to be stretched to fit hoop
+  colorDriftsineChase,//ok
+  sineChase, //stock  
   wavyFlag,// stock
   simpleOrbit,//not sure whats going on here...
-  sineChase, //stock
   sineCompass, //needs smoothing
   POV,
   /*
@@ -233,7 +233,7 @@ unsigned long secondTwoBytes;
 #include <Wire.h>
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
-const int numPixels = 94;
+const int numPixels = 100;
 #define numPixelsHolder numPixels;
 uint8_t framecounter,framecounter1;
 int rotationspeed;
@@ -437,6 +437,7 @@ char urtInStr[35]; // array that will hold the serial input string
 long eightcolorschema[][8] PROGMEM={
 
     /*
+  0 reserved for user color scheme
   1 Major
   2 Natural minor
   3 Harmonic minor
@@ -475,7 +476,7 @@ long eightcolorschema[][8] PROGMEM={
   36 Violet and White  
   37 Rainbow
   */
-    0,0,0,0,0,0,0,0,//placeholder for user color scheme
+    red,orange,yellow,green,teal,blue,indigo,violet,//placeholder for user color scheme
   //splitting a color wheel up into 3 sections 1 for each 
   //primary color, and then splitting each section in half 2 more times
   //gives us 12 different sections which is the same number of steps in halftones
@@ -910,8 +911,6 @@ Serial.println("done");
 } 
 
 void setup() {
-  pinMode(19, OUTPUT);//using internal pull up resistor for button
-  digitalWrite(19, HIGH);// up!
   
   Serial.begin(115200);//start serial connection through usb 
   if(serialoutput==true){ //do we print info?
@@ -1015,7 +1014,8 @@ void setup() {
   memset(imgData, 0, sizeof(imgData)); // Clear image data
   fxVars[backImgIdx][0] = 1; // Mark back image as initialized
   irrecv.enableIRIn();
-  attachInterrupt(7, buttonpress, LOW); //button 19 esternal interrupt 7
+  pinMode(19, INPUT_PULLUP);//using internal pull up resistor
+  //attachInterrupt(19, buttonpress, LOW); //button 19 esternal interrupt 7
   // Timer1.initialize();
   // Timer1.attachInterrupt(callback, 1000000 / 30); //30 times/second
 }
@@ -1298,6 +1298,9 @@ void loop() {
   }
 }
 void others(){
+  if(digitalRead(19)==0){
+    buttonpress();
+  }
   if(opmode==0||opmode==1){
    getir(); 
   }
@@ -1875,7 +1878,7 @@ void callback() {
 // indexes, are automatically carried with them.
 
 // Simplest rendering effect: fill entire image with solid color
-unsigned long usercolorscheme[8] = {0,0,0,0,0,0,0,0};//color scheme stored in ram 
+unsigned long usercolorscheme[8] = {red,orange,yellow,green,teal,blue,indigo,violet};//color scheme stored in ram 
 
 unsigned long getschemacolor(uint8_t y){
   long color;
@@ -5167,15 +5170,14 @@ char fixCos(int angle) {
 
 
 void buttonpress(){
-  if(digitalRead(19)==0){
+  if(digitalRead(19)==1){
    lastbuttonstate=0; 
   }
   if ((millis() - lastDebounceTime) > debounceDelay) {
     if(lastbuttonstate==1) {
       longbutton=1;
-    }
-    else{
-      lastbuttonstate=0;
+    }else{
+      longbutton=0;
     }
     lastbuttonstate=1;
     button=1;
