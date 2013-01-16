@@ -1,4 +1,13 @@
-#define galaxyversion 1 // version of this code. used for bluetooth handshake to determine capabilities
+//goal for v1
+// create non bluetooth code
+// import ir codes
+// modify remotes to not switch code
+// fix pov done untested
+// fix button long press done untested
+// add demo mode switch done unstested
+// fix ir learn display done untested
+// formatting on top
+#define galaxyversion 1 // version of this code. will be used for bluetooth handshake to determine capabilities
 //flags
 boolean demo = true;
 boolean colordemo=false;
@@ -16,10 +25,10 @@ int pattern = -1;
 int nextspeed=0;
 byte colorschemeselector = 0;
 uint8_t brightness = 2; //lower=brighter
-uint16_t patternswitchspeed = 1500; //# of seconds between pattern switches
-uint8_t patternswitchspeedvariance = 0;//# of seconds the pattern switch speed can vary+ and _ so total variance could be 2x 
-uint16_t transitionspeed = 30;// # of secconds transition lasts 
-uint8_t transitionspeedvariance = 0;// # of secconds transition lenght varies by, total var 2X, 1X in either + or -
+uint16_t patternswitchspeed = 1500; //# of frames between pattern switches
+uint8_t patternswitchspeedvariance = 0;//# of frames the pattern switch speed can vary + and - so total variance could be 2x 
+uint16_t transitionspeed = 30;// # of framestransition lasts 
+uint8_t transitionspeedvariance = 0;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
   /*
@@ -82,7 +91,7 @@ void (*renderEffect[])(byte) = {
   fans, 
   scrolls,//need to replace with older version
 
-  
+
 
   //##########in development###########
   // somekindaChase,
@@ -141,7 +150,7 @@ void (*renderEffect[])(byte) = {
 
 /*
 
-
+ 
  HMC5883L_Example.pde - Examhsvple sketch for integration with an HMC5883L triple axis magnetomerwe.
  Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)
  This program is free software: you can redistribute it and/or modify
@@ -189,10 +198,11 @@ LSM303::vector running_min = {
 int irrxpin=18;
 IRrecv irrecv(irrxpin);
 decode_results results;
-#define ircsetup 11
+#define ircsetup 6
 unsigned long irc[ircsetup];
 unsigned long irc2[ircsetup]= {
-  2155864095,//sirius sat radio remote
+0,0,0,0,0,0};
+  /*  2155864095,//sirius sat radio remote
   2155847775,
   2155815135,
   2155811055,
@@ -202,7 +212,7 @@ unsigned long irc2[ircsetup]= {
   2155835535,
   2155868175,
   2155809015,
-  2155831455};
+ 2155831455}; */
 /*
 279939191,
  279928991,
@@ -252,7 +262,7 @@ int tCounter = 0;
 // fixed to very specific pin numbers: on Arduino 168/328, data = pin 11,
 // clock = pin 13. On Mega, data = pin 51, clock = pin 52.
 //LPD8806 strip = LPD8806(numPixels);
-
+boolean back = false;
 int crazycounter;
 //#####################menu stuffs
 uint8_t menuphase = 0,menuphase0 = 0,menuphase1 = 0,menuphase2 = 0;
@@ -436,47 +446,47 @@ char urtInStr[35]; // array that will hold the serial input string
 // each primary color and there are 8 colors which goes into 256 evenly; 256%8=0
 long eightcolorschema[][8] PROGMEM={
 
-    /*
+  /*
   0 reserved for user color scheme
-  1 Major
-  2 Natural minor
-  3 Harmonic minor
-  4 Dorian
-  5 Mixolydian
-  6 Red-Green 1/4
-  7 Green-Blue 1/4
-  8 Blue-Red 1/4
-  9 Red-Blue 1/2
-  10 Green-Red 1/2
-  11 Blue-Green 1/2
-  12 Solid Red
-  13 Solid Orange
-  14 Solid Orange
-  15 Solid Yellow
-  16 Solid Green
-  17 Solid Teal
-  18 Solid Blue
-  19 Solid Indigo
-  20 Solid Violet
-  21 Red and Black
-  22 Orange and Black
-  23 Yellow and Black
-  24 Green and Black
-  25 Teal and Black
-  26 Blue and Black
-  27 Indigo and Black
-  28 Violet and Black
-  29 Red and White
-  30 Orange and White
-  31 Yellow and White
-  32 Green and White
-  33 Teal and White
-  34 Blue and White
-  35 Indigo and White
-  36 Violet and White  
-  37 Rainbow
-  */
-    red,orange,yellow,green,teal,blue,indigo,violet,//placeholder for user color scheme
+   1 Major
+   2 Natural minor
+   3 Harmonic minor
+   4 Dorian
+   5 Mixolydian
+   6 Red-Green 1/4
+   7 Green-Blue 1/4
+   8 Blue-Red 1/4
+   9 Red-Blue 1/2
+   10 Green-Red 1/2
+   11 Blue-Green 1/2
+   12 Solid Red
+   13 Solid Orange
+   14 Solid Orange
+   15 Solid Yellow
+   16 Solid Green
+   17 Solid Teal
+   18 Solid Blue
+   19 Solid Indigo
+   20 Solid Violet
+   21 Red and Black
+   22 Orange and Black
+   23 Yellow and Black
+   24 Green and Black
+   25 Teal and Black
+   26 Blue and Black
+   27 Indigo and Black
+   28 Violet and Black
+   29 Red and White
+   30 Orange and White
+   31 Yellow and White
+   32 Green and White
+   33 Teal and White
+   34 Blue and White
+   35 Indigo and White
+   36 Violet and White  
+   37 Rainbow
+   */
+  red,orange,yellow,green,teal,blue,indigo,violet,//placeholder for user color scheme
   //splitting a color wheel up into 3 sections 1 for each 
   //primary color, and then splitting each section in half 2 more times
   //gives us 12 different sections which is the same number of steps in halftones
@@ -545,7 +555,7 @@ long eightcolorschema[][8] PROGMEM={
   blue,0,blue,0,blue,0,blue,0,
   indigo,0,indigo,0,indigo,0,indigo,0,
   violet,0,violet,0,violet,0,violet,0,
-  
+
   //29-36 2 color roygtbiv and white
   red,white,red,white,red,white,red,white,
   orange,white,orange,white,orange,white,orange,white,
@@ -555,9 +565,9 @@ long eightcolorschema[][8] PROGMEM={
   blue,white,blue,white,blue,white,blue,white,
   indigo,white,indigo,white,indigo,white,indigo,white,
   violet,white,violet,white,violet,white,violet,white,
- 
+
   red,orange,yellow,green,teal,blue,indigo,violet, //rainbow!
- 
+
 
   //6 of 32
   //40-47
@@ -829,15 +839,15 @@ void bluetoothsetup(){
   Serial.println("Setting up bluetooth module");
   //inital baud rate of the bluetooth modules we use is 9600. I think we get the best performance
   //out of 38400 baud because of the timing errors due to the prescaler. we are specifically not using nl/cr
- //* Uart.begin(9600);//change uart baud to match bt default
+  //* Uart.begin(9600);//change uart baud to match bt default
   // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
- //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
- //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
- //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
- //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
- //*  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
- //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
- //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
+  //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
+  //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
+  //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
+  //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
+  //*  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
+  //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
+  //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
   delay(1000);//wait a sec
   Uart.print("AT+NAMEPete's Galaxy"); //sets name seen by android to "Maxs Galaxy"
   delay(1000);
@@ -846,90 +856,145 @@ void bluetoothsetup(){
 }
 void brutebluetooth(){ //mess your bluetooth chip up? not to fear. this will try all available baud rates and
   int baudrate = 6; //when finished we will have a bt chip on 38400 baud
-   // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
- //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
- //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
- //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
- //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
-//   Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 
- //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
- //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
+  // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
+  //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
+  //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
+  //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
+  //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
+  //   Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 
+  //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
+  //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
   delay(1000);//wait a sec
-Serial.println("This may take a while");
-for(int i=0;i<10;i++){
-Uart.begin(1200);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(2400);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(4800);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(9600);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(19200);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(38400);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(57600);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");
-Uart.begin(115200);
-delay(1000);
-Uart.print("AT+BAUD");
-Uart.print(baudrate);
-delay(1000);
-Serial.print(".");}
-Serial.println();
-Serial.println("done");
+  Serial.println("This may take a while");
+  for(int i=0;i<10;i++){
+    Uart.begin(1200);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(2400);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(4800);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(9600);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(19200);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(38400);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(57600);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+    Uart.begin(115200);
+    delay(1000);
+    Uart.print("AT+BAUD");
+    Uart.print(baudrate);
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.println("done");
 
 } 
 
 void setup() {
-  
+  //bring up our serial connections
   Serial.begin(115200);//start serial connection through usb 
-  if(serialoutput==true){ //do we print info?
-    Serial.println("Serial monitor Online.");
-  }
-  Uart.begin(38400); //start serial connection to bluetooth module , timer seems a bit off so i took off 200 to compensate
-  if(serialoutput==true){ //do we print info?
-    Serial.println("Uart port Online");
-  }
+  Uart.begin(38400); //start serial connection to bluetooth module
   strip.begin();//start lpd8806 strip
-  if(serialoutput==true){ //do we print info?
-    Serial.println("LED Strip Online.");
+  
+  //check for demo mode flag in eeprom spot 256, set demo accordingly and
+  //reset flag 
+  if(EEPROM.read(256)>0){//if eeprom 256 is 1 or more
+   demo=false; //disable demo mode
+   EEPROM.write(256, 0);//write eeprom spot 256 to 0
+  }else{//if eeprom 256 is 0 (1 unsigned byte in each eeprom spot)
+    demo=true; //enable demo mode
+    EEPROM.write(256,1);//write eeprom spot 256 to 1
   }
-  //check for pair flag on eeprom spot 255
+  
+  //check for ir learn flag on eeprom spot 255.
   uint8_t offcounter = EEPROM.read(255);
   EEPROM.write(255, offcounter+1);
   //add one to what you find in pair flag slot
-  //if the user turns the hoop on and off 3 times in a row before the rgb
-  //fade finishes it puts the hoop into IR learn mode
+  //if the user turns the hoop on and off 3 times in a row before the 3color
+  //fade finishes it puts the hoop into IR learn mode.
+  //every time the 3color fade finishes it resets eeprom 255 to 0
+  //so 2 consecutive interruptions is required to trigger.
+  
+  
+  //RGB means demo is disabled, CMY means demo is enabled
+ if(demo==true){//Cyan, MAGENTA and yellow fade
+ 
+  for(int i=0;i<127;i++){ //fade in cyan
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, 0, i/2, i/2);
+    }
+    delay(5);
+    strip.show();
+  }
+  for(int i=127;i>0;i--){ //fade out cyan
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, i, i/2, i/2);
+    }
+    delay(5);
+    strip.show();
+  }
+  for(int i=0;i<127;i++){ //fade in purple
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, i, 0, i);
+    }
+    delay(5);
+    strip.show();
+  }
+  for(int i=0;i<127;i++){ //fade out purple
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, abs(i-127), 0, abs(i-127));
+    }
+    delay(5);
+    strip.show();
+  }
+  for(int i=0;i<127;i++){ //fade in orange
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, i, i, 0);
+    }
+    delay(5);
+    strip.show();
+  }
+  for(int i=0;i<127;i++){ //fade out orange
+    for(int q=0;q<numPixels;q++){
+      strip.setPixelColor(q, abs(i-127), abs(i-127), 0);
+    }
+    delay(5);
+    strip.show();
+  } 
+  
+ }else{ //good old red green and blue.
+ 
   for(int i=0;i<127;i++){ //fade in red
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, i, 0, 0);
@@ -962,16 +1027,18 @@ void setup() {
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, i);
     }
-   delay(5);
+    delay(5);
     strip.show();
   }
   for(int i=0;i<127;i++){ //fade out blue
     for(int q=0;q<numPixels;q++){
       strip.setPixelColor(q, 0, 0, abs(i-127));
     }
-  delay(5);
+    delay(5);
     strip.show();
-  }
+  } 
+ } 
+ 
   //delay(100000);
   uint8_t irsetupflag = EEPROM.read(255);
   Serial.print(irsetupflag);
@@ -981,7 +1048,8 @@ void setup() {
     for(int q=1;q<ircsetup;q++){
       strip.setPixelColor(q,64,0,0); 
     }
-    strip.setPixelColor(0,0,64,0);
+    strip.setPixelColor(1,0,64,0);
+    strip.show();
   }
   else{
     EEPROM.write(255,0); //otherwise we want to write eeprom spot 255 to 0  
@@ -1302,7 +1370,7 @@ void others(){
     buttonpress();
   }
   if(opmode==0||opmode==1){
-   getir(); 
+    getir(); 
   }
   else{
     if(opmode==3){
@@ -1327,25 +1395,25 @@ void calibrate(){
   running_max.y = max(running_max.y, compass.m.y);
   running_max.z = max(running_max.z, compass.m.z);
 
- /* if(serialoutput==true&&compassdebug==true){  
-    Serial.print("M min ");
-    Serial.print("X: ");
-    Serial.print((int)running_min.x);
-    Serial.print(" Y: ");
-    Serial.print((int)running_min.y);
-    Serial.print(" Z: ");
-    Serial.print((int)running_min.z);
-
-    Serial.print(" M max ");  
-    Serial.print("X: ");
-    Serial.print((int)running_max.x);
-    Serial.print(" Y: ");
-    Serial.print((int)running_max.y);
-    Serial.print(" Z: ");
-    Serial.println((int)running_max.z);
-    
-  }
-  */
+  /* if(serialoutput==true&&compassdebug==true){  
+   Serial.print("M min ");
+   Serial.print("X: ");
+   Serial.print((int)running_min.x);
+   Serial.print(" Y: ");
+   Serial.print((int)running_min.y);
+   Serial.print(" Z: ");
+   Serial.print((int)running_min.z);
+   
+   Serial.print(" M max ");  
+   Serial.print("X: ");
+   Serial.print((int)running_max.x);
+   Serial.print(" Y: ");
+   Serial.print((int)running_max.y);
+   Serial.print(" Z: ");
+   Serial.println((int)running_max.z);
+   
+   }
+   */
   //recalculate calibration
 
   // Calibration values. Use the Calibrate example program to get the values for
@@ -1376,16 +1444,17 @@ void menurender() {
 void menu() {
   byte *ptr = &imgData[backImgIdx][0];
   int type;//placeholder
-  long color[3]={0,0,0};
+  long color[3]={
+    0,0,0  };
   if(type==0){//type tells us what value we are polling the user for. this 
-   color[0] = red;//will choose colors and set the apropriate values
-   color[1] = green;
-   color[2] = blue;
+    color[0] = red;//will choose colors and set the apropriate values
+    color[1] = green;
+    color[2] = blue;
   }
   if(type==1){//type tells us what value we are polling the user for. this 
-   color[0] = purple;
-   color[1] = yellow;
-   color[2] = teal;
+    color[0] = purple;
+    color[1] = yellow;
+    color[2] = teal;
   }
 
   switch(menuphase){
@@ -1398,7 +1467,7 @@ void menu() {
     }
     else{
       for(int i=0; i<numPixels; i++) {
-        
+
         if(i<=xyheadingdegreescalibrated/60){
           *ptr++ = color[0] >> 16;
           *ptr++ = color[0] >> 8;
@@ -1479,7 +1548,7 @@ void menu() {
     }
     break;
   case 3: // if we are at 3 then the user just selected the last digit.
-  //  Timer1.detachInterrupt();
+    //  Timer1.detachInterrupt();
     if(serialoutput==true){
       Serial.println(menuphase0);
       Serial.println(menuphase1);
@@ -1489,226 +1558,204 @@ void menu() {
 
     if(menuphase1==-1&&menuphase2==-1){
       //code to calculate menu selection if only 1st digit supplied
-     selection = menuphase0;
-    }else{
-     if(menuphase2==-1){
-     //code to calculate menu selection if 2 digits supplied.
-     selection = (menuphase0*10)+ menuphase1;
-     }else{
-     //code to calculate menu selection if all 3 digits caught here
-     selection = (menuphase0*100)+(menuphase1*10)+ menuphase2;
-     } 
+      selection = menuphase0;
+    }
+    else{
+      if(menuphase2==-1){
+        //code to calculate menu selection if 2 digits supplied.
+        selection = (menuphase0*10)+ menuphase1;
+      }
+      else{
+        //code to calculate menu selection if all 3 digits caught here
+        selection = (menuphase0*100)+(menuphase1*10)+ menuphase2;
+      } 
     }
     if(serialoutput==true){
-    Serial.print("selection ");
-    Serial.println(selection);
-  }
+      Serial.print("selection ");
+      Serial.println(selection);
+    }
     if(type==0){//0 is pattern selection
-    
-      
+
+
     }
     //Timer1.attachInterrupt(callback, 1000000/framerate);//redirect interrupt to menu
     menuphase=0;
     break;
 
-/*  case 3:
-    if(button==1){
-      menuphase3=xyheadingdegreescalibrated/60;
-      menuphase++;
-      button=0;
-      return;
-    }
-    else{
-      for(int i=0; i<numPixels; i++) {
-        if(i<=menuphase0){
-          long color=red;
-          *ptr++ = color >> 16;
-          *ptr++ = color >> 8;
-          *ptr++ = color;
-        }
-        else{
-          if(i>=menuphase0&&i<=menuphase0+menuphase1){
-            long color=magenta;
-            *ptr++ = color >> 16;
-            *ptr++ = color >> 8;
-            *ptr++ = color;
-          }
-          else{
-            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
-              long color=blue;
-              *ptr++ = color >> 16;
-              *ptr++ = color >> 8;
-              *ptr++ = color;
-            }
-            else{
-              if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+(xyheadingdegreescalibrated/60)){
-                //   if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+(xyheadingdegreescalibrated/60)){
-                long color=teal;
-                *ptr++ = color >> 16;
-                *ptr++ = color >> 8;
-                *ptr++ = color;
-              }
-              else{
-                *ptr++=0;
-                *ptr++=0;
-                *ptr++=0;
-              }
-            }
-          }
-        }
-      }  
-    }
-    break;
-  case 4:
-    if(button==1){
-      menuphase4=xyheadingdegreescalibrated/60;
-      menuphase++;
-      button=0;
-      return;
-    }
-    else{
-      for(int i=0; i<numPixels; i++) {
-        if(i<=menuphase0){
-          long color=red;
-          *ptr++ = color >> 16;
-          *ptr++ = color >> 8;
-          *ptr++ = color;
-        }
-        else{
-          if(i>=menuphase0&&i<=menuphase0+menuphase1){
-            long color=magenta;
-            *ptr++ = color >> 16;
-            *ptr++ = color >> 8;
-            *ptr++ = color;
-          }
-          else{
-            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
-              long color=blue;
-              *ptr++ = color >> 16;
-              *ptr++ = color >> 8;
-              *ptr++ = color;
-            }
-            else{
-              if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+menuphase3){
-                long color=teal;
-                *ptr++ = color >> 16;
-                *ptr++ = color >> 8;
-                *ptr++ = color;
-              }
-              else{
-                if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+(xyheadingdegreescalibrated/60)){
-                  long color=green;
-                  *ptr++ = color >> 16;
-                  *ptr++ = color >> 8;
-                  *ptr++ = color;
-                }
-                else{
-                  *ptr++=0;
-                  *ptr++=0;
-                  *ptr++=0;
-                }
-              }
-            }
-          }
-        }
-      }  
-    }
-    break;
-  case 5:
-    if(button==1){
-      menuphase5=xyheadingdegreescalibrated/60;
-      menuphase++;
-      button=0;
-      return;
-    }
-    else{
-      for(int i=0; i<numPixels; i++) {
-        if(i<=menuphase0){
-          long color=red;
-          *ptr++ = color >> 16;
-          *ptr++ = color >> 8;
-          *ptr++ = color;
-        }
-        else{
-          if(i>=menuphase0&&i<=menuphase0+menuphase1){
-            long color=magenta;
-            *ptr++ = color >> 16;
-            *ptr++ = color >> 8;
-            *ptr++ = color;
-          }
-          else{
-            if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
-              long color=blue;
-              *ptr++ = color >> 16;
-              *ptr++ = color >> 8;
-              *ptr++ = color;
-            }
-            else{
-              if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+menuphase3){
-                long color=teal;
-                *ptr++ = color >> 16;
-                *ptr++ = color >> 8;
-                *ptr++ = color;
-              }
-              else{
-                if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4){
-                  //if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+(xyheadingdegreescalibrated/60)){
-                  long color=green;
-                  *ptr++ = color >> 16;
-                  *ptr++ = color >> 8;
-                  *ptr++ = color;
-                }
-                else{
-                  if(i>=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4&&i<=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4+(xyheadingdegreescalibrated/60))
-                  {  
-                    long color=orange;
-                    *ptr++ = color >> 16;
-                    *ptr++ = color >> 8;
-                    *ptr++ = color;
-                  }
-                  else{
-                    *ptr++=0;
-                    *ptr++=0;
-                    *ptr++=0;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }  
-    }
-    break;
-    */
+    /*  case 3:
+     if(button==1){
+     menuphase3=xyheadingdegreescalibrated/60;
+     menuphase++;
+     button=0;
+     return;
+     }
+     else{
+     for(int i=0; i<numPixels; i++) {
+     if(i<=menuphase0){
+     long color=red;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0&&i<=menuphase0+menuphase1){
+     long color=magenta;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
+     long color=blue;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+(xyheadingdegreescalibrated/60)){
+     //   if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+(xyheadingdegreescalibrated/60)){
+     long color=teal;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     *ptr++=0;
+     *ptr++=0;
+     *ptr++=0;
+     }
+     }
+     }
+     }
+     }  
+     }
+     break;
+     case 4:
+     if(button==1){
+     menuphase4=xyheadingdegreescalibrated/60;
+     menuphase++;
+     button=0;
+     return;
+     }
+     else{
+     for(int i=0; i<numPixels; i++) {
+     if(i<=menuphase0){
+     long color=red;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0&&i<=menuphase0+menuphase1){
+     long color=magenta;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
+     long color=blue;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+menuphase3){
+     long color=teal;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+(xyheadingdegreescalibrated/60)){
+     long color=green;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     *ptr++=0;
+     *ptr++=0;
+     *ptr++=0;
+     }
+     }
+     }
+     }
+     }
+     }  
+     }
+     break;
+     case 5:
+     if(button==1){
+     menuphase5=xyheadingdegreescalibrated/60;
+     menuphase++;
+     button=0;
+     return;
+     }
+     else{
+     for(int i=0; i<numPixels; i++) {
+     if(i<=menuphase0){
+     long color=red;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0&&i<=menuphase0+menuphase1){
+     long color=magenta;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1&&i<=menuphase0+menuphase1+menuphase2){
+     long color=blue;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1+menuphase2&&i<=menuphase0+menuphase1+menuphase2+menuphase3){
+     long color=teal;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4){
+     //if(i>=menuphase0+menuphase1+menuphase2+menuphase3&&i<=menuphase0+menuphase1+menuphase2+menuphase3+(xyheadingdegreescalibrated/60)){
+     long color=green;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     if(i>=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4&&i<=menuphase0+menuphase1+menuphase2+menuphase3+menuphase4+(xyheadingdegreescalibrated/60))
+     {  
+     long color=orange;
+     *ptr++ = color >> 16;
+     *ptr++ = color >> 8;
+     *ptr++ = color;
+     }
+     else{
+     *ptr++=0;
+     *ptr++=0;
+     *ptr++=0;
+     }
+     }
+     }
+     }
+     }
+     }
+     }  
+     }
+     break;
+     */
   }
 }// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   strip.show();
-  /*  if(framecounter1==30){
-   if(nextspeed==rotationspeed){
-   }
-   else{
-   if(nextspeed>rotationspeed){
-   rotationspeed++;
-   }
-   if(nextspeed<rotationspeed){
-   rotationspeed--;
-   }
-   framecounter1=0;
-   }
-   }
-   
-   if(framecounter>=rotationspeed){
-   if(rotationspeed>0){
-   upperend++;
-   }
-   else{
-   upperend--;
-   }
-   upperend%=numPixels;
-   framecounter=0;
-   }
-   */
+ 
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1732,9 +1779,6 @@ void callback() {
 
   // Always render back image based on current effect index:
   (*renderEffect[fxIdx[backImgIdx]])(backImgIdx);
-  if(tCounter==0){
-    nextspeed=random(1,9)*2/3;
-  }
   // Front render and composite only happen during transitions...
   if(tCounter > 0) {
     // Transition in progress
@@ -1747,32 +1791,6 @@ void callback() {
 
 
     // ...then composite front over back:
-    /*  for(i=upperend; i<numPixels; i++) {
-     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-     inv = 257 - alpha; // 1-256 (ditto)
-     // r, g, b are placed in variables (rather than directly in the
-     // setPixelColor parameter list) because of the postincrement pointer
-     // operations -- C/C++ leaves parameter evaluation order up to the
-     // implementation; left-to-right order isn't guaranteed.
-     r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     strip.setPixelColor(i, r, g, b);
-     }
-     for(i=0; i<upperend; i++) {
-     alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
-     inv = 257 - alpha; // 1-256 (ditto)
-     // r, g, b are placed in variables (rather than directly in the
-     // setPixelColor parameter list) because of the postincrement pointer
-     // operations -- C/C++ leaves parameter evaluation order up to the
-     // implementation; left-to-right order isn't guaranteed.
-     r = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     g = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     b = gamma((*frontPtr++ * alpha + *backPtr++ * inv) >> 8);
-     strip.setPixelColor(i, r, g, b);
-     }
-     
-     */
     for(i=0; i<numPixels; i++) {
       alpha = alphaMask[i] + 1; // 1-256 (allows shift rather than divide)
       inv = 257 - alpha; // 1-256 (ditto)
@@ -1788,21 +1806,7 @@ void callback() {
   }
   else {
     // No transition in progress; just show back image
-    /* for(i=upperend; i<numPixels; i++) {
-     // See note above re: r, g, b vars.
-     r = gamma(*backPtr++);
-     g = gamma(*backPtr++);
-     b = gamma(*backPtr++);
-     strip.setPixelColor(i, r, g, b);
-     }
-     for(i=0; i<upperend; i++) {
-     // See note above re: r, g, b vars.
-     r = gamma(*backPtr++);
-     g = gamma(*backPtr++);
-     b = gamma(*backPtr++);
-     strip.setPixelColor(i, r, g, b);
-     }
-     */
+
     for(i=0; i<numPixels;i++) {
       // See note above re: r, g, b vars.
       r = gamma(*backPtr++);
@@ -1825,18 +1829,19 @@ void callback() {
     if(colordemo==true){
       colorschemeselector=random(256);
     }
-    //fxIdx[frontImgIdx] = random((sizeof(renderEffect) / sizeof(renderEffect[0]))); //original random selection
-    //  if(nextpattern>0){
-    //    frontImgIdx=(sizeof(renderEffect) / sizeof(renderEffect[0]))%nextpattern;
-    //     nextpattern=0;
-    //  }else{
+
     if(pattern>=0){
       fxIdx[frontImgIdx]=pattern;
       pattern=-1;//
     }
     else{
+      if(back==true){
+     
+       fxIdx[frontImgIdx]--;
+       if(fxIdx[frontImgIdx]<0){fxIdx[frontImgIdx]=(sizeof(renderEffect) / sizeof(renderEffect[0]))-1;}
+      }else{
       fxIdx[frontImgIdx]++;//instead of random now its sequential
-      //  }
+      }
     }
     if(fxIdx[frontImgIdx]>=(sizeof(renderEffect) / sizeof(renderEffect[0]))){
       fxIdx[frontImgIdx]=0;
@@ -1878,15 +1883,17 @@ void callback() {
 // indexes, are automatically carried with them.
 
 // Simplest rendering effect: fill entire image with solid color
-unsigned long usercolorscheme[8] = {red,orange,yellow,green,teal,blue,indigo,violet};//color scheme stored in ram 
+unsigned long usercolorscheme[8] = {
+  red,orange,yellow,green,teal,blue,indigo,violet};//color scheme stored in ram 
 
 unsigned long getschemacolor(uint8_t y){
   long color;
   if(colorschemeselector==0){
-  color=usercolorscheme[y%8];
- }else{
-  color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
-}
+    color=usercolorscheme[y%8];
+  }
+  else{
+    color = pgm_read_dword(&eightcolorschema[colorschemeselector][y%8]);
+  }
   return color;
 }
 void schemefade(byte idx) {
@@ -1948,7 +1955,7 @@ void schemetestlongfade(byte idx) {
     fxVars[idx][3] = random(5,10);//spin frame wait holder
     fxVars[idx][4]=0;//starting color
     fxVars[idx][8]=-255;//alpha
-    colorschemeselector = random(16,23);
+    // colorschemeselector = random(16,23);
     fxVars[idx][0]=random(60,180); //init    
   }
   if(fxVars[idx][0] == 1) {
@@ -2344,7 +2351,7 @@ void accelschemesparklefade(byte idx) {
     fxVars[idx][5]=5; //bottom number
     fxVars[idx][0]=1;// init
     //read accell
-    colorschemeselector = 34;
+    // colorschemeselector = 34;
   }
 
   //  Serial.println((averageax+averageay+averageaz)/150);
@@ -3481,12 +3488,13 @@ void raindance(byte idx){
   }
   if(fxVars[idx][0] == -1) {
     if(fxVars[idx][4]>=0){
-      
-    fxVars[idx][4] =-1*( 25 + random(fxVars[idx][1]) / numPixels);
-    }else{
-     if(fxVars[idx][4]<0){
-     fxVars[idx][4] = 25 + random(fxVars[idx][1]) / numPixels;
-     } 
+
+      fxVars[idx][4] =-1*( 25 + random(fxVars[idx][1]) / numPixels);
+    }
+    else{
+      if(fxVars[idx][4]<0){
+        fxVars[idx][4] = 25 + random(fxVars[idx][1]) / numPixels;
+      } 
     }
     //   if(random(2) == 0) fxVars[idx][2] = -fxVars[idx][2];
     fxVars[idx][5] = random(60); // countdown to next change after speed match
@@ -3785,7 +3793,7 @@ void POV(byte idx) {
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=random(0,11);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][10]=random(0,sizeof(Message));// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
 
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
@@ -3868,8 +3876,8 @@ void Whacky(byte idx) {
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
     // fxVars[idx][10]=random(0,15);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of
-  
-      fxVars[idx][10]=0;
+
+    fxVars[idx][10]=0;
     fxVars[idx][11]=-127;//even fade counter
     fxVars[idx][12]=0;//odd fade counter
     fxVars[idx][13]=0;//rotation position
@@ -5170,24 +5178,26 @@ char fixCos(int angle) {
 
 
 void buttonpress(){
-  if(digitalRead(19)==1){
-   lastbuttonstate=0; 
-  }
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    if(lastbuttonstate==1) {
-      longbutton=1;
-    }else{
-      longbutton=0;
+    uint8_t buttoncounter = 0;
+    while(digitalRead(19)==LOW){
+      delay(100);
+      buttoncounter++;
+       if(buttoncounter>100){ //this prob means the button is busted.
+          return; //break while loop
+          //disable button
+        } 
     }
-    lastbuttonstate=1;
-    button=1;
-    lastDebounceTime = millis();
-  }
-  else{
-    lastbuttonstate=0;
+    if(buttoncounter=1){//short press 
+      button=1;
+    }
+    else{
+      if(buttoncounter>=2){//long press
+        longbutton=1;
+      }      
+    }
   }
 }
-
 
 void runningaverageax(int newval) {
   if(newval==0){
@@ -5257,40 +5267,40 @@ void runningaverageaz(int newval) {
 }
 
 void getSerial(){
-unsigned long num;
+  unsigned long num;
   int i;
   if( readSerialString() ) {
-//   if(serialoutput==true){
-      Serial.println(serInStr);
-//    }
+    //   if(serialoutput==true){
+    Serial.println(serInStr);
+    //    }
     char cmd = serInStr[0]; // first char is command
     char* str = serInStr;
     while( *++str == ' ' ); // got past any intervening whitespace
     num = atol(str); // the rest is arguments (maybe)
-   if( cmd == 'J' ) { //
+    if( cmd == 'J' ) { //
       if(serialoutput==true){  
         Serial.println(".");
       }
       for(i=0;i<8;i++){
-          num = atol(str); // the rest is arguments (maybe)
-    //      num=num>>8;
+        num = atol(str); // the rest is arguments (maybe)
+        //      num=num>>8;
         usercolorscheme[i] = num;//what?
-     
+
         Serial.println(num, HEX);
-        
-    while( *++str != ' ' ){ // got to intervening whitespace
-     
-    }
-    while( *++str == ' ' ); // got past any intervening whitespace
-  //  *++str;
- //   num = atoi(str); // the rest is arguments (maybe)
-     
+
+        while( *++str != ' ' ){ // got to intervening whitespace
+
+        }
+        while( *++str == ' ' ); // got past any intervening whitespace
+        //  *++str;
+        //   num = atoi(str); // the rest is arguments (maybe)
+
       }
-       Serial.println("Read user color scheme");
-      
+      Serial.println("Read user color scheme");
+
     }
-   
-   
+
+
     if( cmd == '+' ) {
       if(serialoutput==true){ 
         Serial.println("Button recieved");
@@ -5396,10 +5406,10 @@ unsigned long num;
       }
       acceloutput=false;
     }
-     
+
     serInStr[0] = 0; // say we've used the string
   }
-  
+
 }
 
 
@@ -5408,7 +5418,7 @@ void getUart(){
   long num;
   int i;
   if(readUartString()) {
- //   Serial.println(readUartString());
+    //   Serial.println(readUartString());
     // irrecv.pause();
     delay(10);
     if(uartoutput==true){
@@ -5418,29 +5428,29 @@ void getUart(){
     char* urt = urtInStr;
     while( *++urt == ' ' ); // got past any intervening whitespace
     num = atol(urt); // the rest is arguments (maybe)
-     if( ucmd == 'J' ) { //
+    if( ucmd == 'J' ) { //
       if(serialoutput==true){  
-   //     Serial.println(".");
+        //     Serial.println(".");
       }
       for(i=0;i<8;i++){
-          num = atol(urt); // the rest is arguments (maybe)
-    //      num=num>>8;
+        num = atol(urt); // the rest is arguments (maybe)
+        //      num=num>>8;
         usercolorscheme[i] = num;//what?
-     
-       Serial.println(num, HEX);
-        
-    while( *++urt != ' ' ){ // got to intervening whitespace
-     
-    }
-    while( *++urt == ' ' ); // got past any intervening whitespace
-  //  *++str;
- //   num = atoi(str); // the rest is arguments (maybe)
-     
+
+        Serial.println(num, HEX);
+
+        while( *++urt != ' ' ){ // got to intervening whitespace
+
+        }
+        while( *++urt == ' ' ); // got past any intervening whitespace
+        //  *++str;
+        //   num = atoi(str); // the rest is arguments (maybe)
+
       }
       Serial.println();
       colorschemeselector=0;
-     //  Serial.println("Read user color scheme");
-      
+      //  Serial.println("Read user color scheme");
+
     }
     if( ucmd == 'P' ) {//P means the next character is a pattern we are getting.
       if(num>0){
@@ -5467,16 +5477,16 @@ void getUart(){
       Uart.print(galaxyversion);
     }
     if( ucmd == 'R' ) {//re-init pattern
- //   fxVars[0][0]=0;
-   button=1;
+      //   fxVars[0][0]=0;
+      button=1;
     }
-        if( ucmd == 'C' ) {//re-init pattern
- //   fxVars[0][0]=0;
-     longbutton=1;
+    if( ucmd == 'C' ) {//re-init pattern
+      //   fxVars[0][0]=0;
+      longbutton=1;
     }
-            if( ucmd == 'A' ) {//re-init pattern
- //   fxVars[0][0]=0;
-     opmode=1;
+    if( ucmd == 'A' ) {//re-init pattern
+      //   fxVars[0][0]=0;
+      opmode=1;
     }
 
     /*    if( ucmd == 'Q' ) {
@@ -5518,15 +5528,15 @@ void getUart(){
         Uart.println("Demo mode disabled");
       }
     }
- //   if( ucmd == 'A' ) {//D means toggle demo mode
- //     compassoutput=!compassoutput;
- //     if(compassoutput==1){
- //       Uart.println("compass output enabled");
- //     }
-  //    else{
- //       Uart.println("compass outputdisabled");
- //     }
- //   }
+    //   if( ucmd == 'A' ) {//D means toggle demo mode
+    //     compassoutput=!compassoutput;
+    //     if(compassoutput==1){
+    //       Uart.println("compass output enabled");
+    //     }
+    //    else{
+    //       Uart.println("compass outputdisabled");
+    //     }
+    //   }
     urtInStr[0] = 0; // say we've used the string
     //irrecv.resume();  
   }
@@ -5627,14 +5637,14 @@ void EEPreadirc()
 
     irc[i] = firstTwoBytes + secondTwoBytes;
     if(serialoutput==true){
-    Serial.print("Read code from eeprom spots ");
-    Serial.print(i);
-    Serial.print(" to ");
-    Serial.print(i + 3);
-    Serial.print(" as ");
-    Serial.print(firstTwoBytes + secondTwoBytes, DEC);
-    Serial.print(" in irc spot ");
-    Serial.println(i);
+      Serial.print("Read code from eeprom spots ");
+      Serial.print(i);
+      Serial.print(" to ");
+      Serial.print(i + 3);
+      Serial.print(" as ");
+      Serial.print(firstTwoBytes + secondTwoBytes, DEC);
+      Serial.print(" in irc spot ");
+      Serial.println(i);
     }
     firstTwoBytes = 0;
     secondTwoBytes = 0;
@@ -5645,41 +5655,42 @@ int i;
 
 void irsetup(boolean feedback) {
   // irsetupflag=1;
-  for(int q=0;q<ircsetup;q++){
-    strip.setPixelColor(q, 32,0,0);
-  }
-  if ( 1==0
- // irrecv.decode(&results)
-  ) {
-    if(serialoutput==true){
-      Serial.print("got code ");
+    for(int q=0;q<ircsetup;q++){//refresh image
+      if(i<q){
+        strip.setPixelColor(q, 64, 0, 0);
+      }
+      else{
+        if(i>q){
+          strip.setPixelColor(q, 0, 0, 64);
+        }
+        else{
+         if(i==q){
+          strip.setPixelColor(q, 0, 64, 0);
+         } 
+        }
+      }
     }
-   // irc[i] = results.value;
-    if(serialoutput==true){   
-//      Serial.println(results.value, DEC);
+    
+  if (irrecv.decode(&results)) {//if we have a new ir code
+     irc[i] = results.value; //add it to our ir code array
+    if(serialoutput==true){   //shout it to the world
+      Serial.print("got code ");
+      Serial.println(results.value, DEC);
       Serial.print("Stored in slot ");
       Serial.println(i); 
     }
-    for(int q=0;q<ircsetup;q++){
-      if(i<q){
-        strip.setPixelColor(q, 0, 64, 0);
-      }
-      else{
-        if(i<q){
-          strip.setPixelColor(q, 0, 0, 64);
-        } 
-      }
-    }
-    strip.show();   
-    i++;   
-    delay(1500);//needed for frequent button presses
 
-//    irrecv.resume();
+    strip.setPixelColor(i, 0, 0, 64);// write the current pixel to blue so the user knows to wait.
+    strip.show();  //update image 
+    i++;  //done with this  
+    delay(1500);//needed for frequent button presses
+    irrecv.resume();
     if(serialoutput==true){
       Serial.println("ready for next button");
     }
+  }
 
-    if (i == ircsetup){
+    if (i == ircsetup-1){
       int i2;
       for (i = 0; i < ircsetup; i ++){
         if(serialoutput==true){  
@@ -5699,7 +5710,7 @@ void irsetup(boolean feedback) {
       opmode=0;
       return;
     }
-  }
+ 
   delay(100);
   // irsetupflag=0;
 }
@@ -5709,6 +5720,21 @@ void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup(true);
+  
+  /* keychain remote with flashlight
+Read code from eeprom spots 0 to 3 as 17 in irc spot 0 -
+
+Read code from eeprom spots 1 to 4 as 2064 in irc spot 1 +
+
+Read code from eeprom spots 2 to 5 as 33 in irc spot 2 down 
+
+Read code from eeprom spots 3 to 6 as 2080 in irc spot 3 up 
+
+Read code from eeprom spots 4 to 7 as 62 in irc spot 4 input
+
+Read code from eeprom spots 5 to 8 as 13 in irc spot 5 mute
+
+   */
   /*  kenmore remote
    279939191 , 0
    
@@ -5759,9 +5785,9 @@ void getir(){
    
    
    */
-   
+
   if (irrecv.decode(&results)
-  ) {
+    ) {
     if (results.value == irc2[0]) {
       if(serialoutput==true){
         Serial.println("recognised 0 on ir");
@@ -5877,35 +5903,39 @@ void getir(){
  * @return  Array           The HSV representation
  */
 //unsigned long rgbToHsv(byte r, byte g, byte b, double hsv[]) {
-  unsigned long rgbToHsv(byte r, byte g, byte b) {
-    double rd = (double) r/255;
-    double gd = (double) g/255;
-    double bd = (double) b/255;
-    double max = threeway_max(rd, gd, bd), min = threeway_min(rd, gd, bd);
-    double h, s, v = max;
+unsigned long rgbToHsv(byte r, byte g, byte b) {
+  double rd = (double) r/255;
+  double gd = (double) g/255;
+  double bd = (double) b/255;
+  double max = threeway_max(rd, gd, bd), min = threeway_min(rd, gd, bd);
+  double h, s, v = max;
 
-    double d = max - min;
-    s = max == 0 ? 0 : d / max;
+  double d = max - min;
+  s = max == 0 ? 0 : d / max;
 
-    if (max == min) { 
-        h = 0; // achromatic
-    } else {
-        if (max == rd) {
-            h = (gd - bd) / d + (gd < bd ? 6 : 0);
-        } else if (max == gd) {
-            h = (bd - rd) / d + 2;
-        } else if (max == bd) {
-            h = (rd - gd) / d + 4;
-        }
-        h /= 6;
+  if (max == min) { 
+    h = 0; // achromatic
+  } 
+  else {
+    if (max == rd) {
+      h = (gd - bd) / d + (gd < bd ? 6 : 0);
+    } 
+    else if (max == gd) {
+      h = (bd - rd) / d + 2;
+    } 
+    else if (max == bd) {
+      h = (rd - gd) / d + 4;
     }
+    h /= 6;
+  }
 
-    return h,s,v;
-    }
+  return h,s,v;
+}
 
 unsigned long threeway_max(double a, double b, double c) {
-    return max(a, max(b, c));
+  return max(a, max(b, c));
 }
 unsigned long threeway_min(double a, double b, double c) {
-    return min(a, min(b, c));
+  return min(a, min(b, c));
 }
+
