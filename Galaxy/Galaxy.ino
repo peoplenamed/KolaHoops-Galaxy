@@ -1,12 +1,4 @@
-//goal for v1
-// create non bluetooth code
-// import ir codes
-// modify remotes to not switch code
-// fix pov done untested
-// fix button long press done untested
-// add demo mode switch done unstested
-// fix ir learn display done untested
-// formatting on top
+
 #define galaxyversion 1 // version of this code. will be used for bluetooth handshake to determine capabilities
 //flags
 boolean demo = true;
@@ -24,7 +16,7 @@ boolean uartoutput=true;// will the uart respond?
 int pattern = -1;
 int nextspeed=0;
 byte colorschemeselector = 0;
-uint8_t brightness = 2; //lower=brighter
+uint8_t brightness = 3; //lower=brighter
 uint16_t patternswitchspeed = 1500; //# of frames between pattern switches
 uint8_t patternswitchspeedvariance = 0;//# of frames the pattern switch speed can vary + and - so total variance could be 2x 
 uint16_t transitionspeed = 30;// # of framestransition lasts 
@@ -959,7 +951,7 @@ void setup() {
   }
   for(int i=127;i>0;i--){ //fade out cyan
     for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i, i/2, i/2);
+      strip.setPixelColor(q, 0, i/2, i/2);
     }
     delay(5);
     strip.show();
@@ -1045,10 +1037,10 @@ void setup() {
   Serial.println(" read from EEPROM spot 255");
   if(irsetupflag==3){//if our pair flag is 2 then
     opmode=3;
-    for(int q=1;q<ircsetup;q++){
+    for(int q=0;q<ircsetup;q++){
       strip.setPixelColor(q,64,0,0); 
     }
-    strip.setPixelColor(1,0,64,0);
+    strip.setPixelColor(0,0,64,0);
     strip.show();
   }
   else{
@@ -1837,8 +1829,10 @@ void callback() {
     else{
       if(back==true){
      
-       fxIdx[frontImgIdx]--;
-       if(fxIdx[frontImgIdx]<0){fxIdx[frontImgIdx]=(sizeof(renderEffect) / sizeof(renderEffect[0]))-1;}
+     //  fxIdx[frontImgIdx]--;
+       if(fxIdx[frontImgIdx]==0){fxIdx[frontImgIdx]=(sizeof(renderEffect) / sizeof(renderEffect[0]))-1;}else{
+       fxIdx[frontImgIdx]--;}
+       back=false;
       }else{
       fxIdx[frontImgIdx]++;//instead of random now its sequential
       }
@@ -3773,12 +3767,7 @@ void POV(byte idx) {
     "HACK ",
     "KolaHoops.com ",
     "Did you see that?",
-    "Shannon",
-    ":) :( (: :(",
-    "////",
-    "01010101",
-    "what?",
-    "!$?#@&*",
+    "Shannon"
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
@@ -3793,7 +3782,7 @@ void POV(byte idx) {
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=random(0,sizeof(Message));// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build, 4 = a bunch of symbols
+    fxVars[idx][10]=random(0,6);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build
 
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
@@ -5188,12 +5177,16 @@ void buttonpress(){
           //disable button
         } 
     }
-    if(buttoncounter=1){//short press 
+    Serial.println(buttoncounter);
+    if(buttoncounter<5){//short press 
       button=1;
+      Serial.println("button!");
     }
     else{
-      if(buttoncounter>=2){//long press
-        longbutton=1;
+      if(buttoncounter>=5){//long press
+        //longbutton=1;
+        colorschemeselector++;
+        //Serial.println("long button!");
       }      
     }
   }
@@ -5665,12 +5658,12 @@ void irsetup(boolean feedback) {
         }
         else{
          if(i==q){
-          strip.setPixelColor(q, 0, 64, 0);
+          strip.setPixelColor(i, 0, 64, 0);
          } 
         }
       }
     }
-    
+    strip.show();
   if (irrecv.decode(&results)) {//if we have a new ir code
      irc[i] = results.value; //add it to our ir code array
     if(serialoutput==true){   //shout it to the world
@@ -5786,53 +5779,61 @@ Read code from eeprom spots 5 to 8 as 13 in irc spot 5 mute
    
    */
 
-  if (irrecv.decode(&results)
-    ) {
-    if (results.value == irc2[0]) {
+  if (irrecv.decode(&results)) {
+ //   Serial.println(results.value);
+    if(results.value==0){
+      irrecv.resume();
+      return;}
+    if (results.value == irc2[0]||results.value==2065 || results.value== 17) {//pattern down
       if(serialoutput==true){
         Serial.println("recognised 0 on ir");
       }//pattern ++
+      back=true;
       button=1;
+      tCounter=0;
     }
-    if (results.value == irc2[1]) {
+    if (results.value == irc2[1]||results.value==2064 || results.value==16) {//pattern up
       if(serialoutput==true){
         Serial.println("recognised 1 on ir");
-      } //pattern -- (NOT IMPLEMENTED yet)
+      } 
+      button=1;
+      tCounter=0;
       //colorschemeselector++;
     }  
-    if (results.value == irc2[2]) {
+    if (results.value == irc2[2]||results.value==2081 || results.value==33) {//color scheme down
       if(serialoutput==true){
         Serial.println("recognised 2 on ir");
       }
-      colorschemeselector++;
+      colorschemeselector--;
       //color scheme --
     }
-    if (results.value == irc2[3]) {
+    if (results.value == irc2[3]||results.value==2080 || results.value==32) {//color scheme up
       if(serialoutput==true){
         Serial.println("recognised 3 on ir");
       }
-      colorschemeselector--;
+      colorschemeselector++;
     }
-    if (results.value == irc2[4]) {
+    if (results.value == irc2[4]||results.value==2110 || results.value==62) {//re-init pattern
       if(serialoutput==true){
         Serial.println("recognised 4 on ir");
       }
-      //brightness up
-      if( brightness==1){
-      }
-      else{
-        brightness--;
-      }
+      fxVars[0][0]=0;
+      fxVars[1][0]=0;
     }
-    if (results.value == irc2[5]) {
+    if (results.value == irc2[5]||results.value==2061 || results.value==13) {//toggle brightness
       if(serialoutput==true){
         Serial.println("recognised 5 on ir");//serial message here    
       }
-      if(brightness==6){
-      }
-      else{
-        brightness++;     //brightness down
-      }
+     
+      if(brightness==2){
+        brightness=4;}
+        else{
+         if(brightness==4){
+          brightness=2;} else{brightness=2;}
+        }
+  
+   //   brightness = random(2,1)*2;
+      Serial.println(brightness);
     }    
     if (results.value == irc2[6]) {
       if(serialoutput==true){
