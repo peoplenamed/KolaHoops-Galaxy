@@ -235,7 +235,7 @@ unsigned long secondTwoBytes;
 #include <Wire.h>
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
-const int numPixels = 100;
+const int numPixels = 90;
 #define numPixelsHolder numPixels;
 uint8_t framecounter,framecounter1;
 int rotationspeed;
@@ -831,19 +831,19 @@ void bluetoothsetup(){
   Serial.println("Setting up bluetooth module");
   //inital baud rate of the bluetooth modules we use is 9600. I think we get the best performance
   //out of 38400 baud because of the timing errors due to the prescaler. we are specifically not using nl/cr
-  //* Uart.begin(9600);//change uart baud to match bt default
+  //Uart.begin(9600);//change uart baud to match bt default
   // Uart.print("AT+BAUD1"); //sets bluetooth uart baud at 1200
   //  Uart.print("AT+BAUD2"); //sets bluetooth uart baud at 2400
   //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
   //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
   //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
-  //*  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
+   Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
   //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
   //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
   delay(1000);//wait a sec
-  Uart.print("AT+NAMEPete's Galaxy"); //sets name seen by android to "Maxs Galaxy"
+  Uart.print("AT+NAMEMax's Galaxy"); //sets name seen in bt
   delay(1000);
-  Uart.print("AT+PIN0000");//sets pin to 0000
+  Uart.print("AT+PIN0000");//sets pin 
   delay(1000); 
 }
 void brutebluetooth(){ //mess your bluetooth chip up? not to fear. this will try all available baud rates and
@@ -3761,13 +3761,11 @@ void Dice(byte idx){
 }
 
 void POV(byte idx) {
-  const String Message[11] = {
+  const String Message[4] = {
     "CREATE ",
     "MAKE ",
     "HACK ",
-    "KolaHoops.com ",
-    "Did you see that?",
-    "Shannon"
+    "KolaHoops.com "
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
@@ -3782,7 +3780,7 @@ void POV(byte idx) {
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=random(0,6);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build
+    fxVars[idx][10]=random(0,4);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build
 
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
     fxVars[idx][0]=1;// Effect initialized
@@ -5386,6 +5384,9 @@ void getSerial(){
       }
       bluetoothsetup(); 
       Serial.println("Sent.");
+    }
+        if( cmd == 'z' ) { //send bluetooth config command
+      brutebluetooth();
     }
     if( cmd == 'A' ) { //Enable accel output
       if(serialoutput==true){  
