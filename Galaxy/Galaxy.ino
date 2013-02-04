@@ -1,6 +1,5 @@
 
-#define galaxyversion 1.1 // version of this code. will be used for bluetooth handshake to determine capabilities
-//flags
+#define galaxyversion 1.1 // version of this code
 boolean demo = true;
 boolean colordemo=false;
 uint8_t compassdebug = 0;
@@ -11,7 +10,6 @@ boolean compassoutput=false;
 boolean irsetupflag=false;
 uint8_t calflag; //compass calibration flag. -1 = recalibrate compass;0=get raw calibration data;1=do nothing
 boolean serialoutput=true;// will the serial respond?
-boolean uartoutput=true;// will the uart respond?
 //paramaters
 int pattern = -1;
 int nextspeed=0;
@@ -235,7 +233,7 @@ unsigned long secondTwoBytes;
 #include <Wire.h>
 // Declare the number of pixels in strand; 32 = 32 pixels in a row. The
 // LED strips have 32 LEDs per meter, but you can extend or cut the strip.
-const int numPixels = 106;
+const int numPixels = 94;
 #define numPixelsHolder numPixels;
 uint8_t framecounter,framecounter1;
 int rotationspeed;
@@ -279,7 +277,7 @@ int indexax,indexay,indexaz; // the index of the current reading
 int totalax,totalay,totalaz; // the running total
 int averageax,averageay,averageaz;
 //##############bluetooth serial port
-HardwareSerial Uart = HardwareSerial();
+//HardwareSerial Uart = HardwareSerial();
 
 //#############compass stuff
 uint8_t error = 0;
@@ -827,7 +825,7 @@ char fixCos(int angle);
 
 // ---------------------------------------------------------------------------
 
-void bluetoothsetup(){
+/*void bluetoothsetup(){
   Serial.println("Setting up bluetooth module");
   //inital baud rate of the bluetooth modules we use is 9600. I think we get the best performance
   //out of 38400 baud because of the timing errors due to the prescaler. we are specifically not using nl/cr
@@ -843,7 +841,7 @@ void bluetoothsetup(){
   delay(1000);//wait a sec
   Uart.print("AT+NAMEMax's Galaxy"); //sets name seen in bt
   delay(1000);
-  Uart.print("AT+PIN1337");//sets pin, act like you know
+  Uart.print("AT+PIN0000");//sets pin 
   delay(1000); 
 }
 void brutebluetooth(){ //mess your bluetooth chip up? not to fear. this will try all available baud rates and
@@ -911,12 +909,12 @@ void brutebluetooth(){ //mess your bluetooth chip up? not to fear. this will try
   Serial.println();
   Serial.println("done");
 
-} 
+}*/ 
 
 void setup() {
   //bring up our serial connections
   Serial.begin(115200);//start serial connection through usb 
-  Uart.begin(38400); //start serial connection to bluetooth module
+//  Uart.begin(38400); //start serial connection to bluetooth module
   strip.begin();//start lpd8806 strip
   
   //check for demo mode flag in eeprom spot 256, set demo accordingly and
@@ -1242,13 +1240,12 @@ void compassread()
 
 
   if (compassoutput==1){
-
-    Uart.print("xy");
-    Uart.println(xyheadingdegrees);
-    Uart.print("xz");
-    Uart.println(xzheadingdegrees);
-    Uart.print("yz");
-    Uart.println(yzheadingdegrees);
+    Serial.print("xy");
+    Serial.println(xyheadingdegrees);
+    Serial.print("xz");
+    Serial.println(xzheadingdegrees);
+    Serial.print("yz");
+    Serial.println(yzheadingdegrees);
     //delay(250);
 
   }
@@ -1369,8 +1366,7 @@ void others(){
       irsetup(true); 
     }  
   }
-  //  getSerial();
-  getUart();
+ 
   getSerial();
   compass.read();
   //  if (counter==255)calibrate(),counter=-255;
@@ -3765,7 +3761,7 @@ void POV(byte idx) {
     "CREATE ",
     "MAKE ",
     "HACK ",
-    "KolaHoops.com ",
+    "KolaHoops.com "
   };
   const String led_chars_index =" ! #$%&'()*+,-./0123456789:;>=<?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ ]^_`abcdefghijklmnopqrstuvwxyz{|}~~";
   if(fxVars[idx][0] == 0) {
@@ -3781,9 +3777,8 @@ void POV(byte idx) {
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
     fxVars[idx][10]=random(0,sizeof(Message)/7);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build
- //  Serial.println(sizeof(Message)/7);
+
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
-   
     fxVars[idx][0]=1;// Effect initialized
   }
   // if(fxVars[idx][0] == -1) { //re init
@@ -5375,20 +5370,7 @@ void getSerial(){
         Serial.print("Color Scheme ");
         Serial.println(colorschemeselector);
       }
-    }
-    if( cmd == 'Z' ) { //send bluetooth config command
-      //not needed for normal operation, this will be preconfigured.
-      //left for learning
-      if(serialoutput==true){  
-        Serial.println("Sending bluetooth config commands");
-        Serial.println("This will take about 3 secconds");
-      }
-      bluetoothsetup(); 
-      Serial.println("Sent.");
-    }
-        if( cmd == 'z' ) { //send bluetooth config command
-      brutebluetooth();
-    }
+
     if( cmd == 'A' ) { //Enable accel output
       if(serialoutput==true){  
         Serial.println("Enable accel output");
@@ -5407,135 +5389,9 @@ void getSerial(){
 
 }
 
-
-
-void getUart(){
-  long num;
-  int i;
-  if(readUartString()) {
-    //   Serial.println(readUartString());
-    // irrecv.pause();
-    delay(10);
-    if(uartoutput==true){
-      //    Uart.println(urtInStr);
-    }
-    char ucmd = urtInStr[0]; // first char is command
-    char* urt = urtInStr;
-    while( *++urt == ' ' ); // got past any intervening whitespace
-    num = atol(urt); // the rest is arguments (maybe)
-    if( ucmd == 'J' ) { //
-      if(serialoutput==true){  
-        //     Serial.println(".");
-      }
-      for(i=0;i<8;i++){
-        num = atol(urt); // the rest is arguments (maybe)
-        //      num=num>>8;
-        usercolorscheme[i] = num;//what?
-
-        Serial.println(num, HEX);
-
-        while( *++urt != ' ' ){ // got to intervening whitespace
-
-        }
-        while( *++urt == ' ' ); // got past any intervening whitespace
-        //  *++str;
-        //   num = atoi(str); // the rest is arguments (maybe)
-
-      }
-      Serial.println();
-      colorschemeselector=0;
-      //  Serial.println("Read user color scheme");
-
-    }
-    if( ucmd == 'P' ) {//P means the next character is a pattern we are getting.
-      if(num>0){
-        pattern = num;//in 
-      }
-      tCounter=0;//start the transition
-    }
-    if( ucmd == 'C' ) {//C means color scheme read through atoi comes next
-      if(num>0){
-        colorschemeselector = num;//in
-      }
-    }
-    if( ucmd == 'c' ) {//C means color scheme read through atoi comes next
-      if(num>0){
-        colorschemeselector = num;//in
-      }
-    }
-
-    if( ucmd == 'B' ) {
-      brightness=num;//self explanitory.
-    }
-    if( ucmd == 'H' ) {//handshake. when recieved reply with 'ver#'
-      Uart.print("ver");
-      Uart.print(galaxyversion);
-    }
-    if( ucmd == 'R' ) {//re-init pattern
-      //   fxVars[0][0]=0;
-      button=1;
-    }
-    if( ucmd == 'C' ) {//re-init pattern
-      //   fxVars[0][0]=0;
-      longbutton=1;
-    }
-    if( ucmd == 'A' ) {//re-init pattern
-      //   fxVars[0][0]=0;
-      opmode=1;
-    }
-
-    /*    if( ucmd == 'Q' ) {
-     
-     for (int i =0; i<ircsetup; i++){
-     Uart.print (irc[i]);
-     Uart.print(" , " );
-     Uart.println (i);
-     
-     }
-     Uart.println();
-     for (int i =0; i<ircsetup; i++){
-     Uart.print (irc2[i]);
-     Uart.print(" , " );
-     Uart.println (i);
-     }
-     }
-     */
-    /*    if( ucmd == 'I' ) {
-     //Timer1.detachInterrupt();
-     if(uartoutput==true){ 
-     Uart.println("Entering irsetup");
-     }
-     opmode=2;
-     }
-     //  boolean serialoutput=false;// will the serial respond?
-     */
-    if( ucmd == 'P' ) {//P means pattern number read through atoi comes next
-
-      pattern = num;//in
-      button=1;
-    }
-    if( ucmd == 'D' ) {//D means toggle demo mode
-      demo=!demo;
-      if(demo==1){
-        Uart.println("Demo mode enabled");
-      }
-      else{
-        Uart.println("Demo mode disabled");
-      }
-    }
-    //   if( ucmd == 'A' ) {//D means toggle demo mode
-    //     compassoutput=!compassoutput;
-    //     if(compassoutput==1){
-    //       Uart.println("compass output enabled");
-    //     }
-    //    else{
-    //       Uart.println("compass outputdisabled");
-    //     }
-    //   }
-    urtInStr[0] = 0; // say we've used the string
-    //irrecv.resume();  
-  }
 }
+
+
 
 //read a string from the serial and store it in an array
 //you must supply the array variable
@@ -5555,22 +5411,7 @@ uint8_t readSerialString()
   //serInStr[i] = 0; // indicate end of read string
   return i; // return number of chars read
 }
-uint8_t readUartString()
-{
-  if(!Uart.available()) {
-    return 0;
-  }
-  delay(10); // wait a little for serial data
 
-  memset( serInStr, 0, sizeof(serInStr) ); // set it all to zero
-  int i = 0;
-  while (Uart.available()) {
-    urtInStr[i] = Uart.read(); // FIXME: doesn't check buffer overrun
-    i++;
-  }
-  //serInStr[i] = 0; // indicate end of read string
-  return i; // return number of chars read
-}
 
 #include <ctype.h>
 uint8_t toHex(char hi, char lo)
