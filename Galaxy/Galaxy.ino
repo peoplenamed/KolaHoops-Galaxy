@@ -23,7 +23,7 @@ uint16_t transitionspeed = 30;// # of framestransition lasts
 uint8_t transitionspeedvariance = 0;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
-   HeartPOV,
+  HeartPOV,
   MazePOV,
   StarPOV,
   WavyPOV,
@@ -32,6 +32,8 @@ void (*renderEffect[])(byte) = {
   OooPOV,
   ChainsPOV,
   MiniTriPOV,
+  FourSquare,
+  Checkerboard,
   /*
    * Fixed color patterns
    */
@@ -740,7 +742,20 @@ const uint16_t Images[][16] PROGMEM = {
 0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100,//mini tri8
 0b0010100101001010,0b0111110010011111,0b0001001111100100,0b0010100101001010,
 0b0111110010011111,0b0001001111100100,0b0010100101001010,0b0111110010011111,
-0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100};
+0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100,
+
+0b1111111011111110,0b1000001010000010,0b1000001010000010,0b1000001010000010,//4Square
+0b1000001010000010,0b1000001010000010,0b1111111011111110,0b0000000000000000,
+0b1111111011111110,0b1000001010000010,0b1000001010000010,0b1000001010000010,//4Square
+0b1000001010000010,0b1000001010000010,0b1111111011111110,0b0000000000000000,
+
+0b0000111100001111,0b0000111100001111,0b0000111100001111,0b0000111100001111,
+0b1111000011110000,0b1111000011110000,0b1111000011110000,0b1111000011110000,
+0b0000111100001111,0b0000111100001111,0b0000111100001111,0b0000111100001111,
+0b1111000011110000,0b1111000011110000,0b1111000011110000,0b1111000011110000,
+
+
+};
 
 
 const char led_chars[97][6] PROGMEM = {
@@ -3384,18 +3399,18 @@ void orbit(byte idx) {
 
 void colorDrift(byte idx) {
   if(fxVars[idx][0] == 0) {
-    fxVars[idx][1]=random(0,1536); //color were gonna write initally
-    fxVars[idx][0] = 1; // Effect initialized
-    fxVars[idx][2] =random(1,16); //increments of color drift per frame
+    fxVars[idx][11]=random(0,1536); //color were gonna write initally
+    fxVars[idx][10] = 1; // Effect initialized
+    fxVars[idx][12] =random(1,8); //increments of color drift per frame
     // fxVars[idx][2] =1; //increments of color drift per frame
   }
   byte *ptr = &imgData[idx][0];
-  fxVars[idx][1]+=fxVars[idx][2];
-  long color = hsv2rgb(fxVars[idx][1]%1536, 255, 255);
+  fxVars[idx][11]+=fxVars[idx][12];
+  long colord = hsv2rgb(fxVars[idx][11], 255, 255);
   for(int i=0; i<numPixels; i++) {
-    *ptr++ = color >> 16;
-    *ptr++ = color >> 8;
-    *ptr++ = color;
+    *ptr++ = colord >> 16;
+    *ptr++ = colord >> 8;
+    *ptr++ = colord;
   }
 }
 
@@ -3853,11 +3868,16 @@ void Dice(byte idx){
  void MiniTriPOV(byte idx){
    picPOV(idx, 8); 
   }
-
+ void FourSquare(byte idx){
+   picPOV(idx, 9); 
+  }
+   void Checkerboard(byte idx){
+   picPOV(idx, 10); 
+  }
 void picPOV(byte idx, byte imageSelector) {
  if(fxVars[idx][0] == 0) {
 
-    fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
+   // fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
     fxVars[idx][2]=16; //either 8 or 16 (scale of 1 or 2 ), usedto determine # of pixels in height; our character table is 8 x 6
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
     fxVars[idx][4]=0;//# of frames until next change
@@ -3866,36 +3886,39 @@ void picPOV(byte idx, byte imageSelector) {
     fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
     fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     fxVars[idx][9]=0;// character counter
-    fxVars[idx][10]=0;
+    fxVars[idx][11]=random(0,1536); //color were gonna write initally
+    fxVars[idx][12] =random(1,16); //increments of color drift per frame
     fxVars[idx][0]=1;// Effect initialized
 
 }
 //fxVars[idx][1]=random(10000);
- byte R,G,B;
-      long color=hsv2rgb(fxVars[idx][1],255,255);
-      R=color>>16;
-      G=color>>8;
-      B=color; 
+// byte R,G,B;
+//      long color=hsv2rgb(fxVars[idx][1],255,255);
+//      R=color>>16;
+//      G=color>>8;
+//      B=color; 
   
   fxVars[idx][3]++;
   uint16_t data=pgm_read_word (&Images[imageSelector][fxVars[idx][5]]); //
   byte *ptr = &imgData[idx][0];
+  fxVars[idx][11]+=fxVars[idx][12];
+  long colord = hsv2rgb(fxVars[idx][11], 255, 255);
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
   
     for(int q=0; q<fxVars[idx][2]; q++) {
       if((data>>q)&1){
-        *ptr++ = R;
-        *ptr++ = G;
-        *ptr++ = B;
+    *ptr++ = colord >> 16;
+    *ptr++ = colord >> 8;
+    *ptr++ = colord;
        /// *ptr++ = color;
        // *ptr++ = color;
        // *ptr++ = color;
     
     }
       else{
-        *ptr++ = 0;
-        *ptr++ = 0;
-        *ptr++ = 0;
+    *ptr++ = colord >> 16;
+    *ptr++ = colord >> 8;
+    *ptr++ = colord;
       }
     }
     fxVars[idx][7]++;
@@ -5628,8 +5651,8 @@ void getUart(){
       Uart.print(galaxyversion);
     }
     if( ucmd == 'R' ) {//re-init pattern
-      //   fxVars[0][0]=0;
-      button=1;
+      fxVars[0][0]=0;
+      //button=1;
     }
     if( ucmd == 'C' ) {//re-init pattern
       //   fxVars[0][0]=0;
