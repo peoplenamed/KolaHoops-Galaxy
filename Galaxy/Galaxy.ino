@@ -34,6 +34,17 @@ void (*renderEffect[])(byte) = {
   MiniTriPOV,
   FourSquare,
   Checkerboard,
+   FourSquare,
+  Checkerboard,
+ Slider,
+ Smiley,
+ Float,
+ Zag,
+ NewCircle,
+ DoubleHelix,
+ Bubbles,
+ Move,
+ DiagCheckers,
   /*
    * Fixed color patterns
    */
