@@ -23,6 +23,7 @@ uint16_t transitionspeed = 30;// # of framestransition lasts
 uint8_t transitionspeedvariance = 0;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  colorflag,
   HeartPOV,
   MazePOV,
   StarPOV,
@@ -706,7 +707,8 @@ long eightcolorschema[][8] PROGMEM={
 // 5 data columns + 1 space
 // for each character
 //   why are we storing blank spaces?
-
+const uint32_t rgbImages[][16] PROGMEM = {
+0x12D687,0xBC6146,0x00,0x20F7364,0x00,56701234,00000000,7012345,00000000,12345670,23456701,34567012,45670123,56701234,67012345,7012345,};
 
 const uint16_t Images[][16] PROGMEM = {
 0b0000000000000000,0b0001110001110000,0b0011111011111000,0b0111111111111100,//*********
@@ -3900,6 +3902,121 @@ void Dice(byte idx){
     *ptr++ = color;
   }
 }
+
+
+
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+ void colorflag(byte idx){
+   colorPOV(idx, 0); 
+  }
+
+void colorPOV(byte idx, byte imageSelector2) {
+ if(fxVars[idx][0] == 0) {
+
+   // fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
+    fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), usedto determine # of pixels in height; our character table is 8 x 6
+    fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
+    fxVars[idx][4]=0;//# of frames until next change
+    fxVars[idx][6]=8;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
+    fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
+    fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+    fxVars[idx][9]=0;// character counter
+     fxVars[idx][0]=1;// Effect initialized
+
+}
+  fxVars[idx][3]++;
+  uint32_t data=pgm_read_word (&rgbImages[imageSelector2][fxVars[idx][5]]); //
+  byte *ptr = &imgData[idx][0];
+ 
+  for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
+  
+    for(int q=0; q<fxVars[idx][2]; q++) {
+      if((data>>q)&0){
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0;
+       /// *ptr++ = color;
+       // *ptr++ = color;
+       // *ptr++ = color;
+    
+    }
+      else if((data>>q)&1){
+    *ptr++ = 255;
+    *ptr++ = 255;
+    *ptr++ = 255;
+      }   else if((data>>q)&2){
+    *ptr++ = 255;
+    *ptr++ = 0;
+    *ptr++ = 0;
+      }
+         else if((data>>q)&3){
+    *ptr++ = 0;
+    *ptr++ = 255;
+    *ptr++ = 0;
+      }
+         else if((data>>q)&4){
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 255;
+      }
+         else if((data>>q)&5){
+    *ptr++ = 255;
+    *ptr++ = 140;
+    *ptr++ = 0;
+      }
+         else if((data>>q)&6){
+    *ptr++ = 255;
+    *ptr++ = 247;
+    *ptr++ = 118;
+      }
+         else if((data>>q)&7){
+    *ptr++ = 255;
+    *ptr++ = 0;
+    *ptr++ = 179;
+      }
+       
+      
+    }
+    fxVars[idx][7]++;
+  }
+ 
+  // if(fxVars[idx][3]>=fxVars[idx][4]){
+  //   fxVars[idx][3]=0;
+  fxVars[idx][5]++;
+  //  }
+  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
+  {
+    fxVars[idx][5]=0;
+  }
+}
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
+//*******************************************************************
+
 
   void HeartPOV(byte idx){
    picPOV(idx, 0); 
