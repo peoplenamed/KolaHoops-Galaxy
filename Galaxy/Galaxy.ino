@@ -23,6 +23,7 @@ uint16_t transitionspeed = 30;// # of framestransition lasts
 uint8_t transitionspeedvariance = 0;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  testcolorPOV,
   colorflag,
   HeartPOV,
   MazePOV,
@@ -35,17 +36,17 @@ void (*renderEffect[])(byte) = {
   MiniTriPOV,
   FourSquare,
   Checkerboard,
-   FourSquare,
+  FourSquare,
   Checkerboard,
- Slider,
- Smiley,
- Float,
- Zag,
- NewCircle,
- DoubleHelix,
- Bubbles,
- Move,
- DiagCheckers,
+  Slider,
+  Smiley,
+  Float,
+  Zag,
+  NewCircle,
+  DoubleHelix,
+  Bubbles,
+  Move,
+  DiagCheckers,
   /*
    * Fixed color patterns
    */
@@ -225,17 +226,17 @@ decode_results results;
 #define ircsetup 6
 unsigned long irc[ircsetup];
 unsigned long irc2[ircsetup]= {
-0,0,0,0,0,0};
-  /*  2155864095,//sirius sat radio remote
-  2155847775,
-  2155815135,
-  2155811055,
-  2155860015,
-  2155851855,
-  2155827375,
-  2155835535,
-  2155868175,
-  2155809015,
+  0,0,0,0,0,0};
+/*  2155864095,//sirius sat radio remote
+ 2155847775,
+ 2155815135,
+ 2155811055,
+ 2155860015,
+ 2155851855,
+ 2155827375,
+ 2155835535,
+ 2155868175,
+ 2155809015,
  2155831455}; */
 /*
 279939191,
@@ -707,116 +708,138 @@ long eightcolorschema[][8] PROGMEM={
 // 5 data columns + 1 space
 // for each character
 //   why are we storing blank spaces?
-const uint32_t rgbImages[][16] PROGMEM = {
-0x12D687,0xBC6146,0x00,0x20F7364,0x00,56701234,00000000,7012345,00000000,12345670,23456701,34567012,45670123,56701234,67012345,7012345,};
+const byte rgbImages[][256] PROGMEM = {
+  //who knows what that one is...
+  0x7,0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x7,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x7,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x2,0x1,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x1,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x4,0x1,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x5,0x1,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x6,0x1,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x7,0x1,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x1,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x9,0x1,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0xA,0x1,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0xB,0x1,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0xC,0x1,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0xD,0x1,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0xE,0x1,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,0xF,
+
+
+  //single 1color line
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+  0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+
+};
 
 const uint16_t Images[][16] PROGMEM = {
-0b0000000000000000,0b0001110001110000,0b0011111011111000,0b0111111111111100,//*********
-0b0111111011111100,0b0111111111111100,0b0011111111111000,0b0001111111110000,//Heart 0
-0b0000111111100000,0b0000011111000000,0b0000001110000000,0b0000000100000000,
-0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,//*********
+  0b0000000000000000,0b0001110001110000,0b0011111011111000,0b0111111111111100,//*********
+  0b0111111011111100,0b0111111111111100,0b0011111111111000,0b0001111111110000,//Heart 0
+  0b0000111111100000,0b0000011111000000,0b0000001110000000,0b0000000100000000,
+  0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,//*********
 
-0b0000000100000000,0b0000000100000000,0b0000001110000000,0b0000001110000000,//star 1
-0b0000011111000000,0b1111111111111111,0b0011111111111100,0b0001111111111000,
-0b0000111111110000,0b0001111111111000,0b0011110001111100,0b0111000000011100,
-0b0110000000001100,0b1000000000000010,0b0000000000000000,0b0000000000000000,
-
-
-0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,//wavy 2
-0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,
-0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,
-0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,
-
-0b0001000000000000,0b0001000000100000,0b0010000000100000,0b0110000011111000,//moon 3
-0b1110000001100000,0b1110000010010000,0b1111000000000000,0b1111000000000000,
-0b1111000000000000,0b0111100000000000,0b0111110000000000,0b0001111100000000,
-0b0000111111001000,0b0000011111110000,0b0000000111100000,0b0000000000000000,
-
-0b0000000000000000,0b0000000000000000,0b0001100000000000,0b0010000000000000,//cat 4
-0b0010000000000000,0b0010000000000100,0b0001000000001110,0b0001111111111100,
-0b0001111111111000,0b0011111111111000,0b0010100001001100,0b0100100001000110,
-0b0100100001000010,0b0100010001000001,0b0000000000000000,0b0000000000000000, 
-
-0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,//Ooo 5
-0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,
-0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,
-0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,
-
-0b1011101111111010,0b1010101000001010,0b1110101011101010,0b0000101010101010,//maze 6
-0b1111101010111010,0b1000001010000010,0b1111111010111111,0b0000000010100001,
-0b1010100000000010,0b1000001011101001,0b1011101000001011,0b1010101111111010,
-0b1110011100111001,0b1010111111111110,0b1010000000000001,0b1011111111111111,
-
-0b0110110110110110,0b1001001001001001,0b0110110110110110,0b0110110110110110,//chains7
-0b1001001001001001,0b0110110110110110,0b0110110110110110,0b1001001001001001,
-0b0110110110110110,0b0110110110110110,0b1001001001001001,0b0110110110110110,
-0b0110110110110110,0b1001001001001001,0b0110110110110110,0b0110110110110110,
-
-0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100,//mini tri8
-0b0010100101001010,0b0111110010011111,0b0001001111100100,0b0010100101001010,
-0b0111110010011111,0b0001001111100100,0b0010100101001010,0b0111110010011111,
-0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100,
-
-0b1111111011111110,0b1000001010000010,0b1000001010000010,0b1000001010000010,//4Square
-0b1000001010000010,0b1000001010000010,0b1111111011111110,0b0000000000000000,
-0b1111111011111110,0b1000001010000010,0b1000001010000010,0b1000001010000010,//4Square
-0b1000001010000010,0b1000001010000010,0b1111111011111110,0b0000000000000000,
-
-0b0000111100001111,0b0000111100001111,0b0000111100001111,0b0000111100001111,//checker
-0b1111000011110000,0b1111000011110000,0b1111000011110000,0b1111000011110000,
-0b0000111100001111,0b0000111100001111,0b0000111100001111,0b0000111100001111,
-0b1111000011110000,0b1111000011110000,0b1111000011110000,0b1111000011110000,
+  0b0000000100000000,0b0000000100000000,0b0000001110000000,0b0000001110000000,//star 1
+  0b0000011111000000,0b1111111111111111,0b0011111111111100,0b0001111111111000,
+  0b0000111111110000,0b0001111111111000,0b0011110001111100,0b0111000000011100,
+  0b0110000000001100,0b1000000000000010,0b0000000000000000,0b0000000000000000,
 
 
-0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110, //slider
-0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110,
-0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110,
-0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110,
+  0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,//wavy 2
+  0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,
+  0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,
+  0b0110011001100110,0b1111000011110000,0b0110011001100110,0b0000111100001111,
 
-0b0000000000000000,0b0001111001111000,0b0001111001111000,0b0100000000000010,//Smiley Face
-0b0111100000011110,0b0011111111111100,0b0001111111111000,0b0000000000000000,
-0b0000000000000000,0b0001111001111000,0b0001111001111000,0b0100000000000010,
-0b0111100000011110,0b0011111111111100,0b0001111111111000,0b0000000000000000,
+  0b0001000000000000,0b0001000000100000,0b0010000000100000,0b0110000011111000,//moon 3
+  0b1110000001100000,0b1110000010010000,0b1111000000000000,0b1111000000000000,
+  0b1111000000000000,0b0111100000000000,0b0111110000000000,0b0001111100000000,
+  0b0000111111001000,0b0000011111110000,0b0000000111100000,0b0000000000000000,
+
+  0b0000000000000000,0b0000000000000000,0b0001100000000000,0b0010000000000000,//cat 4
+  0b0010000000000000,0b0010000000000100,0b0001000000001110,0b0001111111111100,
+  0b0001111111111000,0b0011111111111000,0b0010100001001100,0b0100100001000110,
+  0b0100100001000010,0b0100010001000001,0b0000000000000000,0b0000000000000000, 
+
+  0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,//Ooo 5
+  0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,
+  0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,
+  0b1110011100111001,0b1010010100101010,0b1110011100111001,0b0000000000000000,
+
+  0b1011101111111010,0b1010101000001010,0b1110101011101010,0b0000101010101010,//maze 6
+  0b1111101010111010,0b1000001010000010,0b1111111010111111,0b0000000010100001,
+  0b1010100000000010,0b1000001011101001,0b1011101000001011,0b1010101111111010,
+  0b1110011100111001,0b1010111111111110,0b1010000000000001,0b1011111111111111,
+
+  0b0110110110110110,0b1001001001001001,0b0110110110110110,0b0110110110110110,//chains7
+  0b1001001001001001,0b0110110110110110,0b0110110110110110,0b1001001001001001,
+  0b0110110110110110,0b0110110110110110,0b1001001001001001,0b0110110110110110,
+  0b0110110110110110,0b1001001001001001,0b0110110110110110,0b0110110110110110,
+
+  0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100,//mini tri8
+  0b0010100101001010,0b0111110010011111,0b0001001111100100,0b0010100101001010,
+  0b0111110010011111,0b0001001111100100,0b0010100101001010,0b0111110010011111,
+  0b0001001111100100,0b0010100101001010,0b0111110010011111,0b0001001111100100,
+
+  0b1111111011111110,0b1000001010000010,0b1000001010000010,0b1000001010000010,//4Square
+  0b1000001010000010,0b1000001010000010,0b1111111011111110,0b0000000000000000,
+  0b1111111011111110,0b1000001010000010,0b1000001010000010,0b1000001010000010,//4Square
+  0b1000001010000010,0b1000001010000010,0b1111111011111110,0b0000000000000000,
+
+  0b0000111100001111,0b0000111100001111,0b0000111100001111,0b0000111100001111,//checker
+  0b1111000011110000,0b1111000011110000,0b1111000011110000,0b1111000011110000,
+  0b0000111100001111,0b0000111100001111,0b0000111100001111,0b0000111100001111,
+  0b1111000011110000,0b1111000011110000,0b1111000011110000,0b1111000011110000,
 
 
-0b1111000011110000,0b0111100001111000,0b0011110000111100,0b0001111000011110,//Float
-0b0000111100001111,0b1000011110000111,0b1100001111000011,0b1110000111100001,
-0b1111000011110000,0b0111100001111000,0b0011110000111100,0b0001111000011110,
-0b0000111100001111,0b1000011110000111,0b1100001111000011,0b1110000111100001,
+  0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110, //slider
+  0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110,
+  0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110,
+  0b0011001100110011,0b1001100110011001,0b1100110011001100,0b0110011001100110,
 
-0b1100110011001100,0b0110011001100110,0b0011001100110011,0b1001100110011001,//Zag
-0b0011001100110011,0b0110011001100110,0b1100110011001100,0b1001100110011001,
-0b1100110011001100,0b0110011001100110,0b0011001100110011,0b1001100110011001,
-0b0011001100110011,0b0110011001100110,0b1100110011001100,0b1001100110011001,
-
-
-
-0b0000111111110000,0b0011110000111100,0b1111001001001111,0b1100000110000011,//NewCircle
-0b1111001001001111,0b0011110000111100,0b0000111111110000,0b0000000000000000,
-0b0000111111110000,0b0011110000111100,0b1111001001001111,0b1100000110000011,
-0b1111001001001111,0b0011110000111100,0b0000111111110000,0b0000000000000000,
+  0b0000000000000000,0b0001111001111000,0b0001111001111000,0b0100000000000010,//Smiley Face
+  0b0111100000011110,0b0011111111111100,0b0001111111111000,0b0000000000000000,
+  0b0000000000000000,0b0001111001111000,0b0001111001111000,0b0100000000000010,
+  0b0111100000011110,0b0011111111111100,0b0001111111111000,0b0000000000000000,
 
 
-0b1100001111000011,0b1100001111000011,0b0110011001100110,0b0011110000111100,//Double Helix
-0b0011110000111100,0b0110011001100110,0b1100001111000011,0b1100001111000011,
-0b1100001111000011,0b1100001111000011,0b0110011001100110,0b0011110000111100,
-0b0011110000111100,0b0110011001100110,0b1100001111000011,0b1100001111000011,
+  0b1111000011110000,0b0111100001111000,0b0011110000111100,0b0001111000011110,//Float
+  0b0000111100001111,0b1000011110000111,0b1100001111000011,0b1110000111100001,
+  0b1111000011110000,0b0111100001111000,0b0011110000111100,0b0001111000011110,
+  0b0000111100001111,0b1000011110000111,0b1100001111000011,0b1110000111100001,
+
+  0b1100110011001100,0b0110011001100110,0b0011001100110011,0b1001100110011001,//Zag
+  0b0011001100110011,0b0110011001100110,0b1100110011001100,0b1001100110011001,
+  0b1100110011001100,0b0110011001100110,0b0011001100110011,0b1001100110011001,
+  0b0011001100110011,0b0110011001100110,0b1100110011001100,0b1001100110011001,
 
 
-0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,// Bubbles
-0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,
-0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,
-0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,
 
-0b1001001001001001,0b0100100100100100,0b0010010010010010,0b1001001001001001,//Move
-0b0010010010010010,0b0100100100100100,0b1001001001001001,0b0010010010010010,
-0b1001001001001001,0b0100100100100100,0b0010010010010010,0b1001001001001001,
-0b0010010010010010,0b0100100100100100,0b1001001001001001,0b0010010010010010,
+  0b0000111111110000,0b0011110000111100,0b1111001001001111,0b1100000110000011,//NewCircle
+  0b1111001001001111,0b0011110000111100,0b0000111111110000,0b0000000000000000,
+  0b0000111111110000,0b0011110000111100,0b1111001001001111,0b1100000110000011,
+  0b1111001001001111,0b0011110000111100,0b0000111111110000,0b0000000000000000,
 
-0b0011110000111100,0b0111100001111000,0b1111000011110000,0b1110000111100001,//Diag Checkers
-0b0001111000011110,0b0000111100001111,0b1000011110000111,0b1100001111000011,
-0b0011110000111100,0b0111100001111000,0b1111000011110000,0b1110000111100001,
-0b0001111000011110,0b0000111100001111,0b1000011110000111,0b1100001111000011,
+
+  0b1100001111000011,0b1100001111000011,0b0110011001100110,0b0011110000111100,//Double Helix
+  0b0011110000111100,0b0110011001100110,0b1100001111000011,0b1100001111000011,
+  0b1100001111000011,0b1100001111000011,0b0110011001100110,0b0011110000111100,
+  0b0011110000111100,0b0110011001100110,0b1100001111000011,0b1100001111000011,
+
+
+  0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,// Bubbles
+  0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,
+  0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,
+  0b0011001111001100,0b0111100110011110,0b1111110000111111,0b0111100110011110,
+
+  0b1001001001001001,0b0100100100100100,0b0010010010010010,0b1001001001001001,//Move
+  0b0010010010010010,0b0100100100100100,0b1001001001001001,0b0010010010010010,
+  0b1001001001001001,0b0100100100100100,0b0010010010010010,0b1001001001001001,
+  0b0010010010010010,0b0100100100100100,0b1001001001001001,0b0010010010010010,
+
+  0b0011110000111100,0b0111100001111000,0b1111000011110000,0b1110000111100001,//Diag Checkers
+  0b0001111000011110,0b0000111100001111,0b1000011110000111,0b1100001111000011,
+  0b0011110000111100,0b0111100001111000,0b1111000011110000,0b1110000111100001,
+  0b0001111000011110,0b0000111100001111,0b1000011110000111,0b1100001111000011,
 };
 
 
@@ -980,7 +1003,7 @@ void bluetoothsetup(){
   //  Uart.print("AT+BAUD3"); //sets bluetooth uart baud at 4800
   //  Uart.print("AT+BAUD4"); //sets bluetooth uart baud at 9600
   //  Uart.print("AT+BAUD5"); //sets bluetooth uart baud at 19200
-   Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
+  Uart.print("AT+BAUD6"); //sets bluetooth uart baud at 38400 //set bt uart at 38400, applies on next reboot
   //  Uart.print("AT+BAUD7"); //sets bluetooth uart baud at 57600
   //  Uart.print("AT+BAUD8"); //sets bluetooth uart baud at 115200
   delay(1000);//wait a sec
@@ -1061,17 +1084,18 @@ void setup() {
   Serial.begin(115200);//start serial connection through usb 
   Uart.begin(38400); //start serial connection to bluetooth module
   strip.begin();//start lpd8806 strip
-  
+
   //check for demo mode flag in eeprom spot 256, set demo accordingly and
   //reset flag 
   if(EEPROM.read(256)>0){//if eeprom 256 is 1 or more
-   demo=false; //disable demo mode
-   EEPROM.write(256, 0);//write eeprom spot 256 to 0
-  }else{//if eeprom 256 is 0 (1 unsigned byte in each eeprom spot)
+    demo=false; //disable demo mode
+    EEPROM.write(256, 0);//write eeprom spot 256 to 0
+  }
+  else{//if eeprom 256 is 0 (1 unsigned byte in each eeprom spot)
     demo=true; //enable demo mode
     EEPROM.write(256,1);//write eeprom spot 256 to 1
   }
-  
+
   //check for ir learn flag on eeprom spot 255.
   uint8_t offcounter = EEPROM.read(255);
   EEPROM.write(255, offcounter+1);
@@ -1080,100 +1104,101 @@ void setup() {
   //fade finishes it puts the hoop into IR learn mode.
   //every time the 3color fade finishes it resets eeprom 255 to 0
   //so 2 consecutive interruptions is required to trigger.
-  
-  
+
+
   //RGB means demo is disabled, CMY means demo is enabled
- if(demo==true){//Cyan, MAGENTA and yellow fade
- 
-  for(int i=0;i<127;i++){ //fade in cyan
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0, i/2, i/2);
+  if(demo==true){//Cyan, MAGENTA and yellow fade
+
+      for(int i=0;i<127;i++){ //fade in cyan
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, 0, i/2, i/2);
+      }
+      delay(5);
+      strip.show();
     }
-    delay(5);
-    strip.show();
+    for(int i=127;i>0;i--){ //fade out cyan
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, 0, i/2, i/2);
+      }
+      delay(5);
+      strip.show();
+    }
+    for(int i=0;i<127;i++){ //fade in purple
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, i/2, 0, i/2);
+      }
+      delay(5);
+      strip.show();
+    }
+    for(int i=127;i>0;i--){ //fade out cyan
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, i/2,0, i/2);
+      }
+      delay(5);
+      strip.show();
+    }
+    for(int i=0;i<127;i++){ //fade in orange
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, i/2, i/2, 0);
+      }
+      delay(5);
+      strip.show();
+    }
+    for(int i=127;i>0;i--){ //fade out yellow
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, i/2, i/2, 0);
+      }
+      delay(5);
+      strip.show();
+    } 
+
   }
-  for(int i=127;i>0;i--){ //fade out cyan
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0, i/2, i/2);
+  else{ //good old red green and blue.
+
+    for(int i=0;i<127;i++){ //fade in red
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, i, 0, 0);
+      }
+      delay(5);
+      strip.show();
     }
-    delay(5);
-    strip.show();
-  }
-  for(int i=0;i<127;i++){ //fade in purple
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i/2, 0, i/2);
+    for(int i=127;i>0;i--){ //fade out red
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, i, 0, 0);
+      }
+      delay(5);
+      strip.show();
     }
-    delay(5);
-    strip.show();
-  }
-  for(int i=127;i>0;i--){ //fade out cyan
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i/2,0, i/2);
+    for(int i=0;i<127;i++){ //fade in green
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, 0, i, 0);
+      }
+      delay(5);
+      strip.show();
     }
-    delay(5);
-    strip.show();
-  }
-  for(int i=0;i<127;i++){ //fade in orange
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i/2, i/2, 0);
+    for(int i=0;i<127;i++){ //fade out green
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, 0,abs(i-127), 0);
+      }
+      delay(5);
+      strip.show();
     }
-    delay(5);
-    strip.show();
-  }
-  for(int i=127;i>0;i--){ //fade out yellow
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i/2, i/2, 0);
+    for(int i=0;i<127;i++){ //fade in blue
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, 0, 0, i);
+      }
+      delay(5);
+      strip.show();
     }
-    delay(5);
-    strip.show();
+    for(int i=0;i<127;i++){ //fade out blue
+      for(int q=0;q<numPixels;q++){
+        strip.setPixelColor(q, 0, 0, abs(i-127));
+      }
+      delay(5);
+      strip.show();
+    } 
   } 
-  
- }else{ //good old red green and blue.
- 
-  for(int i=0;i<127;i++){ //fade in red
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i, 0, 0);
-    }
-    delay(5);
-    strip.show();
-  }
-  for(int i=127;i>0;i--){ //fade out red
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, i, 0, 0);
-    }
-    delay(5);
-    strip.show();
-  }
-  for(int i=0;i<127;i++){ //fade in green
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0, i, 0);
-    }
-    delay(5);
-    strip.show();
-  }
-  for(int i=0;i<127;i++){ //fade out green
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0,abs(i-127), 0);
-    }
-    delay(5);
-    strip.show();
-  }
-  for(int i=0;i<127;i++){ //fade in blue
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0, 0, i);
-    }
-    delay(5);
-    strip.show();
-  }
-  for(int i=0;i<127;i++){ //fade out blue
-    for(int q=0;q<numPixels;q++){
-      strip.setPixelColor(q, 0, 0, abs(i-127));
-    }
-    delay(5);
-    strip.show();
-  } 
- } 
- 
+
   //delay(100000);
   uint8_t irsetupflag = EEPROM.read(255);
   Serial.print(irsetupflag);
@@ -1580,7 +1605,7 @@ void menu() {
   byte *ptr = &imgData[backImgIdx][0];
   int type;//placeholder
   long color[3]={
-    0,0,0  };
+    0,0,0      };
   if(type==0){//type tells us what value we are polling the user for. this 
     color[0] = red;//will choose colors and set the apropriate values
     color[1] = green;
@@ -1890,7 +1915,7 @@ void menu() {
 }// //Timer1 interrupt handler. Called at equal intervals; 60 Hz by default.
 void callback() {
   strip.show();
- 
+
   if(menuphase!=0){
     menuphase=0;
     menuphase0=0;
@@ -1942,7 +1967,7 @@ void callback() {
   else {
     // No transition in progress; just show back image
 
-    for(i=0; i<numPixels;i++) {
+      for(i=0; i<numPixels;i++) {
       // See note above re: r, g, b vars.
       r = gamma(*backPtr++);
       g = gamma(*backPtr++);
@@ -1971,13 +1996,18 @@ void callback() {
     }
     else{
       if(back==true){
-     
-     //  fxIdx[frontImgIdx]--;
-       if(fxIdx[frontImgIdx]==0){fxIdx[frontImgIdx]=(sizeof(renderEffect) / sizeof(renderEffect[0]))-1;}else{
-       fxIdx[frontImgIdx]--;}
-       back=false;
-      }else{
-      fxIdx[frontImgIdx]++;//instead of random now its sequential
+
+        //  fxIdx[frontImgIdx]--;
+        if(fxIdx[frontImgIdx]==0){
+          fxIdx[frontImgIdx]=(sizeof(renderEffect) / sizeof(renderEffect[0]))-1;
+        }
+        else{
+          fxIdx[frontImgIdx]--;
+        }
+        back=false;
+      }
+      else{
+        fxIdx[frontImgIdx]++;//instead of random now its sequential
       }
     }
     if(fxIdx[frontImgIdx]>=(sizeof(renderEffect) / sizeof(renderEffect[0]))){
@@ -3919,89 +3949,64 @@ void Dice(byte idx){
 //*******************************************************************
 
 //*******************************************************************
- void colorflag(byte idx){
-   colorPOV(idx, 0); 
-  }
+void colorflag(byte idx){
+  colorPOV(idx, 0); 
+}
+
+void testcolorPOV(byte idx){
+  colorPOV(idx, 1); 
+}
 
 void colorPOV(byte idx, byte imageSelector2) {
- if(fxVars[idx][0] == 0) {
+  if(fxVars[idx][0] == 0) {
 
-   // fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
-    fxVars[idx][2]=8; //either 8 or 16 (scale of 1 or 2 ), usedto determine # of pixels in height; our character table is 8 x 6
+    // fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
+    fxVars[idx][2]=16; //either 8 or 16 (scale of 1 or 2 ), usedto determine # of pixels in height; our character table is 8 x 6
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
     fxVars[idx][4]=0;//# of frames until next change
-    fxVars[idx][6]=8;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
+    fxVars[idx][6]=15;//number of different levels or time. a level is incremented every x# of frames; character table is 8x6
     fxVars[idx][5]=0;// level operator gets a ++ every loop and is set to -9 when @ 10 and abs() when called so it oscillates
     fxVars[idx][7]=0;//using this to keep track of which section we're writing to, operator of fxVars[idx][2]. starts at 0
-    fxVars[idx][8] = fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
+    fxVars[idx][8]=fxVars[idx][2];// this is the number of times to cut up the 1536 increment wheel. 2=opposite colors, 3 == a triangle, 4= a square
     fxVars[idx][9]=0;// character counter
-     fxVars[idx][0]=1;// Effect initialized
+    fxVars[idx][0]=1;// Effect initialized
+  }
 
-}
-  fxVars[idx][3]++;
-  uint32_t data=pgm_read_word (&rgbImages[imageSelector2][fxVars[idx][5]]); //
+  // uint32_t data=pgm_read_word (&rgbImages[imageSelector2][fxVars[idx][5]]); //
   byte *ptr = &imgData[idx][0];
- 
+
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
-  
+
     for(int q=0; q<fxVars[idx][2]; q++) {
-      if((data>>q)&0){
-    *ptr++ = 0;
-    *ptr++ = 0;
-    *ptr++ = 0;
-       /// *ptr++ = color;
-       // *ptr++ = color;
-       // *ptr++ = color;
-    
+      long color = (getschemacolor(pgm_read_byte(&rgbImages[imageSelector2][fxVars[idx][5]+(fxVars[idx][3]*16)])));
+      *ptr++ = color>>16;
+      *ptr++ = color>>8;
+      *ptr++ = color;
+       fxVars[idx][5]++;
     }
-      else if((data>>q)&1){
-    *ptr++ = 255;
-    *ptr++ = 255;
-    *ptr++ = 255;
-      }   else if((data>>q)&2){
-    *ptr++ = 255;
-    *ptr++ = 0;
-    *ptr++ = 0;
-      }
-         else if((data>>q)&3){
-    *ptr++ = 0;
-    *ptr++ = 255;
-    *ptr++ = 0;
-      }
-         else if((data>>q)&4){
-    *ptr++ = 0;
-    *ptr++ = 0;
-    *ptr++ = 255;
-      }
-         else if((data>>q)&5){
-    *ptr++ = 255;
-    *ptr++ = 140;
-    *ptr++ = 0;
-      }
-         else if((data>>q)&6){
-    *ptr++ = 255;
-    *ptr++ = 247;
-    *ptr++ = 118;
-      }
-         else if((data>>q)&7){
-    *ptr++ = 255;
-    *ptr++ = 0;
-    *ptr++ = 179;
-      }
-       
-      
-    }
+    fxVars[idx][5]=0;
     fxVars[idx][7]++;
   }
- 
-  // if(fxVars[idx][3]>=fxVars[idx][4]){
-  //   fxVars[idx][3]=0;
-  fxVars[idx][5]++;
-  //  }
-  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
-  {
-    fxVars[idx][5]=0;
+  for(int q=0; q<fxVars[idx][2]; q++) {
+    long color = (getschemacolor(pgm_read_byte(&rgbImages[imageSelector2][fxVars[idx][5]+(fxVars[idx][3]*16)])));
+    *ptr++ = color>>16;
+    *ptr++ = color>>8;
+    *ptr++ = color;
+     fxVars[idx][5]++;
   }
+  fxVars[idx][5]=0;
+  fxVars[idx][7]=0;
+ 
+   fxVars[idx][3]++;
+  if(fxVars[idx][3]>=15){
+    fxVars[idx][3]=0;
+
+  }
+  // fxVars[idx][5]++;
+//  if(fxVars[idx][5]>=fxVars[idx][6]) // if level operator > level holder then increment character and check for overflow
+ // {
+  //  fxVars[idx][5]=0;
+ // }
 }
 //*******************************************************************
 
@@ -4018,72 +4023,72 @@ void colorPOV(byte idx, byte imageSelector2) {
 //*******************************************************************
 
 
-  void HeartPOV(byte idx){
-   picPOV(idx, 0); 
-  }
-   void StarPOV(byte idx){
-   picPOV(idx, 1); 
-  }
- void WavyPOV(byte idx){
-   picPOV(idx, 2); 
-  }
- void MoonPOV(byte idx){
-   picPOV(idx, 3); 
-  }
- void CatPOV(byte idx){
-   picPOV(idx, 4); 
-  }
- void OooPOV(byte idx){
-   picPOV(idx, 5); 
-  }
-   void MazePOV(byte idx){
- picPOV(idx, 6); 
-  }
- void ChainsPOV(byte idx){
-   picPOV(idx, 7); 
-  }
- void MiniTriPOV(byte idx){
-   picPOV(idx, 8); 
-  }
- void FourSquare(byte idx){
-   picPOV(idx, 9); 
-  }
-   void Checkerboard(byte idx){
-   picPOV(idx, 10); 
-  }
-     void Slider(byte idx){
-   picPOV(idx, 11); 
-  }
-     void Smiley(byte idx){
-   picPOV(idx, 12); 
-  }
-     void Float(byte idx){
-   picPOV(idx, 13); 
-  }
-     void Zag(byte idx){
-   picPOV(idx, 14); 
-  }
-     void NewCircle(byte idx){
-   picPOV(idx, 15); 
-  }
-     void DoubleHelix(byte idx){
-   picPOV(idx, 16); 
-  }
-     void Bubbles(byte idx){
-   picPOV(idx, 17); 
-     }
-      void Move(byte idx){
-   picPOV(idx, 18); 
-  }
-     void DiagCheckers(byte idx){
-   picPOV(idx, 19); 
-  }
-    
-  
-void picPOV(byte idx, byte imageSelector) {
- if(fxVars[idx][0] == 0) {
+void HeartPOV(byte idx){
+  picPOV(idx, 0); 
+}
+void StarPOV(byte idx){
+  picPOV(idx, 1); 
+}
+void WavyPOV(byte idx){
+  picPOV(idx, 2); 
+}
+void MoonPOV(byte idx){
+  picPOV(idx, 3); 
+}
+void CatPOV(byte idx){
+  picPOV(idx, 4); 
+}
+void OooPOV(byte idx){
+  picPOV(idx, 5); 
+}
+void MazePOV(byte idx){
+  picPOV(idx, 6); 
+}
+void ChainsPOV(byte idx){
+  picPOV(idx, 7); 
+}
+void MiniTriPOV(byte idx){
+  picPOV(idx, 8); 
+}
+void FourSquare(byte idx){
+  picPOV(idx, 9); 
+}
+void Checkerboard(byte idx){
+  picPOV(idx, 10); 
+}
+void Slider(byte idx){
+  picPOV(idx, 11); 
+}
+void Smiley(byte idx){
+  picPOV(idx, 12); 
+}
+void Float(byte idx){
+  picPOV(idx, 13); 
+}
+void Zag(byte idx){
+  picPOV(idx, 14); 
+}
+void NewCircle(byte idx){
+  picPOV(idx, 15); 
+}
+void DoubleHelix(byte idx){
+  picPOV(idx, 16); 
+}
+void Bubbles(byte idx){
+  picPOV(idx, 17); 
+}
+void Move(byte idx){
+  picPOV(idx, 18); 
+}
+void DiagCheckers(byte idx){
+  picPOV(idx, 19); 
+}
 
-   // fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
+
+void picPOV(byte idx, byte imageSelector) {
+  if(fxVars[idx][0] == 0) {
+
+    // fxVars[idx][1]=random(32)*48; //color were gonna use to cycle
     fxVars[idx][2]=16; //either 8 or 16 (scale of 1 or 2 ), usedto determine # of pixels in height; our character table is 8 x 6
     fxVars[idx][3]=0;//frame counter operator. starts at 1 and is incremented every frame,
     fxVars[idx][4]=0;//# of frames until next change
@@ -4096,35 +4101,35 @@ void picPOV(byte idx, byte imageSelector) {
     fxVars[idx][12] =random(1,16); //increments of color drift per frame
     fxVars[idx][0]=1;// Effect initialized
 
-}
-//fxVars[idx][1]=random(10000);
-// byte R,G,B;
-//      long color=hsv2rgb(fxVars[idx][1],255,255);
-//      R=color>>16;
-//      G=color>>8;
-//      B=color; 
-  
+  }
+  //fxVars[idx][1]=random(10000);
+  // byte R,G,B;
+  //      long color=hsv2rgb(fxVars[idx][1],255,255);
+  //      R=color>>16;
+  //      G=color>>8;
+  //      B=color; 
+
   fxVars[idx][3]++;
   uint16_t data=pgm_read_word (&Images[imageSelector][fxVars[idx][5]]); //
   byte *ptr = &imgData[idx][0];
   fxVars[idx][11]+=fxVars[idx][12];
   long colord = hsv2rgb(fxVars[idx][11], 255, 255);
   for(int i=0; i<numPixels/fxVars[idx][2]; i++) {
-  
+
     for(int q=0; q<fxVars[idx][2]; q++) {
       if((data>>q)&1){
-    *ptr++ = colord >> 16;
-    *ptr++ = colord >> 8;
-    *ptr++ = colord;
-       /// *ptr++ = color;
-       // *ptr++ = color;
-       // *ptr++ = color;
-    
-    }
+        *ptr++ = colord >> 16;
+        *ptr++ = colord >> 8;
+        *ptr++ = colord;
+        /// *ptr++ = color;
+        // *ptr++ = color;
+        // *ptr++ = color;
+
+      }
       else{
-    *ptr++ = 0;
-    *ptr++ = 0;
-    *ptr++ = 0;
+        *ptr++ = 0;
+        *ptr++ = 0;
+        *ptr++ = 0;
       }
     }
     fxVars[idx][7]++;
@@ -4164,9 +4169,9 @@ void POV(byte idx) {
     //using fxVars[idx][2] here makes the whole stretch minus the remainder go once around the clolr wheel
     fxVars[idx][9]=0;// character counter
     fxVars[idx][10]=random(0,sizeof(Message)/7);// determines message for the message array. 0 = KolaHoops.com, 1=make,2=hack,3=build
- //  Serial.println(sizeof(Message)/7);
+    //  Serial.println(sizeof(Message)/7);
     // fxVars[idx][11]= random(0,10); //if greater than 5,change the message after it finishes
-   
+
     fxVars[idx][0]=1;// Effect initialized
   }
   // if(fxVars[idx][0] == -1) { //re init
@@ -5556,10 +5561,10 @@ void buttonpress(){
     while(digitalRead(19)==LOW){
       delay(100);
       buttoncounter++;
-       if(buttoncounter>100){ //this prob means the button is busted.
-          return; //break while loop
-          //disable button
-        } 
+      if(buttoncounter>100){ //this prob means the button is busted.
+        return; //break while loop
+        //disable button
+      } 
     }
     Serial.println(buttoncounter);
     if(buttoncounter<5){//short press 
@@ -5771,7 +5776,7 @@ void getSerial(){
       bluetoothsetup(); 
       Serial.println("Sent.");
     }
-        if( cmd == 'z' ) { //send bluetooth config command
+    if( cmd == 'z' ) { //send bluetooth config command
       brutebluetooth();
     }
     if( cmd == 'A' ) { //Enable accel output
@@ -6035,24 +6040,24 @@ int i;
 
 void irsetup(boolean feedback) {
   // irsetupflag=1;
-    for(int q=0;q<ircsetup;q++){//refresh image
-      if(i<q){
-        strip.setPixelColor(q, 64, 0, 0);
+  for(int q=0;q<ircsetup;q++){//refresh image
+    if(i<q){
+      strip.setPixelColor(q, 64, 0, 0);
+    }
+    else{
+      if(i>q){
+        strip.setPixelColor(q, 0, 0, 64);
       }
       else{
-        if(i>q){
-          strip.setPixelColor(q, 0, 0, 64);
-        }
-        else{
-         if(i==q){
+        if(i==q){
           strip.setPixelColor(i, 0, 64, 0);
-         } 
-        }
+        } 
       }
     }
-    strip.show();
+  }
+  strip.show();
   if (irrecv.decode(&results)) {//if we have a new ir code
-     irc[i] = results.value; //add it to our ir code array
+    irc[i] = results.value; //add it to our ir code array
     if(serialoutput==true){   //shout it to the world
       Serial.print("got code ");
       Serial.println(results.value, DEC);
@@ -6070,27 +6075,27 @@ void irsetup(boolean feedback) {
     }
   }
 
-    if (i == ircsetup-1){
-      int i2;
-      for (i = 0; i < ircsetup; i ++){
-        if(serialoutput==true){  
-          Serial.print("Spot ");
-          Serial.print(i);
-          Serial.print(" has code ");
-          Serial.println(irc[i], DEC);
-          Serial.println("Writing to eeprom");
-        }
-        i2 = (i*4);
-        EEPwrite(i2,irc[i]);
-      }
-      delay(1000);
+  if (i == ircsetup-1){
+    int i2;
+    for (i = 0; i < ircsetup; i ++){
       if(serialoutput==true){  
-        Serial.println("Ready.");
+        Serial.print("Spot ");
+        Serial.print(i);
+        Serial.print(" has code ");
+        Serial.println(irc[i], DEC);
+        Serial.println("Writing to eeprom");
       }
-      opmode=0;
-      return;
+      i2 = (i*4);
+      EEPwrite(i2,irc[i]);
     }
- 
+    delay(1000);
+    if(serialoutput==true){  
+      Serial.println("Ready.");
+    }
+    opmode=0;
+    return;
+  }
+
   delay(100);
   // irsetupflag=0;
 }
@@ -6100,20 +6105,20 @@ void getir(){
   //Serial.println("Please press the numbers 0-9 first, then a few more? if you dont know, keep going.");
   //  Serial.println(i);
   //irsetup(true);
-  
+
   /* keychain remote with flashlight
-Read code from eeprom spots 0 to 3 as 17 in irc spot 0 -
-
-Read code from eeprom spots 1 to 4 as 2064 in irc spot 1 +
-
-Read code from eeprom spots 2 to 5 as 33 in irc spot 2 down 
-
-Read code from eeprom spots 3 to 6 as 2080 in irc spot 3 up 
-
-Read code from eeprom spots 4 to 7 as 62 in irc spot 4 input
-
-Read code from eeprom spots 5 to 8 as 13 in irc spot 5 mute
-
+   Read code from eeprom spots 0 to 3 as 17 in irc spot 0 -
+   
+   Read code from eeprom spots 1 to 4 as 2064 in irc spot 1 +
+   
+   Read code from eeprom spots 2 to 5 as 33 in irc spot 2 down 
+   
+   Read code from eeprom spots 3 to 6 as 2080 in irc spot 3 up 
+   
+   Read code from eeprom spots 4 to 7 as 62 in irc spot 4 input
+   
+   Read code from eeprom spots 5 to 8 as 13 in irc spot 5 mute
+   
    */
   /*  kenmore remote
    279939191 , 0
@@ -6167,10 +6172,11 @@ Read code from eeprom spots 5 to 8 as 13 in irc spot 5 mute
    */
 
   if (irrecv.decode(&results)) {
- //   Serial.println(results.value);
+    //   Serial.println(results.value);
     if(results.value==0){
       irrecv.resume();
-      return;}
+      return;
+    }
     if (results.value == irc2[0]||results.value==2065 || results.value== 17) {//pattern down
       if(serialoutput==true){
         Serial.println("recognised 0 on ir");
@@ -6211,15 +6217,20 @@ Read code from eeprom spots 5 to 8 as 13 in irc spot 5 mute
       if(serialoutput==true){
         Serial.println("recognised 5 on ir");//serial message here    
       }
-     
+
       if(brightness==2){
-        brightness=4;}
+        brightness=4;
+      }
+      else{
+        if(brightness==4){
+          brightness=2;
+        } 
         else{
-         if(brightness==4){
-          brightness=2;} else{brightness=2;}
+          brightness=2;
         }
-  
-   //   brightness = random(2,1)*2;
+      }
+
+      //   brightness = random(2,1)*2;
       Serial.println(brightness);
     }    
     if (results.value == irc2[6]) {
@@ -6326,3 +6337,5 @@ unsigned long threeway_max(double a, double b, double c) {
 unsigned long threeway_min(double a, double b, double c) {
   return min(a, min(b, c));
 }
+
+
