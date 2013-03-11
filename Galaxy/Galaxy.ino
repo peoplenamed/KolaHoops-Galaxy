@@ -23,6 +23,19 @@ uint16_t transitionspeed = 30;// # of framestransition lasts
 uint8_t transitionspeedvariance = 0;// # of frames transition lenght varies by, total var 2X, 1X in either + or -
 
 void (*renderEffect[])(byte) = {
+  SpreadPOV,//*****************************
+  TimePOV,
+  SlagPOV,
+  AmericanFlagPOV,
+  RingsPOV,
+  ArrowPOV,//        These are
+  MultiBoxPOV,//      New Patterns
+  NewPOV,//            3-11-13
+  CrossTheTPOV,
+  TheBigDownPOV,
+  TheBigDownSquarePOV,
+  UpDownPOV,
+  DoubleDimePOV,//**************************
   FourWayCheckersPOV,
   FourColorCheckersPOV,
   ZigZagPOV,
@@ -4354,7 +4367,45 @@ void ZigZagPOV(byte idx){
 void CrazyCirclesPOV(byte idx){
   colorPOV(idx, 9); 
 }
-
+void SpreadPOV(byte idx){
+  colorPOV(idx, 10); 
+}
+void TimePOV(byte idx){
+  colorPOV(idx, 11); 
+}
+void SlagPOV(byte idx){
+  colorPOV(idx, 12); 
+}
+void AmericanFlagPOV(byte idx){
+  colorPOV(idx, 13); 
+}
+void RingsPOV(byte idx){
+  colorPOV(idx, 14); 
+}
+void ArrowPOV(byte idx){
+  colorPOV(idx, 15); 
+}
+void MultiBoxPOV(byte idx){
+  colorPOV(idx, 16); 
+}
+void NewPOV(byte idx){
+  colorPOV(idx, 17); 
+}
+void CrossTheTPOV(byte idx){
+  colorPOV(idx, 18); 
+}
+void TheBigDownPOV(byte idx){
+  colorPOV(idx, 19); 
+}
+void TheBigDownSquarePOV(byte idx){
+  colorPOV(idx, 20); 
+}
+void UpDownPOV(byte idx){
+  colorPOV(idx, 21); 
+}
+void DoubleDimePOV(byte idx){
+  colorPOV(idx, 22); 
+}
 
 void colorPOV(byte idx, byte imageSelector2) {
   if(fxVars[idx][0] == 0) {
